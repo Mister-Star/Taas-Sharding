@@ -1,9 +1,9 @@
 #add_subdirectory(epoch message transaction utils)
 #aux_source_directory(. DIR_SRCS)
 file(GLOB SOURCE
-        connection/*.cpp
         epoch/*.cpp
         message/*.cpp
+        storage/*.cpp
         test/*.cpp
         tools/*.cpp
         transaction/*.cpp
