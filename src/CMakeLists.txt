@@ -19,7 +19,8 @@ target_link_libraries(taas_core
         proto
         glog::glog
         cppzmq-static
-        rapidjson)
+        rapidjson
+        gflags cppzmq tikv_client pthread dl ssl crypto)
 
 #
 #target_sources(taas_core
