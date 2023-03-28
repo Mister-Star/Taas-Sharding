@@ -7,7 +7,7 @@
 #include "epoch/merge.h"
 #include "epoch/epoch_manager.h"
 #include "tools/utilities.h"
-#include "tikv_client.h"
+#include "storage/tikv.h"
 
 namespace Taas {
 
@@ -18,61 +18,56 @@ namespace Taas {
  * @return true
  * @return false
  */
-    void MergeWorkerThreadMain(uint64_t id, Context ctx) {
+
+    void StateChecker(uint64_t id, Context ctx) {
         Merger merger;
-        merger.Run(id, ctx);
         merger.Init(id, std::move(ctx));
 
         auto sleep_flag = false;
-        while(!EpochManager::IsTimerStop()) {
-            sleep_flag = false;
+        std::unique_ptr<pack_params> pack_param;
+        std::unique_ptr<proto::Transaction> txn_ptr;
+        MessageReceiveHandler receiveHandler;
+        MessageSendHandler sendHandler;
+        sendHandler.Init(ctx);
+        receiveHandler.Init(id, ctx);
+        uint64_t redo_log_epoch = 1, merge_epoch = 1;
+        while (!init_ok.load()) usleep(100);
 
-            sleep_flag = sleep_flag | merger.EpochMerge();
+        while (!EpochManager::IsTimerStop()) {
+            sleep_flag = sleep_flag | receiveHandler.StaticClear();///clear receive handler cache
+            sleep_flag = sleep_flag | receiveHandler.CheckReceivedStatesAndReply();/// check and send ack
 
-            sleep_flag = sleep_flag | merger.EpochCommit_RedoLog_TxnMode();
-
-//            sleep_flag = sleep_flag | merger.EpochCommit_RedoLog_ShardingMode();
-
-            if(!sleep_flag) usleep(200);
+            sleep_flag = sleep_flag | sendHandler.SendEpochEndMessage(ctx);///send epoch end flag
+            sleep_flag = sleep_flag | sendHandler.SendBackUpEpochEndMessage(ctx);///send epoch backup end message
+            sleep_flag = sleep_flag | sendHandler.SendAbortSet(ctx); ///send abort set
+            if(!sleep_flag) usleep(50);
         }
     }
 
-    void SendTiKVThreadMain(uint64_t id, Context ctx) {
+    void WorkerThreadMain(uint64_t id, Context ctx) {
+        Merger merger;
+        merger.Init(id, std::move(ctx));
+
         auto sleep_flag = false;
-        auto txn_ptr = std::make_unique<proto::Transaction>();
+        std::unique_ptr<pack_params> pack_param;
+        std::unique_ptr<proto::Transaction> txn_ptr;
+        MessageReceiveHandler receiveHandler;
+        MessageSendHandler sendHandler;
+        sendHandler.Init(ctx);
+        receiveHandler.Init(id, ctx);
+        uint64_t redo_log_epoch = 1, merge_epoch = 1;
+        while (!init_ok.load()) usleep(100);
+
         while(!EpochManager::IsTimerStop()) {
-            sleep_flag = false;
-            if(redo_log_queue.try_dequeue(txn_ptr) && txn_ptr != nullptr) {
-                auto tikv_txn = EpochManager::tikv_client_ptr->begin();
-//                std::vector<KvPair> kvs;
-//                tikv_txn.batch_put();
-                for (auto i = 0; i < txn_ptr->row_size(); i++) {
-                    const auto& row = txn_ptr->row(i);
-                    if (row.op_type() == proto::OpType::Insert || row.op_type() == proto::OpType::Update) {
-                        tikv_txn.put(row.key(), row.data());
-//                        KvPair kvpair;
-//                        kvpair.key = row.key();
-//                        kvpair.value = row.data();
-//                        kvs.push_back();
-                    }
-                }
-//                while(redo_log_queue.try_dequeue(txn_ptr)) {
-//                    if(txn_ptr == nullptr) continue;
-//                    for (auto i = 0; i < txn_ptr->row_size(); i++) {
-//                        const auto& row = txn_ptr->row(i);
-//                        if (row.op_type() == proto::OpType::Insert || row.op_type() == proto::OpType::Update) {
-//                            tikv_txn.put(row.key(), row.data());
-////                            printf("put key: %s, put value: %s\n", row.key().c_str(), row.data().c_str());
-//                        }
-//                    }
-//                }
-                tikv_txn.commit();
-                sleep_flag = true;
-            }
+            EpochManager::EpochCacheSafeCheck();
+            sleep_flag = sleep_flag | receiveHandler.HandleReceivedMessage();
+            sleep_flag = sleep_flag | merger.EpochMerge();
+            sleep_flag = sleep_flag | merger.EpochCommit_RedoLog_TxnMode();
+            sleep_flag = sleep_flag | sendTransactionToTiKV(EpochManager::GetPushDownEpoch() % ctx.kCacheMaxLength, txn_ptr);
+            if(!sleep_flag) usleep(50);
         }
-        if(!sleep_flag) {
-            usleep(200);
-        }
+
     }
+
 }
 

@@ -11,37 +11,11 @@ if (NOT EXISTS "${CMAKE_BINARY_DIR}/lib/libtikv_client.a")
     message(STATUS "tar -xvf ${CMAKE_SOURCE_DIR}/libtikv_client.tar.xz")
     execute_process(
             COMMAND tar -xvf ${CMAKE_SOURCE_DIR}/libtikv_client.tar.xz
+            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+    execute_process(
             COMMAND mv "${CMAKE_SOURCE_DIR}/libtikv_client.a" "${CMAKE_BINARY_DIR}/lib"
             WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 endif()
-#if (NOT EXISTS "${CMAKE_BINARY_DIR}/include")
-#    message(STATUS "generate include and lib directory")
-#    execute_process(
-#            COMMAND mkdir include
-#            COMMAND cp -rf "${CMAKE_SOURCE_DIR}/rust/tikv_client/include/tikv_client.h" "${CMAKE_BINARY_DIR}/include"
-#            COMMAND cp -rf "${CMAKE_SOURCE_DIR}/rust/tikv_client/include/tikv_client_glue.h" "${CMAKE_BINARY_DIR}/include"
-#            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
-#endif()
-
-
-# 3rdParty library  TiKV_Client
-# Build with original makefile
-#if (NOT EXISTS "${CMAKE_SOURCE_DIR}/rust/tikv_client/target/release/libtikv_client.a" AND NOT EXISTS "${CMAKE_BINARY_DIR}/lib/libtikv_client.a")
-#    message(STATUS "make tikv_client")
-#    execute_process(
-#            COMMAND make clean
-#            COMMAND cargo install cxxbridge-cmd --force --version 1.0.18
-#            COMMAND make
-#            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/rust/tikv_client")
-#    execute_process(
-#            COMMAND make release
-#            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/rust/tikv_client")
-#    execute_process(
-#            COMMAND mv "${CMAKE_SOURCE_DIR}/rust/tikv_client/target/release/libtikv_client.a" "${CMAKE_BINARY_DIR}/lib"
-#            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-#            )
-#endif()
-
 
 #========================================
 #               Dependencies
