@@ -9,7 +9,9 @@
 namespace Taas {
 
     void Client(const Context& ctx, uint64_t id) {
+        // 输出客户端启动信息
         printf("Test Client %lu start\n", id);
+        // 初始化随机数生成器
         srand(now_to_us() % 71);
         uint64_t txn_id = 0, op_num, op_type;
         std::string read_version, write_version;
@@ -21,11 +23,15 @@ namespace Taas {
             key_range_dis(1,static_cast<int>(ctx.kTestTxnOpNum)),
             sleep_dis(1, 20000);
 
+        // 等待EpochManager初始化
         while(!EpochManager::IsInitOK() || EpochManager::GetLogicalEpoch() < 10) usleep(sleep_time);
         usleep(sleep_time);
         while(!EpochManager::IsTimerStop()) {
+            // 创建一个message对象
             auto message_ptr = std::make_unique<proto::Message>();
             auto* txn_ptr = message_ptr->mutable_txn();
+
+            // 设置事务ID
             txn_ptr->set_client_txn_id(txn_id * ctx.kTestClientNum + id);
             write_version = std::to_string(txn_ptr->client_txn_id()) + std::to_string(ctx.txn_node_ip_index);
             txn_id ++;
@@ -78,6 +84,7 @@ namespace Taas {
             google::protobuf::io::GzipOutputStream gzipStream(&outputStream, options);
             message_ptr->SerializeToZeroCopyStream(&gzipStream);
             gzipStream.Close();
+            // 将序列化后的数据发送到消息队列
             void *data = static_cast<void*>(const_cast<char*>(serialized_txn_str.data()));
             MessageQueue::listen_message_txn_queue->enqueue(std::make_unique<zmq::message_t>(data, serialized_txn_str.size()));
 

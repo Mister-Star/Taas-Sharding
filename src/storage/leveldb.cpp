@@ -1,10 +1,10 @@
 //
 // Created by zwx on 23-6-30.
 //
-
-#include <queue>
 #include "storage/leveldb.h"
 #include "epoch/epoch_manager.h"
+
+#include "proto/kvdb_server.pb.h"
 
 namespace Taas {
     Context LevelDB::ctx;
@@ -69,7 +69,6 @@ namespace Taas {
 
     /* 睡眠一段时间自己重新变活跃，检查 
     推送queue中所有txn到leveldb
-
     */
     void LevelDB::SendTransactionToLevelDB_Usleep(){
         std::unique_ptr<proto::Transaction> txn_ptr;
@@ -95,6 +94,7 @@ namespace Taas {
                 if(i.op_type() == proto::OpType::Read) {
                     continue;
                 }
+                // 无需table_name和column
                 auto data = request.add_data();
                 data->set_op_type(i.op_type());
                 data->set_key(i.key());
@@ -113,7 +113,7 @@ namespace Taas {
         
     }
 
-    /* 阻塞？推送queue中所有txn到leveldb
+    /* 阻塞推送queue中所有txn到leveldb
     */
     void LevelDB::SendTransactionToLevelDB_Block(){
         std::unique_ptr<proto::Transaction> txn_ptr;

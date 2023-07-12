@@ -20,6 +20,7 @@ namespace Taas {
         // 定义server对象和选项？
         brpc::Server leveldb_server;
         brpc::ServerOptions options;
+
         // 定义service处理Get Put请求
         LevelDBGetService leveldb_get_service;
         LevelDBPutService leveldb_put_service;
@@ -55,12 +56,16 @@ namespace Taas {
 
         // 获取Controller对象
         brpc::Controller* cntl = static_cast<brpc::Controller*>(controller);
+
         // 获取连接编号
         auto num = connection_num.fetch_add(1);
         std::string value;
+        const auto& data = request->data();
+        const std::string& key = data.key();
 
         // 从连接池中选取连接，获取对应key的value
-        auto res = leveldb_connections[num % 10000]->get("1", &value);
+        auto res = leveldb_connections[num % 10000]->get(key, &value);
+        
         // 填写response
         response->set_result(res);
         // KvDbGet::Get(controller, request, response, done);
