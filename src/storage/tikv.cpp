@@ -10,7 +10,7 @@
 namespace Taas {
 
     Context TiKV::ctx;
-    tikv_client::TransactionClient* TiKV::tikv_client_ptr = nullptr;
+    tikv_client::TransactionClient* TiKV::tikv_client_ptr = nullptr;        // 指向client的指针
     AtomicCounters_Cache
             TiKV::epoch_should_push_down_txn_num(10, 1), TiKV::epoch_pushed_down_txn_num(10, 1);
     std::unique_ptr<moodycamel::BlockingConcurrentQueue<std::unique_ptr<proto::Transaction>>>  TiKV::task_queue, TiKV::redo_log_queue;
@@ -25,8 +25,10 @@ namespace Taas {
         redo_log_queue = std::make_unique<moodycamel::BlockingConcurrentQueue<std::unique_ptr<proto::Transaction>>>();
         epoch_should_push_down_txn_num.Init(ctx.kCacheMaxLength, ctx.kTxnNodeNum);
         epoch_pushed_down_txn_num.Init(ctx.kCacheMaxLength, ctx.kTxnNodeNum);
+
         epoch_redo_log_complete.resize(ctx.kCacheMaxLength);
         epoch_redo_log_queue.resize(ctx.kCacheMaxLength);
+
         for(int i = 0; i < static_cast<int>(ctx.kCacheMaxLength); i ++) {
             epoch_redo_log_complete[i] = std::make_unique<std::atomic<bool>>(false);
             epoch_redo_log_queue[i] = std::make_unique<moodycamel::BlockingConcurrentQueue<std::unique_ptr<proto::Transaction>>>();
@@ -109,6 +111,7 @@ namespace Taas {
         epoch_redo_log_queue[epoch_mod]->enqueue(std::move(txn_ptr));
         epoch_redo_log_queue[epoch_mod]->enqueue(nullptr);
     }
+    
     bool TiKV::TiKVRedoLogQueueTryDequeue(uint64_t &epoch, std::unique_ptr<proto::Transaction> &txn_ptr) {
         auto epoch_mod = epoch % ctx.kCacheMaxLength;
         return epoch_redo_log_queue[epoch_mod]->try_dequeue(txn_ptr);

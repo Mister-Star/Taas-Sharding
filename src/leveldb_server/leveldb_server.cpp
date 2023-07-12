@@ -7,6 +7,7 @@
 #include "leveldb_server/rocksdb_connection.h"
 
 
+
 namespace Taas {
 
     // 全局，存储数据库连接
@@ -46,7 +47,7 @@ namespace Taas {
         leveldb_server.RunUntilAskedToQuit();
     }
 
-    // 处理Get请求的service
+    // 实现proto定义的 处理Get请求的service
     void LevelDBGetService::Get(::google::protobuf::RpcController *controller, const ::proto::KvDBRequest *request,
                          ::proto::KvDBResponse *response, ::google::protobuf::Closure *done) {
         // 定义closureGuard，函数返回时自动调用done->Run()
@@ -57,11 +58,13 @@ namespace Taas {
         // 获取连接编号
         auto num = connection_num.fetch_add(1);
         std::string value;
+
         // 从连接池中选取连接，获取对应key的value
         auto res = leveldb_connections[num % 10000]->get("1", &value);
         // 填写response
         response->set_result(res);
-//        KvDbGet::Get(controller, request, response, done);
+        // KvDbGet::Get(controller, request, response, done);
+        done_guard.release();
     }
 
     // 处理Put请求的service
@@ -71,9 +74,17 @@ namespace Taas {
 
         brpc::Controller* cntl = static_cast<brpc::Controller*>(controller);
         auto num = connection_num.fetch_add(1);
-        std::string value;
+
+        // std::string value;
+
+        // 获取request的data
+        const auto& data = request->data();
+        const std::string& key = data.key();
+        const std::string& value = data.value();
+    
         // 键值对插入数据库
-        auto res = leveldb_connections[num % 10000]->syncPut("1", value);
+        // auto res = leveldb_connections[num % 10000]->syncPut("1", value);
+        auto res = leveldb_connections[num % 10000]->syncPut(key, value);
 
         // 填写response
         response->set_result(res);
