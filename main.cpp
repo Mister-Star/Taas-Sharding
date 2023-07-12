@@ -20,17 +20,23 @@ using namespace std;
 
 namespace Taas {
     int main() {
+        // 读取配置信息
         Context ctx("../TaaS_config.xml", "../Storage_config.xml");
 
+        // 初始化glog日志库
         FLAGS_log_dir = ctx.glog_path_;
         FLAGS_alsologtostderr = true;
         google::InitGoogleLogging("Taas-sharding");
         LOG(INFO) << "System Start\n";
+        // 存储工作线程
         std::vector<std::unique_ptr<std::thread>> threads;
 
+        // 判断服务器类型
         if(ctx.server_type == 1) { ///TaaS servers
             EpochManager epochManager;
             Taas::EpochManager::ctx = ctx;
+            // 启动工作线程
+            // 工作线程执行WorkerForPhysicalThreadMain函数，该函数接受一个Context对象作为参数
             threads.push_back(std::make_unique<std::thread>(WorkerForPhysicalThreadMain, ctx));
 
 //        threads.push_back(std::make_unique<std::thread>(WorkerForLogicalThreadMain, ctx));
@@ -53,6 +59,7 @@ namespace Taas {
 
             threads.push_back(std::make_unique<std::thread>(WorkerForClientListenThreadMain, ctx));///client
             threads.push_back(std::make_unique<std::thread>(WorkerForClientSendThreadMain, ctx));
+            
             if(ctx.kTxnNodeNum > 1) {
                 for(int i = 0; i < 16; i ++) {
                     threads.push_back(std::make_unique<std::thread>(WorkerFroEpochMessageThreadMain, ctx, i));///Epoch message
@@ -61,12 +68,14 @@ namespace Taas {
                 threads.push_back(std::make_unique<std::thread>(WorkerForServerListenThreadMain_Epoch, ctx));
                 threads.push_back(std::make_unique<std::thread>(WorkerForServerSendThreadMain, ctx));
             }
+            // 如果启用TiKV，创建客户端并启动工作线程
             if(ctx.is_tikv_enable) {
                 TiKV::tikv_client_ptr = new tikv_client::TransactionClient({ctx.kTiKVIP});
 //            for(int i = 0; i < (int)ctx.kWorkerThreadNum; i ++) {
                 threads.push_back(std::make_unique<std::thread>(WorkerFroTiKVStorageThreadMain, ctx, 0));///tikv push down
 //            }
             }
+            // 启动MOT存储线程
             threads.push_back(std::make_unique<std::thread>(WorkerFroMOTStorageThreadMain)); ///mot push down
 
 
@@ -75,7 +84,9 @@ namespace Taas {
             }
         }
         else if(ctx.server_type == 2) { ///leveldb server
+
             ///todo : add brpc
+
             LevelDBServer(ctx);
 
         }
