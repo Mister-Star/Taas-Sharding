@@ -68,6 +68,7 @@ namespace Taas {
                 threads.push_back(std::make_unique<std::thread>(WorkerForServerListenThreadMain_Epoch, ctx));
                 threads.push_back(std::make_unique<std::thread>(WorkerForServerSendThreadMain, ctx));
             }
+            
             // 如果启用TiKV，创建客户端并启动工作线程
             if(ctx.is_tikv_enable) {
                 TiKV::tikv_client_ptr = new tikv_client::TransactionClient({ctx.kTiKVIP});
