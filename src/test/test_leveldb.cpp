@@ -1,4 +1,4 @@
-#include "test/test.h"
+#include "test/test_leveldb.h"
 #include "transaction/merge.h"
 #include <random>
 #include <brpc/channel.h>
@@ -7,11 +7,16 @@
 
 namespace Taas {
 
-    void Client(const Context& ctx, uint64_t id){
+    void LevelDB_Client(const Context& ctx, uint64_t id){
     
         brpc::Channel channel;
         brpc::ChannelOptions options;
         options.protocol = brpc::PROTOCOL_BAIDU_STD;
+
+        // 创建随机数生成器
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_int_distribution<> dis(1, 100);
         
         if (channel.Init(ctx.kLevevDBIP.c_str(), &options) != 0) {
             LOG(ERROR) << "Fail to initialize channel";
@@ -28,8 +33,9 @@ namespace Taas {
 
         auto data = put_Request.add_data();
 
-        data->set_key("hello");
-        data->set_value("world");
+        int rand_num = dis(gen);
+        data->set_key("hello" + std::to_string(rand_num));
+        data->set_value("world" + std::to_string(rand_num));
 
         put_stub.Put(&put_Cntl, &put_Request, &put_Response, NULL);
         if (!put_Cntl.Failed()) {
@@ -47,7 +53,7 @@ namespace Taas {
         proto::KvDBRequest get_Request;
         proto::KvDBResponse get_Response;
         brpc::Controller get_Cntl;
-        get_Request.set_key("hello");
+        get_Request.set_key("hello" + std::to_string(rand_num));
 
         get_stub.Get(&get_Cntl, &get_Request, &get_Response, NULL);
         if (!get_Cntl.Failed()) {

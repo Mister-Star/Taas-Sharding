@@ -11,6 +11,7 @@
 #include "leveldb_server/leveldb_server.h"
 #include "storage/tikv.h"
 #include "test/test.h"
+#include "test/test_leveldb.h"
 
 #include <glog/logging.h>
 
@@ -35,6 +36,7 @@ namespace Taas {
         if(ctx.server_type == 1) { ///TaaS servers
             EpochManager epochManager;
             Taas::EpochManager::ctx = ctx;
+
             // 启动工作线程
             // 工作线程执行WorkerForPhysicalThreadMain函数，该函数接受一个Context对象作为参数
             threads.push_back(std::make_unique<std::thread>(WorkerForPhysicalThreadMain, ctx));
@@ -68,7 +70,7 @@ namespace Taas {
                 threads.push_back(std::make_unique<std::thread>(WorkerForServerListenThreadMain_Epoch, ctx));
                 threads.push_back(std::make_unique<std::thread>(WorkerForServerSendThreadMain, ctx));
             }
-            
+
             // 如果启用TiKV，创建客户端并启动工作线程
             if(ctx.is_tikv_enable) {
                 TiKV::tikv_client_ptr = new tikv_client::TransactionClient({ctx.kTiKVIP});
@@ -79,16 +81,21 @@ namespace Taas {
             // 启动MOT存储线程
             threads.push_back(std::make_unique<std::thread>(WorkerFroMOTStorageThreadMain)); ///mot push down
 
-
+            // 根据客户端数量创建多个客户端线程，每个客户端线程执行 Client 函数
             for(int i = 0; i < (int)ctx.kTestClientNum; i ++) {
                 threads.push_back(std::make_unique<std::thread>(Client, ctx, i));
             }
         }
         else if(ctx.server_type == 2) { ///leveldb server
-
             ///todo : add brpc
 
+            EpochManager epochManager;
+            Taas::EpochManager::ctx = ctx;
+
             LevelDBServer(ctx);
+            for(int i = 0; i < (int)ctx.kTestClientNum; i ++) {
+                threads.push_back(std::make_unique<std::thread>(LevelDB_Client, ctx, i));
+            }
 
         }
         else if(ctx.server_type == 3) { ///hbase server

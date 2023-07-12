@@ -15,9 +15,9 @@ namespace Taas {
     // 原子全局，记录连接个数
     static std::atomic<uint64_t> connection_num(0);
 
-    // 启动KV数据库
+    // 启动brpc
     void LevelDBServer(const Context &context){
-        // 定义server对象和选项？
+        // 定义server对象和选项
         brpc::Server leveldb_server;
         brpc::ServerOptions options;
 
