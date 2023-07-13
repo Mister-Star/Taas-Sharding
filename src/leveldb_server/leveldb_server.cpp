@@ -61,7 +61,7 @@ namespace Taas {
         auto num = connection_num.fetch_add(1);
         std::string value;
         const auto& data = request->data();
-        const std::string& key = data.key();
+        const std::string& key = data[0].key();
 
         // 从连接池中选取连接，获取对应key的value
         auto res = leveldb_connections[num % 10000]->get(key, &value);
@@ -84,12 +84,15 @@ namespace Taas {
 
         // 获取request的data
         const auto& data = request->data();
-        const std::string& key = data.key();
-        const std::string& value = data.value();
-    
+        for (int i = 0; i < data.size(); i++) {
+            const std::string& key = data[i].key();
+            const std::string& value = data[i].value();
+            auto res = leveldb_connections[num % 10000]->syncPut(key, value);
+        }
+        
         // 键值对插入数据库
         // auto res = leveldb_connections[num % 10000]->syncPut("1", value);
-        auto res = leveldb_connections[num % 10000]->syncPut(key, value);
+        
 
         // 填写response
         response->set_result(res);

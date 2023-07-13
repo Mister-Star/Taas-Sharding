@@ -38,7 +38,7 @@ namespace Taas {
         epoch_redo_log_complete.resize(ctx.kCacheMaxLength);
 
 
-        for (size_t i = 0; i < ctx.kCacheMaxLength; i++){
+        for(int i = 0; i < static_cast<int>(ctx.kCacheMaxLength); i++) {
             epoch_redo_log_queue[i] = std::make_unique<moodycamel::BlockingConcurrentQueue<std::unique_ptr<proto::Transaction>>>();
             epoch_redo_log_complete[i] = std::make_unique<std::atomic<bool>>(false); 
         }
@@ -62,10 +62,10 @@ namespace Taas {
     /* 生成一个task
     should_num++? 加入task q
     */
-    void LevelDB::bool GeneratePushDownTask(uint64_t &epoch){
+    bool LevelDB::GeneratePushDownTask(uint64_t &epoch){
         auto txn_ptr = std::make_unique<proto::Transaction>();
-        txn_ptr->set_commit_epoch = epoch;
-        task_queue->enqueue(std::move(tnx_ptr));
+        txn_ptr->set_commit_epoch(epoch);
+        task_queue->enqueue(std::move(txn_ptr));
         task_queue->enqueue(nullptr);
         return true;
     }
@@ -73,7 +73,7 @@ namespace Taas {
     /* 睡眠一段时间自己重新变活跃，检查 
     推送queue中所有txn到leveldb
     */
-    void LevelDB::SendTransactionToLevelDB_Usleep(){
+    void LevelDB::SendTransactionToDB_Usleep(){
         std::unique_ptr<proto::Transaction> txn_ptr;
         // 通过protobuf生成 xxx_stub 替代调用函数
         proto::KvDBPutService_Stub put_stub(&channel);
@@ -118,7 +118,7 @@ namespace Taas {
 
     /* 阻塞推送queue中所有txn到leveldb
     */
-    void LevelDB::SendTransactionToLevelDB_Block(){
+    void LevelDB::SendTransactionToDB_Block(){
         std::unique_ptr<proto::Transaction> txn_ptr;
         uint64_t epoch;
         while(!EpochManager::IsTimerStop()) {
@@ -172,7 +172,7 @@ namespace Taas {
     bool LevelDB::CheckEpochPushDownComplete(uint64_t &epoch){
         if (epoch_redo_log_complete[epoch % ctx.kCacheMaxLength]->load()) return true;
         // 全部推送但complete还未完成修改的情况
-        if (epoch < EpochManager::GetLogicalEpoch && 
+        if (epoch < EpochManager::GetLogicalEpoch() && 
             epoch_should_push_down_txn_num.GetCount(epoch) <= epoch_pushed_down_txn_num.GetCount(epoch)) {
                 epoch_redo_log_complete[epoch % ctx.kCacheMaxLength]->store(true);
                 return true;
@@ -181,12 +181,12 @@ namespace Taas {
     }
 
 
-    void LevelDB::LevelDBRedoLogQueueEnqueue(uint64_t &epoch, std::unique_ptr<proto::Transaction> &&txn_ptr){
+    void LevelDB::DBRedoLogQueueEnqueue(uint64_t &epoch, std::unique_ptr<proto::Transaction> &&txn_ptr){
         epoch_redo_log_queue[epoch % ctx.kCacheMaxLength]->enqueue(std::move(txn_ptr));
         epoch_redo_log_queue[epoch % ctx.kCacheMaxLength]->enqueue(nullptr);
     }
 
-    bool LevelDB::LevelDBRedoLogQueueTryDequeue(uint64_t &epoch, std::unique_ptr<proto::Transaction> &txn_ptr){
+    bool LevelDB::DBRedoLogQueueTryDequeue(uint64_t &epoch, std::unique_ptr<proto::Transaction> &txn_ptr){
         return epoch_redo_log_queue[epoch % ctx.kCacheMaxLength]->try_dequeue(txn_ptr);
     }
 

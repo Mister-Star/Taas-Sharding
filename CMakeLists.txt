@@ -228,4 +228,3 @@ add_executable(${PROJECT_NAME}_sharding main.cpp)
 set_target_properties(${PROJECT_NAME}_sharding PROPERTIES CXX_STANDARD 20 OUTPUT_NAME "Taas_sharding")
 target_link_libraries(${PROJECT_NAME}_sharding Taas
         ${COMMON_DEPENDENCIES})
-

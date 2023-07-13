@@ -12,7 +12,8 @@
 namespace Taas {
 
     Context TiKV::ctx;
-    tikv_client::TransactionClient* TiKV::tikv_client_ptr = nullptr;        // 指向client的指针
+    // 指向client的指针
+    tikv_client::TransactionClient* TiKV::tikv_client_ptr = nullptr;
     AtomicCounters_Cache
             TiKV::epoch_should_push_down_txn_num(10, 1), TiKV::epoch_pushed_down_txn_num(10, 1);
     std::unique_ptr<moodycamel::BlockingConcurrentQueue<std::unique_ptr<proto::Transaction>>>  TiKV::task_queue, TiKV::redo_log_queue;

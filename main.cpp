@@ -48,7 +48,7 @@ namespace Taas {
         std::vector<std::unique_ptr<std::thread>> threads;
 
         // 判断服务器类型
-        if(ctx.server_type == 1) { ///TaaS servers
+        if(ctx.server_type == ServerMode::Taas) { ///TaaS servers
             EpochManager epochManager;
             Taas::EpochManager::ctx = ctx;
 
