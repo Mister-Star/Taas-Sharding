@@ -4,13 +4,13 @@ project(Taas)
 # For fresh ubuntu 22.04 startup
 # zlib1g-dev is for gzip compress
 # libgoogle-perftools-dev for linking tcmalloc
-# apt install git libtool make autoconf g++-11 zlib1g-dev libgoogle-perftools-dev libssl-dev
+# apt install git libtool make autoconf g++-11 zlib1g-dev libgoogle-perftools-dev libssl-dev libzmq3-dev libboost-all-dev libevent-dev bison flex
 # apt install g++
 
 # Set debug and release flags
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable")
 SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${CMAKE_CXX_FLAGS_COMMON}  -g -O0 -fprofile-arcs -ftest-coverage")
-SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_COMMON} -O2")
+SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_COMMON} -g -O2")
 
 ### CHECK g++ version
 if(CMAKE_COMPILER_IS_GNUCXX)
@@ -125,6 +125,11 @@ find_package(brpc_install
         PATHS ${PROJECT_SOURCE_DIR}/vendor
         )
 
+### Gtest thrift
+find_package(thrift_install
+        CONFIG
+        REQUIRED
+        PATHS ${PROJECT_SOURCE_DIR}/vendor        )
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/vendor/tools.cmake)
 
@@ -167,7 +172,7 @@ add_library(
         ${PROJECT_NAME}
         ${headers}
         ${sources}
-        include/storage/kvdb.h)
+        )
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
 
 
@@ -191,7 +196,8 @@ SET(COMMON_DEPENDENCIES
         dl
         ssl
         crypto
-
+        # Use thrift2 to connect HBase
+        thriftd
         )
 
 # Link dependencies
@@ -201,7 +207,9 @@ target_link_libraries(${PROJECT_NAME}
         PUBLIC
         gflags
         ${COMMON_DEPENDENCIES}
-        "-Wl,--disable-new-dtags")
+        "-Wl,--disable-new-dtags"
+
+        )
 
 target_include_directories(
         ${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
@@ -213,18 +221,11 @@ target_include_directories(
 # the location where the project's version header will be placed should match the project's regular
 # header paths
 string(TOLOWER ${PROJECT_NAME}/version.h VERSION_HEADER_LOCATION)
-#add_subdirectory(Taas-Sharding)
-#include_directories("${CMAKE_SOURCE_DIR}/rust/tikv_client/include")
-#include_directories("${CMAKE_SOURCE_DIR}/include")
-#add_subdirectory("src")
 
 
 # ---- Create sharding executable ----
-
 add_executable(${PROJECT_NAME}_sharding main.cpp)
 set_target_properties(${PROJECT_NAME}_sharding PROPERTIES CXX_STANDARD 20 OUTPUT_NAME "Taas_sharding")
 target_link_libraries(${PROJECT_NAME}_sharding Taas
         ${COMMON_DEPENDENCIES})
-
-#target_link_libraries(Taas_sharding taas_core proto gflags cppzmq tikv_client pthread dl ssl crypto)
 

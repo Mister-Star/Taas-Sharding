@@ -5,6 +5,9 @@
 #include "epoch/epoch_manager.h"
 
 #include "proto/kvdb_server.pb.h"
+#include "epoch/epoch_manager.h"
+
+#include "proto/kvdb_server.pb.h"
 
 namespace Taas {
     Context LevelDB::ctx;

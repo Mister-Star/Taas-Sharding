@@ -27,7 +27,8 @@ namespace Taas {
             Merger::epoch_insert_set;
 
     concurrent_unordered_map<std::string, std::string>
-            Merger::read_version_map, ///read validate for higher isolation
+            Merger::read_version_map_data, ///read validate for higher isolation
+            Merger::read_version_map_csn, ///read validate for higher isolation
             Merger::insert_set,   ///插入集合，用于判断插入是否可以执行成功 check key exits?
             Merger::abort_txn_set; /// 所有abort的事务，不区分epoch
 
@@ -57,7 +58,7 @@ namespace Taas {
 //        merge_queue = std::make_unique<BlockingConcurrentQueue<std::unique_ptr<proto::Transaction>>>();
         commit_queue = std::make_unique<BlockingConcurrentQueue<std::unique_ptr<proto::Transaction>>>();
 
-//        epoch_merge_queue.resize(max_length);
+        epoch_merge_queue.resize(max_length);
         epoch_local_txn_queue.resize(max_length);
 //        epoch_commit_queue.resize(max_length);
 
@@ -79,7 +80,7 @@ namespace Taas {
             epoch_abort_txn_set[i] = std::make_unique<concurrent_crdt_unordered_map<std::string, std::string, std::string>>();
             epoch_insert_set[i] = std::make_unique<concurrent_unordered_map<std::string, std::string>>();
 
-//            epoch_merge_queue[i] = std::make_unique<BlockingConcurrentQueue<std::unique_ptr<proto::Transaction>>>();
+            epoch_merge_queue[i] = std::make_unique<BlockingConcurrentQueue<std::unique_ptr<proto::Transaction>>>();
             epoch_local_txn_queue[i] = std::make_unique<BlockingConcurrentQueue<std::unique_ptr<proto::Transaction>>>();
 //            epoch_commit_queue[i] = std::make_unique<BlockingConcurrentQueue<std::unique_ptr<proto::Transaction>>>();
         }

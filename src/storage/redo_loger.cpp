@@ -5,6 +5,8 @@
 #include "storage/redo_loger.h"
 #include "epoch/epoch_manager.h"
 #include "storage/tikv.h"
+#include "storage/leveldb.h"
+#include "storage/hbase.h"
 #include "storage/mot.h"
 
 namespace Taas {
@@ -21,6 +23,12 @@ namespace Taas {
         if(ctx.is_tikv_enable) {
             TiKV::StaticInit(ctx);
         }
+        if(ctx.is_leveldb_enable) {
+            LevelDB::StaticInit(ctx);
+        }
+        if(ctx.is_hbase_enable) {
+            HBase::StaticInit(ctx);
+        }
         MOT::StaticInit(ctx);
     }
 
@@ -30,6 +38,12 @@ namespace Taas {
         epoch_log_lsn.SetCount(epoch_mod, 0);
         if(ctx.is_tikv_enable) {
             TiKV::StaticClear(epoch);
+        }
+        if(ctx.is_leveldb_enable) {
+            LevelDB::StaticClear(epoch);
+        }
+        if(ctx.is_hbase_enable) {
+            HBase::StaticClear(epoch);
         }
     }
 
@@ -41,8 +55,16 @@ namespace Taas {
         committed_txn_cache[epoch_id % ctx.kCacheMaxLength]->insert(key, txn);
         if(ctx.is_tikv_enable) {
 //            TiKV::tikv_epoch_should_push_down_txn_num.IncCount(epoch_id, txn.server_id(), 1);
-//            TiKV::TiKVRedoLogQueueEnqueue(epoch_id, std::make_unique<proto::Transaction>(txn));
-            TiKV::redo_log_queue->enqueue(std::make_unique<proto::Transaction>(txn));
+            TiKV::DBRedoLogQueueEnqueue(epoch_id, std::make_unique<proto::Transaction>(txn));
+//            TiKV::redo_log_queue->enqueue(std::make_unique<proto::Transaction>(txn));
+        }
+        if(ctx.is_leveldb_enable) {
+            LevelDB::DBRedoLogQueueEnqueue(epoch_id, std::make_unique<proto::Transaction>(txn));
+//            LevelDB::redo_log_queue->enqueue(std::make_unique<proto::Transaction>(txn));
+        }
+        if(ctx.is_hbase_enable) {
+            HBase::DBRedoLogQueueEnqueue(epoch_id, std::make_unique<proto::Transaction>(txn));
+//            HBase::redo_log_queue->enqueue(std::make_unique<proto::Transaction>(txn));
         }
         return true;
     }
@@ -51,11 +73,19 @@ namespace Taas {
         if(ctx.is_tikv_enable) {
             TiKV::GeneratePushDownTask(epoch);
         }
+        if(ctx.is_leveldb_enable) {
+            LevelDB::GeneratePushDownTask(epoch);
+        }
+        if(ctx.is_hbase_enable) {
+            HBase::GeneratePushDownTask(epoch);
+        }
         MOT::GeneratePushDownTask(epoch);
         return true;
     }
 
     bool RedoLoger::CheckPushDownComplete(const Context &ctx, uint64_t &epoch) {
-        return MOT::IsMOTPushDownComplete(epoch) && (ctx.is_tikv_enable == 0 || TiKV::CheckEpochPushDownComplete(epoch));
+        return MOT::IsMOTPushDownComplete(epoch) && (ctx.is_tikv_enable == 0 || TiKV::CheckEpochPushDownComplete(epoch)) &&
+                (ctx.is_leveldb_enable == 0 || LevelDB::CheckEpochPushDownComplete(epoch)) &&
+                (ctx.is_hbase_enable == 0 || HBase::CheckEpochPushDownComplete(epoch));
     }
 }

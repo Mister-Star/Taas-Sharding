@@ -17,19 +17,34 @@
 
 #include <iostream>
 #include <thread>
+#include <csignal>
+
 using namespace std;
 
 namespace Taas {
+    void signalHandler(int signal)
+    {
+        if (signal == SIGINT)
+        {
+            std::cout << "Ctrl+C detected!" << std::endl;
+            EpochManager::SetTimerStop(true);
+        }
+    }
+
     int main() {
         // 读取配置信息
         Context ctx("../TaaS_config.xml", "../Storage_config.xml");
 
         // 初始化glog日志库
         FLAGS_log_dir = ctx.glog_path_;
+        FLAGS_log_dir = "/tmp";
         FLAGS_alsologtostderr = true;
         google::InitGoogleLogging("Taas-sharding");
         LOG(INFO) << "System Start\n";
         // 存储工作线程
+        auto res = ctx.Print();
+        LOG(INFO) << res;
+        printf("%s\n", res.c_str());
         std::vector<std::unique_ptr<std::thread>> threads;
 
         // 判断服务器类型
@@ -53,7 +68,7 @@ namespace Taas {
             threads.push_back(std::make_unique<std::thread>(WorkerForEpochBackUpEndFlagSendThreadMain, ctx));
 
 //        for(int i = 0; i < (int)ctx.kWorkerThreadNum; i ++) {
-            for(int i = 0; i < 16; i ++) {
+            for(int i = 0; i < (int)ctx.kWorkerThreadNum; i ++) {
                 threads.push_back(std::make_unique<std::thread>(WorkerFroTxnMessageThreadMain, ctx, i));///txn message
                 threads.push_back(std::make_unique<std::thread>(WorkerFroMergeThreadMain, ctx, i));///merge
                 threads.push_back(std::make_unique<std::thread>(WorkerFroCommitThreadMain, ctx, i));///commit
@@ -63,7 +78,7 @@ namespace Taas {
             threads.push_back(std::make_unique<std::thread>(WorkerForClientSendThreadMain, ctx));
             
             if(ctx.kTxnNodeNum > 1) {
-                for(int i = 0; i < 16; i ++) {
+                for(int i = 0; i < (int)ctx.kWorkerThreadNum; i ++) {
                     threads.push_back(std::make_unique<std::thread>(WorkerFroEpochMessageThreadMain, ctx, i));///Epoch message
                 }
                 threads.push_back(std::make_unique<std::thread>(WorkerForServerListenThreadMain, ctx));
@@ -74,9 +89,9 @@ namespace Taas {
             // 如果启用TiKV，创建客户端并启动工作线程
             if(ctx.is_tikv_enable) {
                 TiKV::tikv_client_ptr = new tikv_client::TransactionClient({ctx.kTiKVIP});
-//            for(int i = 0; i < (int)ctx.kWorkerThreadNum; i ++) {
-                threads.push_back(std::make_unique<std::thread>(WorkerFroTiKVStorageThreadMain, ctx, 0));///tikv push down
-//            }
+                for(int i = 0; i < (int)ctx.kWorkerThreadNum; i ++) {
+                    threads.push_back(std::make_unique<std::thread>(WorkerFroTiKVStorageThreadMain, ctx, 0));///tikv push down
+                }
             }
             // 启动MOT存储线程
             threads.push_back(std::make_unique<std::thread>(WorkerFroMOTStorageThreadMain)); ///mot push down
@@ -86,7 +101,7 @@ namespace Taas {
                 threads.push_back(std::make_unique<std::thread>(Client, ctx, i));
             }
         }
-        else if(ctx.server_type == 2) { ///leveldb server
+        else if(ctx.server_type == ServerMode::LevelDB) { ///leveldb server
             ///todo : add brpc
 
             EpochManager epochManager;
@@ -98,25 +113,25 @@ namespace Taas {
             }
 
         }
-        else if(ctx.server_type == 3) { ///hbase server
+        else if(ctx.server_type == ServerMode::HBase) { ///hbase server
 
         }
-
-
 
         if(ctx.kDurationTime_us != 0) {
             while(!test_start.load()) usleep(sleep_time);
             usleep(ctx.kDurationTime_us);
             EpochManager::SetTimerStop(true);
         }
+        else {
+            std::signal(SIGINT, signalHandler);
+        }
         for(auto &i : threads) {
             i->join();
         }
-
+        google::ShutdownGoogleLogging();
         std::cout << "============================================================================" << std::endl;
         std::cout << "=====================              END                 =====================" << std::endl;
         std::cout << "============================================================================" << std::endl;
-
         return 0;
     }
 

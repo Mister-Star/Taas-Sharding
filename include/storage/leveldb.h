@@ -34,13 +34,13 @@ namespace Taas {
 
         static bool GeneratePushDownTask(uint64_t &epoch);
 
-        static void SendTransactionToLevelDB_Usleep();
-        static void SendTransactionToLevelDB_Block();
+        static void SendTransactionToDB_Usleep();
+        static void SendTransactionToDB_Block();
 
         static bool CheckEpochPushDownComplete(uint64_t &epoch);
         static void LevelDBRedoLogQueueEnqueue(uint64_t &epoch, std::unique_ptr<proto::Transaction> &&txn_ptr);
         static bool LevelDBRedoLogQueueTryDequeue(uint64_t &epoch, std::unique_ptr<proto::Transaction> &txn_ptr);
-        
+
     };
 }
 
