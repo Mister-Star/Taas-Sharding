@@ -84,10 +84,11 @@ namespace Taas {
 
         // 获取request的data
         const auto& data = request->data();
+        bool res = false;
         for (int i = 0; i < data.size(); i++) {
             const std::string& key = data[i].key();
             const std::string& value = data[i].value();
-            auto res = leveldb_connections[num % 10000]->syncPut(key, value);
+            res = leveldb_connections[num % 10000]->syncPut(key, value);
         }
         
         // 键值对插入数据库
