@@ -14,7 +14,7 @@
 
 namespace Taas {
 
-    void LevelDBServer(const Context &context);
+    void LevelDBServer(const Context &context, std::promise<void> serverReady);
 
     class LevelDBGetService : public proto::KvDBGetService{
     public:

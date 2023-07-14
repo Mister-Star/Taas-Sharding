@@ -8,7 +8,7 @@
 namespace Taas {
 
     void LevelDB_Client(const Context& ctx, uint64_t id){
-    
+        LOG(INFO) << "Leveldb Client test = " << id;
         brpc::Channel channel;
         brpc::ChannelOptions options;
         options.protocol = brpc::PROTOCOL_BAIDU_STD;
@@ -20,7 +20,7 @@ namespace Taas {
         
         if (channel.Init(ctx.kLevevDBIP.c_str(), &options) != 0) {
             LOG(ERROR) << "Fail to initialize channel";
-            return -1;
+            return;
         }
 
         proto::KvDBPutService_Stub put_stub(&channel);
@@ -30,6 +30,8 @@ namespace Taas {
         proto::KvDBRequest put_Request;
         proto::KvDBResponse put_Response;
         brpc::Controller put_Cntl;
+        put_Cntl.set_timeout_ms(5000);
+//        put_Cntl.set_timeout_ms(-1);
 
         auto data = put_Request.add_data();
 
@@ -53,21 +55,25 @@ namespace Taas {
         proto::KvDBRequest get_Request;
         proto::KvDBResponse get_Response;
         brpc::Controller get_Cntl;
-        get_Request.set_key("hello" + std::to_string(rand_num));
+        get_Cntl.set_timeout_ms(5000);
+//        get_Cntl.set_timeout_ms(-1);
+
+        auto get_data = get_Request.add_data();
+        get_data->set_key("hello" + std::to_string(rand_num));
 
         get_stub.Get(&get_Cntl, &get_Request, &get_Response, NULL);
         if (!get_Cntl.Failed()) {
-            LOG(INFO) << "Get success: " << get_Response.success();
-            if (get_Response.success()) {
-            LOG(INFO) << "Value: " << get_Response.value();
+            LOG(INFO) << "Get success: " << get_Response.result();
+            if (get_Response.result()) {
+            LOG(INFO) << "Value: " << get_Response.data()[0].value();
             }
         } else {
-            LOG(ERROR) << get_cntl.ErrorText();
+            LOG(ERROR) << get_Cntl.ErrorText();
         }
 
 
-        LOG(INFO) << "LevelDBClient is going to quit";
-        return 0;
+        LOG(INFO) << "LevelDBClient is going to quit, Client = " << id;
+        return;
     }
 
 

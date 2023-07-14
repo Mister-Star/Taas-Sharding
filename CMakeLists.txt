@@ -172,7 +172,7 @@ add_library(
         ${PROJECT_NAME}
         ${headers}
         ${sources}
-        )
+        include/test/test_leveldb.h src/test/test_leveldb.cpp)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
 
 

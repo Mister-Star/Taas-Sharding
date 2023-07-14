@@ -18,6 +18,7 @@
 #include <iostream>
 #include <thread>
 #include <csignal>
+#include <future>
 
 using namespace std;
 
@@ -103,13 +104,23 @@ namespace Taas {
         }
         else if(ctx.server_type == ServerMode::LevelDB) { ///leveldb server
             ///todo : add brpc
-
+///todo : add brpc
             EpochManager epochManager;
             Taas::EpochManager::ctx = ctx;
 
-            LevelDBServer(ctx);
-            for(int i = 0; i < (int)ctx.kTestClientNum; i ++) {
-                threads.push_back(std::make_unique<std::thread>(LevelDB_Client, ctx, i));
+            std::promise<void> serverReady;
+            std::future<void> serverReadyFuture = serverReady.get_future();
+//            LevelDBServer(ctx);
+            threads.push_back(std::make_unique<std::thread>(LevelDBServer,ctx, std::move(serverReady)));
+            serverReadyFuture.wait();
+            for (int i = 0; i < 5; ++i) {
+                threads.push_back(std::make_unique<std::thread>(LevelDB_Client,ctx,i));
+
+            }
+//            threads.push_back(std::make_unique<std::thread>(LevelDB_Client,ctx,0));
+            for(auto &i : threads) {
+                i->join();
+                usleep(1000);
             }
 
         }
@@ -127,6 +138,7 @@ namespace Taas {
         }
         for(auto &i : threads) {
             i->join();
+            // usleep(sleep_time);
         }
         google::ShutdownGoogleLogging();
         std::cout << "============================================================================" << std::endl;
