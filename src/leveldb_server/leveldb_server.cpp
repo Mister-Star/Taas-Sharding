@@ -94,7 +94,6 @@ namespace Taas {
         // 键值对插入数据库
         // auto res = leveldb_connections[num % 10000]->syncPut("1", value);
         
-
         // 填写response
         response->set_result(res);
 //        KvDbPut::Put(controller, request, response, done);
