@@ -11,12 +11,14 @@
 #include "leveldb_server/leveldb_server.h"
 #include "storage/tikv.h"
 #include "test/test.h"
+#include "test/test_leveldb.h"
 
 #include <glog/logging.h>
 
 #include <iostream>
 #include <thread>
 #include <csignal>
+#include <future>
 
 using namespace std;
 
@@ -89,7 +91,23 @@ namespace Taas {
         }
         else if(ctx.server_type == ServerMode::LevelDB) { ///leveldb server
             ///todo : add brpc
-            LevelDBServer(ctx);
+            EpochManager epochManager;
+            Taas::EpochManager::ctx = ctx;
+
+            std::promise<void> serverReady;
+            std::future<void> serverReadyFuture = serverReady.get_future();
+//            LevelDBServer(ctx);
+            threads.push_back(std::make_unique<std::thread>(LevelDBServer,ctx, std::move(serverReady)));
+            serverReadyFuture.wait();
+            for (int i = 0; i < 5; ++i) {
+                threads.push_back(std::make_unique<std::thread>(LevelDB_Client,ctx,i));
+
+            }
+//            threads.push_back(std::make_unique<std::thread>(LevelDB_Client,ctx,0));
+            for(auto &i : threads) {
+                i->join();
+                usleep(1000);
+            }
         }
         else if(ctx.server_type == ServerMode::HBase) { ///hbase server
 
@@ -103,7 +121,7 @@ namespace Taas {
         else {
             std::signal(SIGINT, signalHandler);
         }
-        threads[0]->join();
+//        threads[0]->join();
         google::ShutdownGoogleLogging();
         std::cout << "============================================================================" << std::endl;
         std::cout << "=====================              END                 =====================" << std::endl;

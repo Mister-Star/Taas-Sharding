@@ -31,7 +31,7 @@ namespace Taas {
             rocksdb::DB* db;
             rocksdb::Status status = rocksdb::DB::Open(options, dbName, &db);
             if (!status.ok()) {
-                LOG(WARNING) << "Can not open database: " << dbName;
+                LOG(WARNING) << "Can not open database: " << dbName << ", error:" << status.ToString();
                 return nullptr;
             }
             std::unique_ptr<RocksDBConnection> dbc(new RocksDBConnection());

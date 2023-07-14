@@ -98,7 +98,7 @@ namespace Taas {
 
         tinyxml2::XMLElement* leveldb = root->FirstChildElement("is_leveldb_enable");
         is_leveldb_enable = std::stoull(leveldb->GetText());
-        tinyxml2::XMLElement *leveldb_ip_port= root->FirstChildElement("tikv_ip");
+        tinyxml2::XMLElement *leveldb_ip_port= root->FirstChildElement("leveldb_ip");
         auto leveldb_ip = leveldb_ip_port->GetText();
         kLevevDBIP = std::string(leveldb_ip);
 

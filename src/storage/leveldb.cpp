@@ -62,7 +62,7 @@ namespace Taas {
             proto::KvDBRequest request;
             proto::KvDBResponse response;
             brpc::Controller cntl;
-            cntl.set_timeout_ms(500);
+            cntl.set_timeout_ms(5000);
             auto csn = txn_ptr->csn();
             for(auto i : txn_ptr->row()) {
                 if(i.op_type() == proto::OpType::Read) {
@@ -76,8 +76,15 @@ namespace Taas {
                 put_stub.Put(&cntl, &request, &response, NULL);
                 if (cntl.Failed()) {
                     // RPC失败了. response里的值是未定义的，勿用。
+                    LOG(WARNING) << cntl.ErrorText();
                 } else {
                     // RPC成功了，response里有我们想要的回复数据。
+                    LOG(INFO) << "Usleep success ==="
+                              << "Received response from " << cntl.remote_side()
+                              << " to " << cntl.local_side()
+                              << ": " << response.result() << " (attached="
+                              << cntl.response_attachment() << ")"
+                              << " latency=" << cntl.latency_us() << "us";
                 }
             }
             epoch_pushed_down_txn_num.IncCount(epoch, txn_ptr->server_id(), 1);
