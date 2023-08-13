@@ -104,20 +104,21 @@ namespace Taas {
         }
         else if(ctx.server_type == ServerMode::LevelDB) { ///leveldb server
             ///todo : add brpc
-///todo : add brpc
+
             EpochManager epochManager;
             Taas::EpochManager::ctx = ctx;
 
-            std::promise<void> serverReady;
-            std::future<void> serverReadyFuture = serverReady.get_future();
-//            LevelDBServer(ctx);
-            threads.push_back(std::make_unique<std::thread>(LevelDBServer,ctx, std::move(serverReady)));
-            serverReadyFuture.wait();
+            // 线程同步
+            // std::promise<void> serverReady;
+            // std::future<void> serverReadyFuture = serverReady.get_future();
+            // threads.push_back(std::make_unique<std::thread>(LevelDBServer,ctx, std::move(serverReady)));
+            // serverReadyFuture.wait();
+            
+            LevelDBServer(ctx);
             for (int i = 0; i < 5; ++i) {
                 threads.push_back(std::make_unique<std::thread>(LevelDB_Client,ctx,i));
 
             }
-//            threads.push_back(std::make_unique<std::thread>(LevelDB_Client,ctx,0));
             for(auto &i : threads) {
                 i->join();
                 usleep(1000);
