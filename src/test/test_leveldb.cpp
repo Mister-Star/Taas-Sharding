@@ -75,6 +75,4 @@ namespace Taas {
         LOG(INFO) << "LevelDBClient is going to quit, Client = " << id;
         return;
     }
-
-
 }

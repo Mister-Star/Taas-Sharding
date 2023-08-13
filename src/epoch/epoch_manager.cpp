@@ -130,7 +130,7 @@ namespace Taas {
 
     void OUTPUTLOG(const Context& ctx, const string& s, uint64_t& epoch_){
         auto epoch_mod = epoch_ % EpochManager::max_length;
-        auto res = PrintfToString("%60s \n\
+        LOG(INFO) << PrintfToString("%60s \n\
         physical                     %6lu, logical                      %6lu,   \
         pushdown_mot                 %6lu, pushdownepoch                %6lu  \n\
         merge_epoch                  %6lu, abort_set_epoch              %6lu    \
@@ -158,7 +158,7 @@ namespace Taas {
         merge_num                    %6lu, time          %lu \n",
        s.c_str(),
        EpochManager::GetPhysicalEpoch(),                                                  EpochManager::GetLogicalEpoch(),
-       MOT::GetPushedDownMOTEpoch(),                                                EpochManager::GetPushDownEpoch(),
+       MOT::pushed_down_mot_epoch.load(),                                                EpochManager::GetPushDownEpoch(),
        merge_epoch.load(), abort_set_epoch.load(), commit_epoch.load(), redo_log_epoch.load(),clear_epoch.load(),
        epoch_mod,                                                                         EpochManager::GetPhysicalEpoch() - EpochManager::GetLogicalEpoch(),
        (uint64_t)MessageReceiveHandler::IsShardingPackReceiveComplete(ctx, epoch_mod),(uint64_t)MessageReceiveHandler::IsShardingTxnReceiveComplete(ctx, epoch_mod),
@@ -185,9 +185,13 @@ namespace Taas {
        MessageReceiveHandler::insert_set_received_ack_num.GetCount(epoch_mod),      MessageReceiveHandler::abort_set_received_ack_num.GetCount(epoch_mod),
 
        (uint64_t)0,
-       now_to_us());
-
-        LOG(INFO) << res;
+       now_to_us()) << PrintfToString("Epoch: %lu ClearEpoch: %lu, SuccessTxnNumber %lu, ToTalSuccessLatency %lu, SuccessAvgLatency %lf, TotalCommitTxnNum %lu, TotalCommitlatency %lu, TotalCommitAvglatency %lf ************\n",
+                                    epoch_, clear_epoch.load(),
+                                    MessageSendHandler::TotalSuccessTxnNUm.load(), MessageSendHandler::TotalSuccessLatency.load(),
+                                    (((double)MessageSendHandler::TotalSuccessLatency.load()) / ((double)MessageSendHandler::TotalSuccessTxnNUm.load())),
+                                    MessageSendHandler::TotalTxnNum.load(),///receive from client
+                                    MessageSendHandler::TotalLatency.load(),
+                                    (((double)MessageSendHandler::TotalLatency.load()) / ((double)MessageSendHandler::TotalTxnNum.load())));
     }
 
     bool CheckRedoLogPushDownState(const Context& ctx) {
@@ -197,8 +201,9 @@ namespace Taas {
            EpochManager::IsCommitComplete(i) &&
            RedoLoger::CheckPushDownComplete(ctx, i) &&
            MessageReceiveHandler::IsRedoLogPushDownACKReceiveComplete(ctx, i)) {
+            LOG(INFO) << PrintfToString("=-=-=-=-=-=-= 完成一个Epoch的 Log Push Down Epoch: %8lu ClearEpoch: %8lu =-=-=-=-=-=-=\n", commit_epoch.load(), i);
             if(i % ctx.print_mode_size == 0) {
-                printf("=-=-=-=-=-=-=完成一个Epoch的 Log Push Down Epoch: %8lu ClearEpoch: %8lu =-=-=-=-=-=-=\n", commit_epoch.load(), i);
+                printf("=-=-=-=-=-=-= 完成一个Epoch的 Log Push Down Epoch: %8lu ClearEpoch: %8lu =-=-=-=-=-=-=\n", commit_epoch.load(), i);
             }
             EpochManager::ClearMergeEpochState(i); //清空当前epoch的merge信息
             MessageReceiveHandler::StaticClear(ctx, i);//清空current epoch的receive cache num信息
@@ -220,7 +225,7 @@ namespace Taas {
             cache_server_available = 0;
         }
         uint64_t epoch = 1;
-        OUTPUTLOG(ctx, "=====start Epoch的合并===== ", epoch);
+        OUTPUTLOG(ctx, "===== Start Epoch的合并 ===== ", epoch);
         while(!EpochManager::IsTimerStop()){
 
 //            while(EpochManager::GetPhysicalEpoch() <= EpochManager::GetLogicalEpoch() + ctx.kDelayEpochNum) {
@@ -269,17 +274,21 @@ namespace Taas {
         test_start.store(true);
         is_epoch_advance_started.store(true);
 
-        printf("EpochTimerManager 同步完成，数据库开始正常运行\n");
+        printf("=============  EpochTimerManager 同步完成，数据库开始正常运行 ============= \n");
+        auto startTime = now_to_us();
         while(!EpochManager::IsTimerStop()){
             usleep(GetSleeptime(ctx));
             EpochManager::AddPhysicalEpoch();
             epoch_ ++;
+            logical = EpochManager::GetLogicalEpoch();
+            LOG(INFO) << "============= Start Physical Epoch : " << epoch_ << ", logical : " << logical << "Time : " << now_to_us() - startTime << "=============\n";
             if(epoch_ % ctx.print_mode_size == 0) {
-                logical = EpochManager::GetLogicalEpoch();
-                OUTPUTLOG(ctx, "=============start Epoch============= ", logical);
+                OUTPUTLOG(ctx, "============= Epoch INFO ============= ", logical);
             }
             EpochManager::EpochCacheSafeCheck();
         }
+        OUTPUTLOG(ctx, "============= Epoch INFO ============= ", logical);
+        LOG(INFO) << "Start Physical epoch : " << epoch_ << ", logical : " << logical << "Time : " << now_to_us() - startTime;
         printf("EpochTimerManager End!!!\n");
     }
 

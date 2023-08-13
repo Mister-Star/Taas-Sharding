@@ -44,6 +44,8 @@ namespace Taas {
         kCacheMaxLength = std::stoull(cachemaxlength->GetText());
         tinyxml2::XMLElement* merge_thread_num = root->FirstChildElement("worker_thread_num");
         kWorkerThreadNum = std::stoull(merge_thread_num->GetText());
+        tinyxml2::XMLElement* usleep_thread_num = root->FirstChildElement("usleep_thread_num");
+        kUsleepThreadNum = std::stoull(usleep_thread_num->GetText());
 
         tinyxml2::XMLElement* duration_time = root->FirstChildElement("duration_time_us");
         kDurationTime_us = std::stoull(duration_time->GetText());
@@ -84,6 +86,9 @@ namespace Taas {
         tinyxml2::XMLDocument doc;
         doc.LoadFile(config_file_path.c_str());
         auto* root=doc.RootElement();
+
+        tinyxml2::XMLElement* mot = root->FirstChildElement("is_mot_enable");
+        is_mot_enable = std::stoull(mot->GetText());
 
         tinyxml2::XMLElement* tikv = root->FirstChildElement("is_tikv_enable");
         is_tikv_enable = std::stoull(tikv->GetText());

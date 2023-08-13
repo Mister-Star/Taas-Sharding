@@ -39,7 +39,7 @@ namespace Taas {
         std::vector<std::string> kServerIp;
         volatile uint64_t kTxnNodeNum = 1, kBackUpNum = 1;
         uint64_t kIndexNum = 1, kEpochSize_us = 10000/** us */, txn_node_ip_index = 0,
-                kWorkerThreadNum = 10, kDurationTime_us = 0,
+                kWorkerThreadNum = 10, kUsleepThreadNum = 5, kDurationTime_us = 0,
                 kTestClientNum = 2, kTestKeyRange = 1000000, kTestTxnOpNum = 10,
                 kCacheMaxLength = 200000, kDelayEpochNum = 0, print_mode_size = 1000;
         volatile bool is_read_repeatable = false, is_snap_isolation = false,
@@ -48,7 +48,7 @@ namespace Taas {
         std::string glog_path_ = "/tmp";
 
         /// storage info
-        volatile bool is_tikv_enable = true, is_leveldb_enable = true, is_hbase_enable = true;
+        volatile bool is_tikv_enable = true, is_leveldb_enable = true, is_hbase_enable = true, is_mot_enable = true;
         std::string kMasterIp, kPrivateIp, kTiKVIP, kLevevDBIP, kHbaseIP;
 
 

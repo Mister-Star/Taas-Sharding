@@ -88,8 +88,7 @@ namespace Taas {
             proto::KvDBRequest request;
             proto::KvDBResponse response;
             brpc::Controller cntl;
-
-            cntl.set_timeout_ms(500);
+            cntl.set_timeout_ms(5000);
             auto csn = txn_ptr->csn();
 
             // Transaction的消息类型，其中包含一个名为row的repeated字段，表示当前事务中所有行
@@ -107,8 +106,15 @@ namespace Taas {
 
                 if (cntl.Failed()) {
                     // RPC失败了. response里的值是未定义的，勿用。
+                    LOG(WARNING) << cntl.ErrorText();
                 } else {
                     // RPC成功了，response里有我们想要的回复数据。
+                    LOG(INFO) << "Usleep success ==="
+                              << "Received response from " << cntl.remote_side()
+                              << " to " << cntl.local_side()
+                              << ": " << response.result() << " (attached="
+                              << cntl.response_attachment() << ")"
+                              << " latency=" << cntl.latency_us() << "us";
                 }
             }
             epoch_pushed_down_txn_num.IncCount(epoch, txn_ptr->server_id(), 1);
