@@ -92,6 +92,15 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
                 case proto::BackUpEpochEndFlag:
                 case proto::AbortSet:
                 case proto::InsertSet:
+                case proto::Lock_ok:
+                case proto::Lock_abort:
+                case proto::Prepare_req:
+                case proto::Prepare_ok:
+                case proto::Prepare_abort:
+                case proto::Commit_req:
+                case proto::Commit_ok:
+                case proto::Commit_abort:
+                case proto::Abort_txn:
                     break;
             }
         }

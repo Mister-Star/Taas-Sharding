@@ -186,10 +186,23 @@ namespace Taas {
             sharding_row_vector.clear();
         }
         else if(ctx.taasContext.taasMode == TaasMode::MultiMaster) {
+            auto write_set = std::make_shared<proto::Transaction>();
+            write_set->set_csn(txn_ptr->csn());
+            write_set->set_commit_epoch(txn_ptr->commit_epoch());
+            write_set->set_server_id(txn_ptr->server_id());
+            write_set->set_client_ip(txn_ptr->client_ip());
+            write_set->set_client_txn_id(txn_ptr->client_txn_id());
+            write_set->set_sharding_id(ctx.taasContext.txn_node_ip_index);
+            for(auto i = 0; i < txn_ptr->row_size(); i ++) {
+                const auto& row = txn_ptr->row(i);
+                if(row.op_type() == proto::OpType::Read) continue;
+                auto row_ptr = write_set->add_row();
+                (*row_ptr) = row;
+            }
             Merger::MergeQueueEnqueue(message_epoch, txn_ptr);/// multi-master merge
             EpochMessageReceiveHandler::sharding_should_send_txn_num.IncCount(message_epoch, ctx.taasContext.txn_node_ip_index, 1);
             EpochMessageReceiveHandler::backup_should_send_txn_num.IncCount(message_epoch, ctx.taasContext.txn_node_ip_index, 1);
-            EpochMessageSendHandler::SendTxnToServer(message_epoch, ctx.taasContext.txn_node_ip_index, txn_ptr, proto::TxnType::RemoteServerTxn);
+            EpochMessageSendHandler::SendTxnToServer(message_epoch, ctx.taasContext.txn_node_ip_index, write_set, proto::TxnType::RemoteServerTxn);
             EpochMessageReceiveHandler::sharding_send_txn_num.IncCount(message_epoch, 0, 1);
             EpochMessageReceiveHandler::backup_send_txn_num.IncCount(message_epoch, ctx.taasContext.txn_node_ip_index, 1);
 //            epoch_backup_txn[message_epoch_mod]->enqueue(txn_ptr);
