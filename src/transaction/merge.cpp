@@ -252,12 +252,14 @@ namespace Taas {
             epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
 
             while(epoch_read_validate_queue[epoch_mod]->try_dequeue(txn_ptr)) {
-                message_epoch = txn_ptr->commit_epoch();
-                message_epoch_mod = message_epoch % ctx.taasContext.kCacheMaxLength;
-                message_server_id = txn_ptr->server_id();
-                txn_ptr->sharding_id();
-                ReadValidate();
-                EpochMessageReceiveHandler::sharding_handled_local_txn_num.IncCount(message_epoch, thread_id, 1);
+                if (txn_ptr != nullptr && txn_ptr->txn_type() != proto::TxnType::NullMark) {
+                    message_epoch = txn_ptr->commit_epoch();
+                    message_epoch_mod = message_epoch % ctx.taasContext.kCacheMaxLength;
+                    message_server_id = txn_ptr->server_id();
+                    txn_ptr->sharding_id();
+                    ReadValidate();
+                    EpochMessageReceiveHandler::sharding_handled_local_txn_num.IncCount(message_epoch, thread_id, 1);
+                }
             }
 
             if(!EpochManager::IsShardingMergeComplete(epoch)) {

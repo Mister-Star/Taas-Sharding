@@ -81,6 +81,9 @@ namespace Taas {
                 socket->send(*msg, sendFlags);
 //            LOG(INFO) << "send a message "  << params->type;
             }
+            else {
+                usleep(50);
+            }
         }
         socket->send((zmq::message_t &) "end", sendFlags);
     }
