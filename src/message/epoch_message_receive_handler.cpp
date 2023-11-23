@@ -215,9 +215,7 @@ namespace Taas {
                     txn_ptr->set_csn(now_to_us());
                     txn_ptr->set_server_id(ctx.taasContext.txn_node_ip_index);
                     SetMessageRelatedCountersInfo();
-                    HandleClientTxn();
-                    Merger::CommitQueueEnqueue(message_epoch, txn_ptr);
-                    sharding_handled_local_txn_num.IncCount(message_epoch, thread_id, 1);
+                    Merger::ReadValidateQueueEnqueue(message_epoch, txn_ptr);
                 }
                 break;
             }
@@ -344,7 +342,8 @@ namespace Taas {
         txn_ptr->set_csn(txn_id);
         txn_ptr->set_server_id(ctx.taasContext.txn_node_ip_index);
         SetMessageRelatedCountersInfo();
-        HandleClientTxn();
+        Merger::ReadValidateQueueEnqueue(message_epoch, txn_ptr);
+//        HandleClientTxn();
         Merger::CommitQueueEnqueue(message_epoch, txn_ptr);
         sharding_handled_local_txn_num.IncCount(message_epoch, thread_id, 1);
     }
@@ -381,54 +380,7 @@ namespace Taas {
         return true;
     }
 
-    bool EpochMessageReceiveHandler::HandleClientTxn() {
-        if(ctx.taasContext.taasMode == TaasMode::Sharding) {
-            std::vector<std::shared_ptr<proto::Transaction>> sharding_row_vector;
-            for(uint64_t i = 0; i < sharding_num; i ++) {
-                sharding_row_vector.emplace_back(std::make_shared<proto::Transaction>());
-                sharding_row_vector[i]->set_csn(txn_ptr->csn());
-                sharding_row_vector[i]->set_commit_epoch(txn_ptr->commit_epoch());
-                sharding_row_vector[i]->set_server_id(txn_ptr->server_id());
-                sharding_row_vector[i]->set_client_ip(txn_ptr->client_ip());
-                sharding_row_vector[i]->set_client_txn_id(txn_ptr->client_txn_id());
-                sharding_row_vector[i]->set_sharding_id(i);
-            }
-            for(auto i = 0; i < txn_ptr->row_size(); i ++) {
-                const auto& row = txn_ptr->row(i);
-                auto row_ptr = sharding_row_vector[GetHashValue(row.key())]->add_row();
-                (*row_ptr) = row;
-            }
-            for(uint64_t i = 0; i < sharding_num; i ++) {
-                if(sharding_row_vector[i]->row_size() > 0) {
-                    if(i == ctx.taasContext.txn_node_ip_index) {
-                        Merger::MergeQueueEnqueue(message_epoch, sharding_row_vector[ctx.taasContext.txn_node_ip_index]);/// sharding merge
-                    }
-                    else {
-                        sharding_should_send_txn_num.IncCount(message_epoch, i, 1);
-                        EpochMessageSendHandler::SendTxnToServer(message_epoch, i, sharding_row_vector[i], proto::TxnType::RemoteServerTxn);
-                        sharding_send_txn_num.IncCount(message_epoch, i, 1);
-                    }
-                }
-            }
-            backup_should_send_txn_num.IncCount(message_epoch, ctx.taasContext.txn_node_ip_index, 1);
-            EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, txn_ptr, proto::TxnType::BackUpTxn);
-            backup_send_txn_num.IncCount(message_epoch, ctx.taasContext.txn_node_ip_index, 1);
-//            epoch_backup_txn[message_epoch_mod]->enqueue(txn_ptr);
-//            epoch_backup_txn[message_epoch_mod]->enqueue(nullptr);
-            sharding_row_vector.clear();
-        }
-        else if(ctx.taasContext.taasMode == TaasMode::MultiMaster) {
-            Merger::MergeQueueEnqueue(message_epoch, txn_ptr);/// multi-master merge
-            sharding_should_send_txn_num.IncCount(message_epoch, ctx.taasContext.txn_node_ip_index, 1);
-            backup_should_send_txn_num.IncCount(message_epoch, ctx.taasContext.txn_node_ip_index, 1);
-            EpochMessageSendHandler::SendTxnToServer(message_epoch, ctx.taasContext.txn_node_ip_index, txn_ptr, proto::TxnType::RemoteServerTxn);
-            sharding_send_txn_num.IncCount(message_epoch, 0, 1);
-            backup_send_txn_num.IncCount(message_epoch, ctx.taasContext.txn_node_ip_index, 1);
-//            epoch_backup_txn[message_epoch_mod]->enqueue(txn_ptr);
-//            epoch_backup_txn[message_epoch_mod]->enqueue(nullptr);
-        }
-        return true;
-    }
+
 
     bool EpochMessageReceiveHandler::UpdateEpochAbortSet() {
         message_epoch = txn_ptr->commit_epoch();
