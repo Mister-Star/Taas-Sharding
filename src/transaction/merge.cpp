@@ -131,6 +131,8 @@ namespace Taas {
     void Merger::Init(uint64_t id_) {
         txn_ptr.reset();
         thread_id = id_;
+        message_ptr = nullptr;
+        sharding_num = ctx.taasContext.kTxnNodeNum;
 //        message_handler.Init(thread_id);
     }
 
