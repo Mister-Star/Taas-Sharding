@@ -27,15 +27,24 @@ namespace Taas {
         std::shared_ptr<proto::Transaction> txn_ptr;
         std::unique_ptr<pack_params> pack_param;
         std::string csn_temp, key_temp, key_str, table_name, csn_result;
-        uint64_t thread_id = 0, epoch = 0, epoch_mod = 0, txn_server_id = 0;
+        uint64_t thread_id = 0,
+                server_dequeue_id = 0, epoch_mod = 0, epoch = 0, max_length = 0, sharding_num = 0,///cache check
+        message_epoch = 0, message_epoch_mod = 0, message_sharding_id = 0, message_server_id = 0, ///message epoch info
+        server_reply_ack_id = 0,
+                cache_clear_epoch_num = 0, cache_clear_epoch_num_mod = 0,
+                redo_log_push_down_reply = 1, txn_server_id = 0;;
+
         bool res, sleep_flag;
-        CRDTMerge merger;
-        EpochMessageSendHandler message_transmitter;
-        EpochMessageReceiveHandler message_handler;
+        std::shared_ptr<proto::Transaction> empty_txn_ptr;
+        std::hash<std::string> _hash;
+//        CRDTMerge merger;
+//        EpochMessageSendHandler message_transmitter;
+//        EpochMessageReceiveHandler message_handler;
 
         ///epoch
         static Context ctx;
         static AtomicCounters_Cache
+                epoch_should_read_validate_txn_num, epoch_read_validated_txn_num,
                 epoch_should_merge_txn_num, epoch_merged_txn_num,
                 epoch_should_commit_txn_num, epoch_committed_txn_num,
                 epoch_record_commit_txn_num, epoch_record_committed_txn_num;
@@ -49,8 +58,9 @@ namespace Taas {
 
         ///queues
         static std::vector<std::unique_ptr<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>>
-                epoch_merge_queue,///merge_queue 存放需要进行merge的子事务 不区分epoch
-                epoch_commit_queue;///epoch_commit_queue 当前epoch的涉及当前分片的要进行validate和commit的子事务 receive from servers and local sharding txn, wait to validate
+                epoch_read_validate_queue,///validate_queue 存放需要进行validate的事务 区分epoch
+                epoch_merge_queue,///merge_queue 存放需要进行merge的事务 区分epoch
+                epoch_commit_queue;///epoch_commit_queue 当前epoch的涉及当前分片的要进行commit validate和commit的子事务 receive from servers and local sharding txn, wait to validate
 
         static std::vector<std::unique_ptr<std::atomic<bool>>>
                 epoch_merge_complete,
@@ -64,12 +74,19 @@ namespace Taas {
         static void StaticInit(const Context& ctx_);
         static void ClearMergerEpochState(uint64_t &epoch);
 
+        uint64_t GetHashValue(const std::string& key) const {
+            return _hash(key) % sharding_num;
+        }
+
         void Init(uint64_t id_);
 
+        void ReadValidate();
+        void Send();
         void Merge();
         void Commit();
         void EpochMerge();
 
+        static void ReadValidateQueueEnqueue(uint64_t &epoch, const std::shared_ptr<proto::Transaction> &txn_ptr);
         static void MergeQueueEnqueue(uint64_t &epoch, const std::shared_ptr<proto::Transaction>& txn_ptr);
         static bool MergeQueueTryDequeue(uint64_t &epoch, const std::shared_ptr<proto::Transaction>& txn_ptr);
         static void CommitQueueEnqueue(uint64_t &epoch, const std::shared_ptr<proto::Transaction>& txn_ptr);
@@ -106,6 +123,8 @@ namespace Taas {
 
         static bool IsMergeComplete(const uint64_t& epoch) {
             for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i++) {
+                if (epoch_should_read_validate_txn_num.GetCount(epoch, i) > epoch_read_validated_txn_num.GetCount(epoch, i))
+                    return false;
                 if (epoch_should_merge_txn_num.GetCount(epoch, i) > epoch_merged_txn_num.GetCount(epoch, i))
                     return false;
             }
