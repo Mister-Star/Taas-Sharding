@@ -195,7 +195,7 @@ namespace Taas {
             write_set->set_client_ip(txn_ptr->client_ip());
             write_set->set_client_txn_id(txn_ptr->client_txn_id());
             write_set->set_sharding_id(ctx.taasContext.txn_node_ip_index);
-            for(auto i = 0; i < txn_ptr->row_size(); i ++) {
+            for(auto i = 0; i < txn_ptr->row_size(); i ++) { /// for SI isolation only seng the wriet set.
                 const auto& row = txn_ptr->row(i);
                 if(row.op_type() == proto::OpType::Read) continue;
                 auto row_ptr = write_set->add_row();
