@@ -242,7 +242,6 @@ namespace Taas {
         message_epoch = txn_ptr->commit_epoch();
         message_epoch_mod = message_epoch % ctx.taasContext.kCacheMaxLength;
         message_server_id = txn_ptr->server_id();
-        txn_ptr->sharding_id();
         return true;
     }
 
