@@ -197,6 +197,7 @@ namespace Taas {
         auto backup = std::make_shared<proto::Transaction>(*txn_ptr);
         backup->set_txn_type(proto::BackUpTxn);
         Merger::epoch_back_txn_map[message_epoch_mod]->insert(csn_temp, backup);
+        Merger::epoch_txn_map[message_epoch_mod]->insert(csn_temp, txn_ptr);
         if(ctx.taasContext.taasMode == TaasMode::Sharding) {/// send then validate on the remote server
             auto sharding_row_vector = std::make_shared<std::vector<std::shared_ptr<proto::Transaction>>>() ;
             for(uint64_t i = 0; i < sharding_num; i ++) {
@@ -248,7 +249,6 @@ namespace Taas {
             Merger::epoch_write_set_map[message_epoch_mod]->insert(csn_temp, write_set);
             Merger::ReadValidateQueueEnqueue(message_epoch, txn_ptr);
         }
-        Merger::epoch_txn_map[message_epoch_mod]->insert(csn_temp, txn_ptr);
     }
 
     bool EpochMessageReceiveHandler::SetMessageRelatedCountersInfo() {
