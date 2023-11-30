@@ -188,17 +188,19 @@ namespace Taas {
     }
 
     void Merger::ReadValidate() {
-        epoch = txn_ptr->commit_epoch();
+        message_epoch = txn_ptr->commit_epoch();
+        message_epoch_mod = message_epoch % ctx.taasContext.kCacheMaxLength;
+        message_server_id = txn_ptr->server_id();
         if (CRDTMerge::ValidateReadSet(txn_ptr)) {
             Send();
         }
         else {
             total_read_version_check_failed_txn_num.fetch_add(1);
             csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->server_id());
-            epoch_abort_txn_set[epoch_mod]->insert(csn_temp, csn_temp);
+            epoch_abort_txn_set[message_epoch]->insert(csn_temp, csn_temp);
             EpochMessageSendHandler::SendTxnCommitResultToClient(txn_ptr, proto::TxnState::Abort);
         }
-        epoch_read_validated_txn_num.IncCount(epoch, txn_server_id, 1);
+        epoch_read_validated_txn_num.IncCount(message_epoch, txn_server_id, 1);
         EpochMessageReceiveHandler::sharding_handled_local_txn_num.IncCount(message_epoch, thread_id, 1);
     }
 
@@ -245,9 +247,6 @@ namespace Taas {
 
             while(epoch_read_validate_queue[epoch_mod]->try_dequeue(txn_ptr)) { /// only local txn do this procedure
                 if (txn_ptr != nullptr && txn_ptr->txn_type() != proto::TxnType::NullMark) {
-                    message_epoch = txn_ptr->commit_epoch();
-                    message_epoch_mod = message_epoch % ctx.taasContext.kCacheMaxLength;
-                    message_server_id = txn_ptr->server_id();
                     ReadValidate();
                     txn_ptr.reset();
                     sleep_flag = false;
