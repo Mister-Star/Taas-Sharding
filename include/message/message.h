@@ -54,6 +54,7 @@ namespace Taas {
                 send_to_storage_queue, send_to_mot_storage_queue, send_to_nebula_storage_queue, send_to_server_pub_queue;
         static std::unique_ptr<MessageBlockingConcurrentQueue<std::unique_ptr<proto::Message>>> request_queue, raft_message_queue;
         static void StaticInitMessageQueue(const Context& ctx);
+        static std::atomic<uint64_t> client_receive_message_num, client_send_message_num;
     };
 
     //message transport threads

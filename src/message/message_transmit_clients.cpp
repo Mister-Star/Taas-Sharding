@@ -39,6 +39,7 @@ namespace Taas {
             recvResult = socket_listen.recv((*message_ptr), recvFlags);//防止上次遗留消息造成message cache出现问题
             assert(recvResult != -1);
             if (is_epoch_advance_started.load()) {
+                MessageQueue::client_receive_message_num.fetch_add(1);
                 auto res = MessageQueue::listen_message_txn_queue->enqueue(std::move(message_ptr));
                 assert(res);
                 res = MessageQueue::listen_message_txn_queue->enqueue(nullptr);
@@ -51,6 +52,7 @@ namespace Taas {
             std::unique_ptr<zmq::message_t> message_ptr = std::make_unique<zmq::message_t>();
             recvResult = socket_listen.recv((*message_ptr), recvFlags);
             assert(recvResult != -1);
+            MessageQueue::client_receive_message_num.fetch_add(1);
             auto res = MessageQueue::listen_message_txn_queue->enqueue(std::move(message_ptr));
 //            printf("线程开始工作 ListenClientThread receive a message\n");
             assert(res);
@@ -91,6 +93,7 @@ namespace Taas {
             while(!EpochManager::IsTimerStop()) {
                 if (MessageQueue::send_to_client_queue->try_dequeue(params)) {
                     if (params == nullptr || params->type == proto::TxnType::NullMark) continue;
+                    MessageQueue::client_send_message_num.fetch_add(1);
                     msg = std::make_unique<zmq::message_t>(*(params->str));
                     auto key = "tcp://" + params->ip;
                     if (socket_map.find(key) != socket_map.end()) {

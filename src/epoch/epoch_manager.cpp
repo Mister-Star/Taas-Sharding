@@ -148,7 +148,9 @@ namespace Taas {
         ShouldReceiveAbortSetNum     %6lu, ReceivedAbortSetNum          %6lu  \n\
         ReceivedShardingACKNum       %6lu, ReceivedBackupACKNum         %6lu    \
         ReceivedInsertSetACKNum      %6lu, ReceivedAbortSetACKNum       %6lu  \n\
-        merge_num                    %6lu, time          %lu \n",
+        merge_num                    %6lu, time          %lu \n\
+        message send client num      %6lu, message receive client num   %6lu    \
+        handled client txn num       %6lu\n",
        s.c_str(),
        EpochManager::GetPhysicalEpoch(),                                                  EpochManager::GetLogicalEpoch(),
        MOT::pushed_down_epoch.load(),                                                EpochManager::GetPushDownEpoch(),
@@ -177,8 +179,12 @@ namespace Taas {
        EpochMessageReceiveHandler::sharding_received_ack_num.GetCount(epoch_mod),        EpochMessageReceiveHandler::backup_received_ack_num.GetCount(epoch_mod),
        EpochMessageReceiveHandler::insert_set_received_ack_num.GetCount(epoch_mod),      EpochMessageReceiveHandler::abort_set_received_ack_num.GetCount(epoch_mod),
 
-       (uint64_t)0,
-        now_to_us()) << PrintfToString("\n Epoch: %lu ClearEpoch: %lu, SuccessTxnNumber %lu, ToTalSuccessLatency %lu, SuccessAvgLatency %lf, TotalCommitTxnNum %lu, TotalCommitlatency %lu, TotalCommitAvglatency %lf \n",
+       (uint64_t)0, now_to_us(),
+       MessageQueue::client_send_message_num.load(), MessageQueue::client_receive_message_num.load(),
+       EpochMessageSendHandler::TotalTxnNum.load()
+       )
+
+       << PrintfToString("\n Epoch: %lu ClearEpoch: %lu, SuccessTxnNumber %lu, ToTalSuccessLatency %lu, SuccessAvgLatency %lf, TotalCommitTxnNum %lu, TotalCommitlatency %lu, TotalCommitAvglatency %lf \n",
                                        epoch_, clear_epoch.load(),
                                        EpochMessageSendHandler::TotalSuccessTxnNUm.load(), EpochMessageSendHandler::TotalSuccessLatency.load(),
                                        (((double)EpochMessageSendHandler::TotalSuccessLatency.load()) / ((double)EpochMessageSendHandler::TotalSuccessTxnNUm.load())),
