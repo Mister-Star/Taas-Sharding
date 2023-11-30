@@ -38,6 +38,7 @@ namespace Taas {
             Merger::epoch_commit_queue;///存放每个epoch要进行写日志的事务，分片写日志
 
     std::vector<std::unique_ptr<std::atomic<bool>>>
+            Merger::epoch_read_validate_complete,
             Merger::epoch_merge_complete,
             Merger::epoch_commit_complete;
 
@@ -64,6 +65,7 @@ namespace Taas {
         epoch_merge_queue.resize(max_length);
         epoch_commit_queue.resize(max_length);
 
+        epoch_read_validate_complete.resize(max_length);
         epoch_merge_complete.resize(max_length);
         epoch_commit_complete.resize(max_length);
 
@@ -78,6 +80,7 @@ namespace Taas {
 
         for(int i = 0; i < static_cast<int>(max_length); i ++) {
 //            epoch_validate_complete[i] = std::make_unique<std::atomic<bool>>(false);
+            epoch_read_validate_complete[i] = std::make_unique<std::atomic<bool>>(false);
             epoch_merge_complete[i] = std::make_unique<std::atomic<bool>>(false);
             epoch_commit_complete[i] = std::make_unique<std::atomic<bool>>(false);
             epoch_merge_map[i] = std::make_unique<concurrent_crdt_unordered_map<std::string, std::string, std::string>>();
@@ -124,6 +127,7 @@ namespace Taas {
 
     void Merger::ClearMergerEpochState(uint64_t& epoch) {
         auto epoch_mod_temp = epoch % ctx.taasContext.kCacheMaxLength;
+        epoch_read_validate_complete[epoch_mod_temp]->store(false);
         epoch_merge_complete[epoch_mod_temp]->store(false);
         epoch_commit_complete[epoch_mod_temp]->store(false);
         epoch_merge_map[epoch_mod_temp]->clear();
@@ -158,6 +162,8 @@ namespace Taas {
             epoch_back_txn_map[message_epoch_mod]->getValue(csn_temp, backup_txn);
             /// SI only send write set
             /// if you want to achieve SER, you need to send the complete txn
+            EpochMessageReceiveHandler::sharding_should_send_txn_num.IncCount(message_epoch, ctx.taasContext.txn_node_ip_index, 1);
+            EpochMessageReceiveHandler::backup_should_send_txn_num.IncCount(message_epoch, ctx.taasContext.txn_node_ip_index, 1);
             EpochMessageSendHandler::SendTxnToServer(message_epoch, ctx.taasContext.txn_node_ip_index, write_set, proto::TxnType::RemoteServerTxn);
             EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, backup_txn, proto::TxnType::BackUpTxn);
             EpochMessageReceiveHandler::sharding_send_txn_num.IncCount(message_epoch, ctx.taasContext.txn_node_ip_index, 1);
@@ -178,6 +184,7 @@ namespace Taas {
             Send();
         }
         else {
+
             total_read_version_check_failed_txn_num.fetch_add(1);
             csn_temp = csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->server_id());
             epoch_abort_txn_set[message_epoch]->insert(csn_temp, csn_temp);

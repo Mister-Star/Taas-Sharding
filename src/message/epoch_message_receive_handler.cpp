@@ -245,8 +245,6 @@ namespace Taas {
                 auto row_ptr = write_set->add_row();
                 (*row_ptr) = row;
             }
-            EpochMessageReceiveHandler::sharding_should_send_txn_num.IncCount(message_epoch, ctx.taasContext.txn_node_ip_index, 1);
-            EpochMessageReceiveHandler::backup_should_send_txn_num.IncCount(message_epoch, ctx.taasContext.txn_node_ip_index, 1);
             Merger::epoch_write_set_map[message_epoch_mod]->insert(csn_temp, write_set);
             Merger::ReadValidateQueueEnqueue(message_epoch, txn_ptr);
         }
@@ -275,6 +273,7 @@ namespace Taas {
                     txn_ptr->set_commit_epoch(message_epoch);
                     txn_ptr->set_csn(now_to_us());
                     txn_ptr->set_server_id(ctx.taasContext.txn_node_ip_index);
+                    txn_ptr->set_txn_type(proto::RemoteServerTxn);/// change to server txn, then, use server_id to check
                     SetMessageRelatedCountersInfo();
                     Sharding();
                     sharding_handled_local_txn_num.IncCount(message_epoch, thread_id, 1);

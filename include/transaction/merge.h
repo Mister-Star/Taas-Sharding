@@ -66,6 +66,7 @@ namespace Taas {
                 epoch_commit_queue;///epoch_commit_queue 当前epoch的涉及当前分片的要进行commit validate和commit的子事务 receive from servers and local sharding txn, wait to validate
 
         static std::vector<std::unique_ptr<std::atomic<bool>>>
+                epoch_read_validate_complete,
                 epoch_merge_complete,
                 epoch_commit_complete;
 
@@ -95,6 +96,16 @@ namespace Taas {
         static void CommitQueueEnqueue(uint64_t &epoch, const std::shared_ptr<proto::Transaction>& txn_ptr);
         static bool CommitQueueTryDequeue(uint64_t &epoch, std::shared_ptr<proto::Transaction> txn_ptr);
 
+        static bool CheckEpochReadValidateComplete(const uint64_t& epoch) {
+            if(epoch_read_validate_complete[epoch % ctx.taasContext.kCacheMaxLength]->load()) {
+                return true;
+            }
+            if (epoch < EpochManager::GetPhysicalEpoch() && IsReadValidateComplete(epoch)) {
+                epoch_read_validate_complete[epoch % ctx.taasContext.kCacheMaxLength]->store(true);
+                return true;
+            }
+            return false;
+        }
 
         static bool CheckEpochMergeComplete(const uint64_t& epoch) {
             if(epoch_merge_complete[epoch % ctx.taasContext.kCacheMaxLength]->load()) {
@@ -122,8 +133,13 @@ namespace Taas {
             return epoch_commit_complete[epoch % ctx.taasContext.kCacheMaxLength]->load();
         }
 
-
-
+        static bool IsReadValidateComplete(const uint64_t& epoch) {
+            for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i++) {
+                if (epoch_should_read_validate_txn_num.GetCount(epoch, i) > epoch_read_validated_txn_num.GetCount(epoch, i))
+                    return false;
+            }
+            return true;
+        }
         static bool IsMergeComplete(const uint64_t& epoch) {
             for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i++) {
                 if (epoch_should_read_validate_txn_num.GetCount(epoch, i) > epoch_read_validated_txn_num.GetCount(epoch, i))
@@ -133,9 +149,6 @@ namespace Taas {
             }
             return true;
         }
-        static bool IsMergeComplete(const uint64_t &epoch, const uint64_t &server_id) {
-            return epoch_should_merge_txn_num.GetCount(epoch, server_id) <= epoch_merged_txn_num.GetCount(epoch, server_id);
-        }
         static bool IsCommitComplete(const uint64_t & epoch) {
             for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i++) {
                 if (epoch_should_commit_txn_num.GetCount(epoch, i) > epoch_committed_txn_num.GetCount(epoch, i))
@@ -143,10 +156,6 @@ namespace Taas {
             }
             return true;
         }
-        static bool IsCommitComplete(const uint64_t & epoch, const uint64_t & server_id) {
-            return epoch_should_commit_txn_num.GetCount(epoch, server_id) <= epoch_committed_txn_num.GetCount(epoch, server_id);
-        }
-
         static bool IsRedoLogComplete(const uint64_t & epoch) {
             for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i++) {
                 if (epoch_record_commit_txn_num.GetCount(epoch, i) > epoch_record_committed_txn_num.GetCount(epoch, i))
@@ -154,9 +163,7 @@ namespace Taas {
             }
             return true;
         }
-        static bool IsRedoLogComplete(const uint64_t & epoch, const uint64_t & server_id) {
-            return epoch_record_commit_txn_num.GetCount(epoch, server_id) <= epoch_record_committed_txn_num.GetCount(epoch, server_id);
-        }
+
 
     };
 }
