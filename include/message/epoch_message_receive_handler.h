@@ -311,6 +311,7 @@ namespace Taas {
             return true;
         }
 
+        void Sharding();
     };
 
 }

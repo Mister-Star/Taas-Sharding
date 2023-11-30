@@ -24,7 +24,8 @@ namespace Taas {
         std::unique_ptr<zmq::message_t> message_ptr;
         std::unique_ptr<std::string> message_string_ptr;
         std::unique_ptr<proto::Message> msg_ptr;
-        std::shared_ptr<proto::Transaction> txn_ptr;
+        std::shared_ptr<proto::Transaction> txn_ptr, write_set, backup_txn;
+        std::shared_ptr<std::vector<std::shared_ptr<proto::Transaction>>> sharding_row_vector;
         std::unique_ptr<pack_params> pack_param;
         std::string csn_temp, key_temp, key_str, table_name, csn_result;
         uint64_t thread_id = 0,
@@ -37,6 +38,7 @@ namespace Taas {
         bool res, sleep_flag;
         std::shared_ptr<proto::Transaction> empty_txn_ptr;
         std::hash<std::string> _hash;
+
 //        CRDTMerge merger;
 //        EpochMessageSendHandler message_transmitter;
 //        EpochMessageReceiveHandler message_handler;
@@ -52,7 +54,10 @@ namespace Taas {
                 epoch_merge_map,
                 local_epoch_abort_txn_set,
                 epoch_abort_txn_set;
-
+        static std::vector<std::unique_ptr<concurrent_unordered_map<std::string, std::shared_ptr<std::vector<std::shared_ptr<proto::Transaction>>>>>>
+                epoch_send_sharding_txn_map;
+        static std::vector<std::unique_ptr<concurrent_unordered_map<std::string, std::shared_ptr<proto::Transaction>>>>
+                epoch_send_multi_master_map, epoch_send_back_txn_map;
         /// whole server state
         static concurrent_unordered_map<std::string, std::string> read_version_map_data, read_version_map_csn, insert_set;
 

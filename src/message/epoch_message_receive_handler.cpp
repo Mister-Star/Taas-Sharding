@@ -192,6 +192,52 @@ namespace Taas {
         }
     }
 
+    void EpochMessageReceiveHandler::Sharding() {
+        csn_temp = txn_ptr->client_ip() + ":" + std::to_string(txn_ptr->client_txn_id());
+        if(ctx.taasContext.taasMode == TaasMode::Sharding) {
+            auto sharding_row_vector = std::make_shared<std::vector<std::shared_ptr<proto::Transaction>>>() ;
+            for(uint64_t i = 0; i < sharding_num; i ++) {
+                sharding_row_vector->emplace_back(std::make_shared<proto::Transaction>());
+                auto vector_i = &(*((*sharding_row_vector)[i]));
+                vector_i->set_csn(txn_ptr->csn());
+                vector_i->set_commit_epoch(txn_ptr->commit_epoch());
+                vector_i->set_server_id(txn_ptr->server_id());
+                vector_i->set_client_ip(txn_ptr->client_ip());
+                vector_i->set_client_txn_id(txn_ptr->client_txn_id());
+                vector_i->set_sharding_id(i);
+                vector_i->set_txn_type(proto::RemoteServerTxn);
+            }
+            for(auto i = 0; i < txn_ptr->row_size(); i ++) {
+                const auto& row = txn_ptr->row(i);
+                auto row_ptr = (*sharding_row_vector)[GetHashValue(row.key())]->add_row();
+                (*row_ptr) = row;
+            }
+//            epoch_backup_txn[message_epoch_mod]->enqueue(txn_ptr);
+//            epoch_backup_txn[message_epoch_mod]->enqueue(nullptr);
+            Merger::epoch_send_sharding_txn_map[message_epoch_mod]->insert(csn_temp, sharding_row_vector);
+        }
+        else if(ctx.taasContext.taasMode == TaasMode::MultiMaster) {
+            auto write_set = std::make_shared<proto::Transaction>();
+            write_set->set_csn(txn_ptr->csn());
+            write_set->set_commit_epoch(txn_ptr->commit_epoch());
+            write_set->set_server_id(txn_ptr->server_id());
+            write_set->set_client_ip(txn_ptr->client_ip());
+            write_set->set_client_txn_id(txn_ptr->client_txn_id());
+            write_set->set_sharding_id(ctx.taasContext.txn_node_ip_index);
+            write_set->set_txn_type(proto::RemoteServerTxn);
+            for(auto i = 0; i < txn_ptr->row_size(); i ++) { /// for SI isolation only seng the wriet set.
+                const auto& row = txn_ptr->row(i);
+                if(row.op_type() == proto::OpType::Read) continue;
+                auto row_ptr = write_set->add_row();
+                (*row_ptr) = row;
+            }
+            Merger::epoch_send_multi_master_map[message_epoch_mod]->insert(csn_temp, write_set);
+        }
+        auto backup = std::make_shared<proto::Transaction>(*txn_ptr);
+        backup->set_txn_type(proto::BackUpTxn);
+        Merger::epoch_send_back_txn_map[message_epoch_mod]->insert(csn_temp, backup);
+    }
+
     bool EpochMessageReceiveHandler::SetMessageRelatedCountersInfo() {
         message_epoch = txn_ptr->commit_epoch();
         message_epoch_mod = message_epoch % ctx.taasContext.kCacheMaxLength;
@@ -215,6 +261,7 @@ namespace Taas {
                     txn_ptr->set_csn(now_to_us());
                     txn_ptr->set_server_id(ctx.taasContext.txn_node_ip_index);
                     SetMessageRelatedCountersInfo();
+                    Sharding();
                     Merger::ReadValidateQueueEnqueue(message_epoch, txn_ptr);
                 }
                 break;
@@ -224,11 +271,11 @@ namespace Taas {
                 Merger::MergeQueueEnqueue(message_epoch, txn_ptr);
                 Merger::CommitQueueEnqueue(message_epoch, txn_ptr);
                 sharding_received_txn_num.IncCount(message_epoch,message_server_id, 1);
-                if(ctx.taasContext.taasMode == TaasMode::MultiMaster) {
-//                    epoch_backup_txn[message_epoch_mod]->enqueue(txn_ptr);
-//                    epoch_backup_txn[message_epoch_mod]->enqueue(nullptr);
-                    backup_received_txn_num.IncCount(message_epoch,message_server_id, 1);
-                }
+//                if(ctx.taasContext.taasMode == TaasMode::MultiMaster) {
+////                    epoch_backup_txn[message_epoch_mod]->enqueue(txn_ptr);
+////                    epoch_backup_txn[message_epoch_mod]->enqueue(nullptr);
+//                    backup_received_txn_num.IncCount(message_epoch,message_server_id, 1);
+//                }
                 sharding_handled_remote_txn_num.IncCount(message_epoch, thread_id, 1);
                 break;
             }

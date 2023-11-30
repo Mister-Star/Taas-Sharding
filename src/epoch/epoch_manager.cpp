@@ -112,7 +112,7 @@ namespace Taas {
     }
 
     std::string PrintfToString(const char* format, ...) {
-        char buffer[2048]; // 假设输出不超过1024个字符
+        char buffer[5120];
         va_list args;
         va_start(args, format);
         std::vsnprintf(buffer, sizeof(buffer), format, args);
@@ -149,6 +149,7 @@ namespace Taas {
         ReceivedShardingACKNum       %6lu, ReceivedBackupACKNum         %6lu    \
         ReceivedInsertSetACKNum      %6lu, ReceivedAbortSetACKNum       %6lu  \n\
         merge_num                    %6lu, time          %lu \n\
+====\
         message send client num      %6lu, message receive client num   %6lu    \
         handled client txn num       %6lu\n",
        s.c_str(),
@@ -166,19 +167,14 @@ namespace Taas {
        Merger::epoch_merged_txn_num.GetCount(epoch_mod),                            Merger::epoch_should_merge_txn_num.GetCount(epoch_mod),
        Merger::epoch_committed_txn_num.GetCount(epoch_mod),                         Merger::epoch_should_commit_txn_num.GetCount(epoch_mod),
        Merger::epoch_record_committed_txn_num.GetCount(epoch_mod),                  Merger::epoch_record_commit_txn_num.GetCount(epoch_mod),
-
        EpochMessageReceiveHandler::sharding_should_receive_pack_num.GetCount(epoch_mod), EpochMessageReceiveHandler::sharding_received_pack_num.GetCount(epoch_mod),
        EpochMessageReceiveHandler::sharding_should_receive_txn_num.GetCount(epoch_mod),  EpochMessageReceiveHandler::sharding_received_txn_num.GetCount(epoch_mod),
-
        EpochMessageReceiveHandler::backup_should_receive_pack_num.GetCount(epoch_mod),   EpochMessageReceiveHandler::backup_received_pack_num.GetCount(epoch_mod),
        EpochMessageReceiveHandler::backup_should_receive_txn_num.GetCount(epoch_mod),    EpochMessageReceiveHandler::backup_received_txn_num.GetCount(epoch_mod),
-
        EpochMessageReceiveHandler::insert_set_should_receive_num.GetCount(epoch_mod),          EpochMessageReceiveHandler::insert_set_received_num.GetCount(epoch_mod),
        EpochMessageReceiveHandler::abort_set_should_receive_num.GetCount(epoch_mod),  EpochMessageReceiveHandler::abort_set_received_num.GetCount(epoch_mod),
-
        EpochMessageReceiveHandler::sharding_received_ack_num.GetCount(epoch_mod),        EpochMessageReceiveHandler::backup_received_ack_num.GetCount(epoch_mod),
        EpochMessageReceiveHandler::insert_set_received_ack_num.GetCount(epoch_mod),      EpochMessageReceiveHandler::abort_set_received_ack_num.GetCount(epoch_mod),
-
        (uint64_t)0, now_to_us(),
        MessageQueue::client_send_message_num.load(), MessageQueue::client_receive_message_num.load(),
        EpochMessageSendHandler::TotalTxnNum.load()

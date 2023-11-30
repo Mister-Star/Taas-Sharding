@@ -68,6 +68,7 @@ namespace Taas {
         auto* mode_size_t = root->FirstChildElement("print_mode_size");
         print_mode_size = std::stoull(mode_size_t->GetText());
 
+//        kBackUpNum = kTxnNodeNum - 1;
     }
 
     std::string TaasContext::Print() {
