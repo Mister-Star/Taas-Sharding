@@ -95,7 +95,7 @@ namespace Taas {
 
     void Merger::ReadValidateQueueEnqueue(uint64_t &epoch, const std::shared_ptr<proto::Transaction>& txn_ptr) {
         auto epoch_mod_temp = epoch % ctx.taasContext.kCacheMaxLength;
-        LOG(INFO)<< "ReadValidateQueueEnqueue epoch" <<  epoch << " csn " << txn_ptr->csn();
+//        LOG(INFO)<< "ReadValidateQueueEnqueue epoch" <<  epoch << " csn " << txn_ptr->csn();
         epoch_should_read_validate_txn_num.IncCount(epoch, txn_ptr->server_id(), 1);
         epoch_read_validate_queue[epoch_mod_temp]->enqueue(txn_ptr);
         epoch_read_validate_queue[epoch_mod_temp]->enqueue(nullptr);
@@ -160,7 +160,7 @@ namespace Taas {
             /// if you want to achieve SER, you need to send the complete txn
             EpochMessageSendHandler::SendTxnToServer(message_epoch, ctx.taasContext.txn_node_ip_index, write_set, proto::TxnType::RemoteServerTxn);
             EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, backup_txn, proto::TxnType::BackUpTxn);
-            EpochMessageReceiveHandler::sharding_send_txn_num.IncCount(message_epoch, 0, 1);
+            EpochMessageReceiveHandler::sharding_send_txn_num.IncCount(message_epoch, ctx.taasContext.txn_node_ip_index, 1);
             EpochMessageReceiveHandler::backup_send_txn_num.IncCount(message_epoch, ctx.taasContext.txn_node_ip_index, 1);
             write_set.reset();
             backup_txn.reset();

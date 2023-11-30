@@ -195,6 +195,10 @@ namespace Taas {
             }
             return true;
         }
+        static bool IsEpochLocalTxnHandleComplete(const uint64_t &epoch) {
+            return epoch < EpochManager::GetPhysicalEpoch() &&
+                   sharding_handled_local_txn_num.GetCount(epoch) >= sharding_should_handle_local_txn_num.GetCount(epoch);
+        }
         static bool IsEpochTxnHandleComplete(const uint64_t &epoch) {
             return epoch < EpochManager::GetPhysicalEpoch() &&
                 sharding_handled_local_txn_num.GetCount(epoch) >= sharding_should_handle_local_txn_num.GetCount(epoch) &&

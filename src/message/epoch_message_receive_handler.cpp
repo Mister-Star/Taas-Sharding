@@ -251,7 +251,6 @@ namespace Taas {
             Merger::ReadValidateQueueEnqueue(message_epoch, txn_ptr);
         }
         Merger::epoch_txn_map[message_epoch_mod]->insert(csn_temp, txn_ptr);
-        sharding_should_handle_local_txn_num.IncCount(message_epoch, thread_id, 1);
     }
 
     bool EpochMessageReceiveHandler::SetMessageRelatedCountersInfo() {
@@ -278,6 +277,7 @@ namespace Taas {
                     txn_ptr->set_server_id(ctx.taasContext.txn_node_ip_index);
                     SetMessageRelatedCountersInfo();
                     Sharding();
+                    sharding_handled_local_txn_num.IncCount(message_epoch, thread_id, 1);
                 }
                 break;
             }

@@ -94,10 +94,11 @@ namespace Taas {
                 auto time1 = now_to_us();
                 while(epoch >= EpochManager::GetPhysicalEpoch()) usleep(logical_sleep_timme);
 //                LOG(INFO) << "**** Start Epoch Merge Epoch : " << epoch << "****\n";
-                while(!EpochMessageReceiveHandler::IsShardingSendFinish(epoch)) usleep(logical_sleep_timme);
+                while(!EpochMessageReceiveHandler::IsEpochLocalTxnHandleComplete(epoch)) usleep(logical_sleep_timme);
                 workers.push_emergency_task([epoch, &ctx] () {
                     EpochMessageSendHandler::SendEpochEndMessage(ctx.taasContext.txn_node_ip_index, epoch, ctx.taasContext.kTxnNodeNum);
                 });
+                while(!EpochMessageReceiveHandler::IsShardingSendFinish(epoch)) usleep(logical_sleep_timme);
 //                LOG(INFO) << "**** finished IsShardingSendFinish : " << epoch << "****\n";
                 while(!EpochMessageReceiveHandler::IsShardingACKReceiveComplete(epoch)) usleep(logical_sleep_timme);
 //                LOG(INFO) << "**** finished IsShardingACKReceiveComplete : " << epoch << "****\n";
