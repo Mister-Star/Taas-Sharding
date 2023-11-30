@@ -115,8 +115,8 @@ namespace Taas {
         return false;
     }
     void Merger::CommitQueueEnqueue(uint64_t& epoch, const std::shared_ptr<proto::Transaction>& txn_ptr) {
-        epoch_should_commit_txn_num.IncCount(epoch, ctx.taasContext.txn_node_ip_index, 1);
         auto epoch_mod_temp = epoch % ctx.taasContext.kCacheMaxLength;
+        epoch_should_commit_txn_num.IncCount(epoch, txn_ptr->server_id(), 1);
         epoch_commit_queue[epoch_mod_temp]->enqueue(txn_ptr);
         epoch_commit_queue[epoch_mod_temp]->enqueue(nullptr);
     }
