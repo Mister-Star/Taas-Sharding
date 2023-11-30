@@ -148,12 +148,12 @@ namespace Taas {
     void Merger::Send() {
         csn_temp = csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->server_id());
         if(ctx.taasContext.taasMode == TaasMode::Sharding) {
-            epoch_txn_map[message_epoch_mod]->getValue(csn_temp, full_txn);
+            /// already send
         }
-        else if(ctx.taasContext.taasMode == TaasMode::MultiMaster) {
+        else if(ctx.taasContext.taasMode == TaasMode::MultiMaster && txn_ptr->server_id() == ctx.taasContext.txn_node_ip_index) {
+            /// only local txn send its write set or complete txn
             epoch_write_set_map[message_epoch_mod]->getValue(csn_temp, write_set);
             epoch_back_txn_map[message_epoch_mod]->getValue(csn_temp, backup_txn);
-            epoch_txn_map[message_epoch_mod]->getValue(csn_temp, full_txn);
             EpochMessageReceiveHandler::sharding_should_send_txn_num.IncCount(message_epoch, ctx.taasContext.txn_node_ip_index, 1);
             EpochMessageReceiveHandler::backup_should_send_txn_num.IncCount(message_epoch, ctx.taasContext.txn_node_ip_index, 1);
             /// SI only send write set
@@ -165,6 +165,7 @@ namespace Taas {
             write_set.reset();
             backup_txn.reset();
         }
+        epoch_txn_map[message_epoch_mod]->getValue(csn_temp, full_txn);
         MergeQueueEnqueue(message_epoch, txn_ptr);
         CommitQueueEnqueue(message_epoch, full_txn);
     }
