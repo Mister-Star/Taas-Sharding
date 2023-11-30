@@ -215,11 +215,10 @@ namespace Taas {
                 (*row_ptr) = row;
             }
             for(uint64_t i = 0; i < sharding_num; i ++) {
-                if((*sharding_row_vector)[i]->row_size() > 0) {
-                    if(i == ctx.taasContext.txn_node_ip_index) {
-                        Merger::ReadValidateQueueEnqueue(message_epoch, (*sharding_row_vector)[ctx.taasContext.txn_node_ip_index]);
-                    }
-                    else {
+                if(i == ctx.taasContext.txn_node_ip_index) {
+                    Merger::ReadValidateQueueEnqueue(message_epoch, (*sharding_row_vector)[ctx.taasContext.txn_node_ip_index]);
+                } else {
+                    if((*sharding_row_vector)[i]->row_size() > 0) {
                         EpochMessageReceiveHandler::sharding_should_send_txn_num.IncCount(message_epoch, i, 1);
                         EpochMessageSendHandler::SendTxnToServer(message_epoch, i, (*sharding_row_vector)[i], proto::TxnType::RemoteServerTxn);
                         EpochMessageReceiveHandler::sharding_send_txn_num.IncCount(message_epoch, i, 1);

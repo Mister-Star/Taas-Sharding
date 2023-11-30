@@ -137,6 +137,7 @@ namespace Taas {
         IsShardingMergeComplete      %6lu, IsAbortSetMergeComplete      %6lu    \
         IsCommitComplete             %6lu, SetRecordCommitted           %6lu  \n\
 \
+        ReadValidatedTxnNum          %6lu, ShouldReadValidateTxnNum     %6lu,   \
         MergedTxnNum                 %6lu, ShouldMergeTxnNum            %6lu,   \
         CommittedTxnNum              %6lu, ShouldCommitTxnNum           %6lu,   \
         RecordCommit                 %6lu, RecordCommitted              %6lu, \n\
@@ -164,6 +165,7 @@ namespace Taas {
        (uint64_t)EpochManager::IsShardingMergeComplete(epoch_mod),                  (uint64_t)EpochManager::IsAbortSetMergeComplete(epoch_mod),
        (uint64_t)EpochManager::IsCommitComplete(epoch_mod),                         (uint64_t)EpochManager::IsRecordCommitted(epoch_mod),
 
+       Merger::epoch_read_validated_txn_num.GetCount(epoch_mod),                    Merger::epoch_should_read_validate_txn_num.GetCount(epoch_mod),
        Merger::epoch_merged_txn_num.GetCount(epoch_mod),                            Merger::epoch_should_merge_txn_num.GetCount(epoch_mod),
        Merger::epoch_committed_txn_num.GetCount(epoch_mod),                         Merger::epoch_should_commit_txn_num.GetCount(epoch_mod),
        Merger::epoch_record_committed_txn_num.GetCount(epoch_mod),                  Merger::epoch_record_commit_txn_num.GetCount(epoch_mod),

@@ -129,6 +129,8 @@ namespace Taas {
         epoch_back_txn_map[epoch_mod]->clear();
         epoch_abort_txn_set[epoch_mod]->clear();
         local_epoch_abort_txn_set[epoch_mod]->clear();
+        epoch_should_read_validate_txn_num.Clear(epoch_mod),
+        epoch_read_validated_txn_num.Clear(epoch_mod),
         epoch_should_merge_txn_num.Clear(epoch_mod), epoch_merged_txn_num.Clear(epoch_mod);
         epoch_should_commit_txn_num.Clear(epoch_mod), epoch_committed_txn_num.Clear(epoch_mod);
         epoch_record_commit_txn_num.Clear(epoch_mod), epoch_record_committed_txn_num.Clear(epoch_mod);
