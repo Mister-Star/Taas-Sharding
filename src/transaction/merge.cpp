@@ -67,6 +67,8 @@ namespace Taas {
         epoch_merge_complete.resize(max_length);
         epoch_commit_complete.resize(max_length);
 
+        epoch_should_read_validate_txn_num.Init(max_length, pack_num);
+        epoch_read_validated_txn_num.Init(max_length, pack_num);
         epoch_should_merge_txn_num.Init(max_length, pack_num);
         epoch_merged_txn_num.Init(max_length, pack_num);
         epoch_should_commit_txn_num.Init(max_length, pack_num);
@@ -92,17 +94,18 @@ namespace Taas {
     }
 
     void Merger::ReadValidateQueueEnqueue(uint64_t &epoch, const std::shared_ptr<proto::Transaction>& txn_ptr) {
-        auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod_temp = epoch % ctx.taasContext.kCacheMaxLength;
+        LOG(INFO)<< "ReadValidateQueueEnqueue epoch" <<  epoch << " csn " << txn_ptr->csn();
         epoch_should_read_validate_txn_num.IncCount(epoch, txn_ptr->server_id(), 1);
-        epoch_read_validate_queue[epoch_mod]->enqueue(txn_ptr);
-        epoch_read_validate_queue[epoch_mod]->enqueue(nullptr);
+        epoch_read_validate_queue[epoch_mod_temp]->enqueue(txn_ptr);
+        epoch_read_validate_queue[epoch_mod_temp]->enqueue(nullptr);
     }
 
     void Merger::MergeQueueEnqueue(uint64_t &epoch, const std::shared_ptr<proto::Transaction>& txn_ptr) {
-        auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod_temp = epoch % ctx.taasContext.kCacheMaxLength;
         epoch_should_merge_txn_num.IncCount(epoch, txn_ptr->server_id(), 1);
-        epoch_merge_queue[epoch_mod]->enqueue(txn_ptr);
-        epoch_merge_queue[epoch_mod]->enqueue(nullptr);
+        epoch_merge_queue[epoch_mod_temp]->enqueue(txn_ptr);
+        epoch_merge_queue[epoch_mod_temp]->enqueue(nullptr);
     }
     bool Merger::MergeQueueTryDequeue(uint64_t &epoch, const std::shared_ptr<proto::Transaction>& txn_ptr) {
         ///not use for now
@@ -110,33 +113,30 @@ namespace Taas {
     }
     void Merger::CommitQueueEnqueue(uint64_t& epoch, const std::shared_ptr<proto::Transaction>& txn_ptr) {
         epoch_should_commit_txn_num.IncCount(epoch, ctx.taasContext.txn_node_ip_index, 1);
-        auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
-        epoch_commit_queue[epoch_mod]->enqueue(txn_ptr);
-        epoch_commit_queue[epoch_mod]->enqueue(nullptr);
+        auto epoch_mod_temp = epoch % ctx.taasContext.kCacheMaxLength;
+        epoch_commit_queue[epoch_mod_temp]->enqueue(txn_ptr);
+        epoch_commit_queue[epoch_mod_temp]->enqueue(nullptr);
     }
     bool Merger::CommitQueueTryDequeue(uint64_t& epoch, std::shared_ptr<proto::Transaction> txn_ptr) {
-        auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
-        return epoch_commit_queue[epoch_mod]->try_dequeue(txn_ptr);
+        auto epoch_mod_temp = epoch % ctx.taasContext.kCacheMaxLength;
+        return epoch_commit_queue[epoch_mod_temp]->try_dequeue(txn_ptr);
     }
 
     void Merger::ClearMergerEpochState(uint64_t& epoch) {
-        auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
-        epoch_merge_complete[epoch_mod]->store(false);
-        epoch_commit_complete[epoch_mod]->store(false);
-        epoch_merge_map[epoch_mod]->clear();
-        epoch_txn_map[epoch_mod]->clear();
-        epoch_write_set_map[epoch_mod]->clear();
-        epoch_back_txn_map[epoch_mod]->clear();
-        epoch_abort_txn_set[epoch_mod]->clear();
-        local_epoch_abort_txn_set[epoch_mod]->clear();
-        epoch_should_read_validate_txn_num.Clear(epoch_mod),
-        epoch_read_validated_txn_num.Clear(epoch_mod),
-        epoch_should_merge_txn_num.Clear(epoch_mod), epoch_merged_txn_num.Clear(epoch_mod);
-        epoch_should_commit_txn_num.Clear(epoch_mod), epoch_committed_txn_num.Clear(epoch_mod);
-        epoch_record_commit_txn_num.Clear(epoch_mod), epoch_record_committed_txn_num.Clear(epoch_mod);
-
-//        epoch_merge_queue[epoch_mod] = std::make_unique<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>();
-//        epoch_commit_queue[epoch_mod] = std::make_unique<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>();
+        auto epoch_mod_temp = epoch % ctx.taasContext.kCacheMaxLength;
+        epoch_merge_complete[epoch_mod_temp]->store(false);
+        epoch_commit_complete[epoch_mod_temp]->store(false);
+        epoch_merge_map[epoch_mod_temp]->clear();
+        epoch_txn_map[epoch_mod_temp]->clear();
+        epoch_write_set_map[epoch_mod_temp]->clear();
+        epoch_back_txn_map[epoch_mod_temp]->clear();
+        epoch_abort_txn_set[epoch_mod_temp]->clear();
+        local_epoch_abort_txn_set[epoch_mod_temp]->clear();
+        epoch_should_read_validate_txn_num.Clear(epoch_mod_temp),
+        epoch_read_validated_txn_num.Clear(epoch_mod_temp),
+        epoch_should_merge_txn_num.Clear(epoch_mod_temp), epoch_merged_txn_num.Clear(epoch_mod_temp);
+        epoch_should_commit_txn_num.Clear(epoch_mod_temp), epoch_committed_txn_num.Clear(epoch_mod_temp);
+        epoch_record_commit_txn_num.Clear(epoch_mod_temp), epoch_record_committed_txn_num.Clear(epoch_mod_temp);
     }
 
     void Merger::Init(uint64_t id_) {
@@ -156,8 +156,6 @@ namespace Taas {
             /// only local txn send its write set or complete txn
             epoch_write_set_map[message_epoch_mod]->getValue(csn_temp, write_set);
             epoch_back_txn_map[message_epoch_mod]->getValue(csn_temp, backup_txn);
-            EpochMessageReceiveHandler::sharding_should_send_txn_num.IncCount(message_epoch, ctx.taasContext.txn_node_ip_index, 1);
-            EpochMessageReceiveHandler::backup_should_send_txn_num.IncCount(message_epoch, ctx.taasContext.txn_node_ip_index, 1);
             /// SI only send write set
             /// if you want to achieve SER, you need to send the complete txn
             EpochMessageSendHandler::SendTxnToServer(message_epoch, ctx.taasContext.txn_node_ip_index, write_set, proto::TxnType::RemoteServerTxn);
@@ -185,8 +183,7 @@ namespace Taas {
             epoch_abort_txn_set[message_epoch]->insert(csn_temp, csn_temp);
             EpochMessageSendHandler::SendTxnCommitResultToClient(txn_ptr, proto::TxnState::Abort);
         }
-        epoch_read_validated_txn_num.IncCount(message_epoch, txn_server_id, 1);
-        EpochMessageReceiveHandler::sharding_handled_local_txn_num.IncCount(message_epoch, thread_id, 1);
+        epoch_read_validated_txn_num.IncCount(message_epoch, message_server_id, 1);
     }
 
     void Merger::Merge() {

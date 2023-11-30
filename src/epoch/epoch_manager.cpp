@@ -138,7 +138,7 @@ namespace Taas {
         IsCommitComplete             %6lu, SetRecordCommitted           %6lu  \n\
 \
         ReadValidatedTxnNum          %6lu, ShouldReadValidateTxnNum     %6lu,   \
-        MergedTxnNum                 %6lu, ShouldMergeTxnNum            %6lu,   \
+        MergedTxnNum                 %6lu, ShouldMergeTxnNum            %6lu, \n\
         CommittedTxnNum              %6lu, ShouldCommitTxnNum           %6lu,   \
         RecordCommit                 %6lu, RecordCommitted              %6lu, \n\
         ShouldReceiveShardingPackNum %6lu, ReceivedShardingPackNum      %6lu    \
