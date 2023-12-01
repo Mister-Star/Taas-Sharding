@@ -99,14 +99,12 @@ namespace Taas {
     void Merger::ReadValidateQueueEnqueue(uint64_t &epoch, const std::shared_ptr<proto::Transaction>& txn_ptr) {
         auto epoch_mod_temp = epoch % ctx.taasContext.kCacheMaxLength;
 //        LOG(INFO)<< "ReadValidateQueueEnqueue epoch" <<  epoch << " csn " << txn_ptr->csn();
-        epoch_should_read_validate_txn_num.IncCount(epoch, txn_ptr->server_id(), 1);
         epoch_read_validate_queue[epoch_mod_temp]->enqueue(txn_ptr);
         epoch_read_validate_queue[epoch_mod_temp]->enqueue(nullptr);
     }
 
     void Merger::MergeQueueEnqueue(uint64_t &epoch, const std::shared_ptr<proto::Transaction>& txn_ptr) {
         auto epoch_mod_temp = epoch % ctx.taasContext.kCacheMaxLength;
-        epoch_should_merge_txn_num.IncCount(epoch, txn_ptr->server_id(), 1);
         epoch_merge_queue[epoch_mod_temp]->enqueue(txn_ptr);
         epoch_merge_queue[epoch_mod_temp]->enqueue(nullptr);
     }
@@ -116,7 +114,6 @@ namespace Taas {
     }
     void Merger::CommitQueueEnqueue(uint64_t& epoch, const std::shared_ptr<proto::Transaction>& txn_ptr) {
         auto epoch_mod_temp = epoch % ctx.taasContext.kCacheMaxLength;
-        epoch_should_commit_txn_num.IncCount(epoch, txn_ptr->server_id(), 1);
         epoch_commit_queue[epoch_mod_temp]->enqueue(txn_ptr);
         epoch_commit_queue[epoch_mod_temp]->enqueue(nullptr);
     }
@@ -154,10 +151,7 @@ namespace Taas {
     void Merger::Send() {
         csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->server_id());
         epoch_txn_map[message_epoch_mod]->getValue(csn_temp, full_txn);
-        if(full_txn == nullptr) {
-            LOG(INFO) << csn_temp << ", epoch " <<  message_epoch_mod << ", txn_epoch " << txn_ptr->commit_epoch();
-        }
-//        assert(full_txn == nullptr);
+        assert(full_txn == nullptr);
         MergeQueueEnqueue(message_epoch, txn_ptr);
         CommitQueueEnqueue(message_epoch, full_txn);
         if(ctx.taasContext.taasMode == TaasMode::Sharding) {

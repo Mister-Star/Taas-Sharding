@@ -275,6 +275,9 @@ namespace Taas {
                     txn_ptr->set_server_id(ctx.taasContext.txn_node_ip_index);
                     txn_ptr->set_txn_type(proto::RemoteServerTxn);/// change to server txn, then, use server_id to check
                     SetMessageRelatedCountersInfo();
+                    Merger::epoch_should_read_validate_txn_num.IncCount(message_epoch, txn_ptr->server_id(), 1);
+                    Merger::epoch_should_merge_txn_num.IncCount(message_epoch, txn_ptr->server_id(), 1);
+                    Merger::epoch_should_commit_txn_num.IncCount(message_epoch, txn_ptr->server_id(), 1);
                     Sharding();
                     sharding_handled_local_txn_num.IncCount(message_epoch, thread_id, 1);
                 }
@@ -283,6 +286,11 @@ namespace Taas {
             case proto::TxnType::RemoteServerTxn : {
                 sharding_should_handle_remote_txn_num.IncCount(message_epoch, thread_id, 1);
                 Merger::epoch_txn_map[message_epoch_mod]->insert(csn_temp, txn_ptr);
+                if(ctx.taasContext.taasMode == TaasMode::Sharding) { /// multi-master mode, remote txn no need to do read validate.
+                    Merger::epoch_should_read_validate_txn_num.IncCount(message_epoch, txn_ptr->server_id(), 1);
+                }
+                Merger::epoch_should_merge_txn_num.IncCount(message_epoch, txn_ptr->server_id(), 1);
+                Merger::epoch_should_commit_txn_num.IncCount(message_epoch, txn_ptr->server_id(), 1);
                 Merger::ReadValidateQueueEnqueue(message_epoch, txn_ptr);
                 sharding_received_txn_num.IncCount(message_epoch,message_server_id, 1);
                 sharding_handled_remote_txn_num.IncCount(message_epoch, thread_id, 1);
