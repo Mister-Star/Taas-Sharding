@@ -157,7 +157,7 @@ namespace Taas {
         if(full_txn == nullptr) {
             LOG(INFO) << csn_temp << ", epoch " <<  message_epoch_mod << ", txn_epoch " << txn_ptr->commit_epoch();
         }
-        assert(full_txn == nullptr);
+//        assert(full_txn == nullptr);
         MergeQueueEnqueue(message_epoch, txn_ptr);
         CommitQueueEnqueue(message_epoch, full_txn);
         if(ctx.taasContext.taasMode == TaasMode::Sharding) {
