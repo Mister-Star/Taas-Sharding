@@ -144,16 +144,30 @@ namespace Taas {
                 auto time7 = now_to_us();
                 auto epoch_commit_success_txn_num = Merger::epoch_record_committed_txn_num.GetCount(epoch);
                 total_commit_txn_num += epoch_commit_success_txn_num;///success
-                if(epoch % ctx.taasContext.print_mode_size == 0)
-                    LOG(INFO) << PrintfToString("************ 完成一个Epoch的合并 Physical Epoch %lu, Logical Epoch: %lu, Local EpochSuccessCommitTxnNum: %lu,TotalSuccessTxnNum: %lu, EpochCommitTxnNum: %lu ",
-                                                EpochManager::GetPhysicalEpoch(), epoch, epoch_commit_success_txn_num, total_commit_txn_num,
-                                                EpochMessageSendHandler::TotalTxnNum.load() - last_total_commit_txn_num)
-                    << ",Time Cost  Epoch: " << epoch
-                    << ",Merge time cost : " << time5 - time1
-                    << ",Abort Set Merge time cost : " << time6 - time5
-                    << ",Commit time cost : " << time7 - time6
-                    << "Total Time Cost ****" << time7 - time1
-                    << "****\n";
+//                if(epoch % ctx.taasContext.print_mode_size == 0)
+//                    LOG(INFO) << PrintfToString("************ 完成一个Epoch的合并 Physical Epoch %lu, Logical Epoch: %lu, Local EpochSuccessCommitTxnNum: %lu,TotalSuccessTxnNum: %lu, EpochCommitTxnNum: %lu ",
+//                                                EpochManager::GetPhysicalEpoch(), epoch, epoch_commit_success_txn_num, total_commit_txn_num,
+//                                                EpochMessageSendHandler::TotalTxnNum.load() - last_total_commit_txn_num)
+//                    << ",Time Cost  Epoch: " << epoch
+//                    << ",Merge time cost : " << time5 - time1
+//                    << ",Abort Set Merge time cost : " << time6 - time5
+//                    << ",Commit time cost : " << time7 - time6
+//                    << "Total Time Cost ****" << time7 - time1
+//                    << "****\n";
+//                    OUTPUTLOG("===== Logical Start Epoch的合并 ===== ", epoch);
+                if(epoch % ctx.taasContext.print_mode_size == 0) {
+                    LOG(INFO) << PrintfToString(
+                            "************ 完成一个Epoch的合并 Physical Epoch %lu, Logical Epoch: %lu, Local EpochSuccessCommitTxnNum: %lu,TotalSuccessTxnNum: %lu, EpochCommitTxnNum: %lu ",
+                            EpochManager::GetPhysicalEpoch(), epoch, epoch_commit_success_txn_num, total_commit_txn_num,
+                            EpochMessageSendHandler::TotalTxnNum.load() - last_total_commit_txn_num)
+                              << ",Time Cost  Epoch: " << epoch
+                              << ",Merge time cost : " << time5 - time1
+                              << ",Abort Set Merge time cost : " << time6 - time5
+                              << ",Commit time cost : " << time7 - time6
+                              << "Total Time Cost ****" << time7 - time1
+                              << "****\n";
+                    OUTPUTLOG("===== Logical Start Epoch的合并 ===== ", epoch);
+                }
                 epoch ++;
                 last_total_commit_txn_num = EpochMessageSendHandler::TotalTxnNum.load();
             }
@@ -179,16 +193,29 @@ namespace Taas {
                 auto time7 = now_to_us();
                 auto epoch_commit_success_txn_num = Merger::epoch_record_committed_txn_num.GetCount(epoch);
                 total_commit_txn_num += epoch_commit_success_txn_num;///success
-                if(epoch % ctx.taasContext.print_mode_size == 0)
-                    LOG(INFO) << PrintfToString("************ 完成一个Epoch的合并 Physical Epoch %lu, Logical Epoch: %lu, Local EpochSuccessCommitTxnNum: %lu,TotalSuccessTxnNum: %lu, EpochCommitTxnNum: %lu ",
-                                                EpochManager::GetPhysicalEpoch(), epoch, epoch_commit_success_txn_num, total_commit_txn_num,
-                                            EpochMessageSendHandler::TotalTxnNum.load() - last_total_commit_txn_num)
-                          << ",Time Cost  Epoch: " << epoch
-                          << ",Merge time cost : " << time5 - time1
-                          << ",Abort Set Merge time cost : " << time6 - time5
-                          << ",Commit time cost : " << time7 - time6
-                          << "Total Time Cost ****" << time7 - time1
-                          << "****\n";
+//                if(epoch % ctx.taasContext.print_mode_size == 0)
+//                    LOG(INFO) << PrintfToString("************ 完成一个Epoch的合并 Physical Epoch %lu, Logical Epoch: %lu, Local EpochSuccessCommitTxnNum: %lu,TotalSuccessTxnNum: %lu, EpochCommitTxnNum: %lu ",
+//                                                EpochManager::GetPhysicalEpoch(), epoch, epoch_commit_success_txn_num, total_commit_txn_num,
+//                                            EpochMessageSendHandler::TotalTxnNum.load() - last_total_commit_txn_num)
+//                          << ",Time Cost  Epoch: " << epoch
+//                          << ",Merge time cost : " << time5 - time1
+//                          << ",Abort Set Merge time cost : " << time6 - time5
+//                          << ",Commit time cost : " << time7 - time6
+//                          << "Total Time Cost ****" << time7 - time1
+//                          << "****\n";
+                if(epoch % ctx.taasContext.print_mode_size == 0) {
+                    LOG(INFO) << PrintfToString(
+                            "************ 完成一个Epoch的合并 Physical Epoch %lu, Logical Epoch: %lu, Local EpochSuccessCommitTxnNum: %lu,TotalSuccessTxnNum: %lu, EpochCommitTxnNum: %lu ",
+                            EpochManager::GetPhysicalEpoch(), epoch, epoch_commit_success_txn_num, total_commit_txn_num,
+                            EpochMessageSendHandler::TotalTxnNum.load() - last_total_commit_txn_num)
+                              << ",Time Cost  Epoch: " << epoch
+                              << ",Merge time cost : " << time5 - time1
+                              << ",Abort Set Merge time cost : " << time6 - time5
+                              << ",Commit time cost : " << time7 - time6
+                              << "Total Time Cost ****" << time7 - time1
+                              << "****\n";
+                    OUTPUTLOG("===== Logical Start Epoch的合并 ===== ", epoch);
+                }
                 epoch ++;
                 last_total_commit_txn_num = EpochMessageSendHandler::TotalTxnNum.load();
             }
