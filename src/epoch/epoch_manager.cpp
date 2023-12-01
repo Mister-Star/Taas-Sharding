@@ -137,6 +137,8 @@ namespace Taas {
         IsShardingMergeComplete      %6lu, IsAbortSetMergeComplete      %6lu    \
         IsCommitComplete             %6lu, SetRecordCommitted           %6lu  \n\
 \
+        handlelocaltxnNum            %6lu, shouldhandlelocaltxnNum      %6lu,   \
+        handleremotetxnNum           %6lu, shouldhandleremotetxnNum     %6lu,   \
         ReadValidatedTxnNum          %6lu, ShouldReadValidateTxnNum     %6lu,   \
         MergedTxnNum                 %6lu, ShouldMergeTxnNum            %6lu, \n\
         CommittedTxnNum              %6lu, ShouldCommitTxnNum           %6lu,   \
@@ -165,6 +167,8 @@ namespace Taas {
        (uint64_t)EpochManager::IsShardingMergeComplete(epoch_mod),                  (uint64_t)EpochManager::IsAbortSetMergeComplete(epoch_mod),
        (uint64_t)EpochManager::IsCommitComplete(epoch_mod),                         (uint64_t)EpochManager::IsRecordCommitted(epoch_mod),
 
+       EpochMessageReceiveHandler::sharding_handled_local_txn_num.GetCount(epoch_mod), EpochMessageReceiveHandler::sharding_should_handle_local_txn_num.GetCount(epoch_mod),
+       EpochMessageReceiveHandler::sharding_handled_remote_txn_num.GetCount(epoch_mod),EpochMessageReceiveHandler::sharding_should_handle_remote_txn_num.GetCount(epoch_mod),
        Merger::epoch_read_validated_txn_num.GetCount(epoch_mod),                    Merger::epoch_should_read_validate_txn_num.GetCount(epoch_mod),
        Merger::epoch_merged_txn_num.GetCount(epoch_mod),                            Merger::epoch_should_merge_txn_num.GetCount(epoch_mod),
        Merger::epoch_committed_txn_num.GetCount(epoch_mod),                         Merger::epoch_should_commit_txn_num.GetCount(epoch_mod),
