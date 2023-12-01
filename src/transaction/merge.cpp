@@ -152,14 +152,23 @@ namespace Taas {
     }
 
     void Merger::Send() {
-        csn_temp = csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->server_id());
+        csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->server_id());
+        epoch_txn_map[message_epoch_mod]->getValue(csn_temp, full_txn);
+        if(full_txn == nullptr) {
+            LOG(INFO) << csn_temp << ", epoch " <<  message_epoch_mod << ", txn_epoch " << txn_ptr->commit_epoch();
+        }
+        assert(full_txn == nullptr);
+        MergeQueueEnqueue(message_epoch, txn_ptr);
+        CommitQueueEnqueue(message_epoch, full_txn);
         if(ctx.taasContext.taasMode == TaasMode::Sharding) {
             /// already send
         }
         else if(ctx.taasContext.taasMode == TaasMode::MultiMaster && txn_ptr->server_id() == ctx.taasContext.txn_node_ip_index) {
             /// only local txn send its write set or complete txn
             epoch_write_set_map[message_epoch_mod]->getValue(csn_temp, write_set);
+            assert(write_set == nullptr);
             epoch_back_txn_map[message_epoch_mod]->getValue(csn_temp, backup_txn);
+            assert(backup_txn == nullptr);
             /// SI only send write set
             /// if you want to achieve SER, you need to send the complete txn
             EpochMessageReceiveHandler::sharding_should_send_txn_num.IncCount(message_epoch, ctx.taasContext.txn_node_ip_index, 1);
@@ -171,9 +180,6 @@ namespace Taas {
             write_set.reset();
             backup_txn.reset();
         }
-        epoch_txn_map[message_epoch_mod]->getValue(csn_temp, full_txn);
-        MergeQueueEnqueue(message_epoch, txn_ptr);
-        CommitQueueEnqueue(message_epoch, full_txn);
     }
 
     void Merger::ReadValidate() {
@@ -184,9 +190,8 @@ namespace Taas {
             Send();
         }
         else {
-
             total_read_version_check_failed_txn_num.fetch_add(1);
-            csn_temp = csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->server_id());
+            csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->server_id());
             epoch_abort_txn_set[message_epoch]->insert(csn_temp, csn_temp);
             EpochMessageSendHandler::SendTxnCommitResultToClient(txn_ptr, proto::TxnState::Abort);
         }

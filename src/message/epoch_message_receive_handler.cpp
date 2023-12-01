@@ -193,7 +193,7 @@ namespace Taas {
     }
 
     void EpochMessageReceiveHandler::Sharding() {
-        csn_temp = csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->server_id());
+        csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->server_id());
         auto backup = std::make_shared<proto::Transaction>(*txn_ptr);
         backup->set_txn_type(proto::BackUpTxn);
         Merger::epoch_back_txn_map[message_epoch_mod]->insert(csn_temp, backup);
@@ -255,7 +255,7 @@ namespace Taas {
         message_epoch = txn_ptr->commit_epoch();
         message_epoch_mod = message_epoch % ctx.taasContext.kCacheMaxLength;
         message_server_id = txn_ptr->server_id();
-        csn_temp = csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->server_id());
+        csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->server_id());
         return true;
     }
 
