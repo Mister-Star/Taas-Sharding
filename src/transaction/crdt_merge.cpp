@@ -29,7 +29,8 @@ namespace Taas {
             }
             if (version != row.data()) {
                 auto csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->server_id());
-                Merger::epoch_abort_txn_set[epoch_mod]->insert(csn_temp, csn_temp);
+                if(ctx.taasContext.taasMode == Sharding)
+                    Merger::epoch_abort_txn_set[epoch_mod]->insert(csn_temp, csn_temp);
 //                LOG(INFO) <<"Txn read version check failed";
 //                LOG(INFO) <<"read version check failed version : " << version << ", row.data() : " << row.data();
                 txn_ptr.reset();
