@@ -193,7 +193,7 @@ namespace Taas {
         else {
             total_read_version_check_failed_txn_num.fetch_add(1);
             csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->server_id());
-            epoch_abort_txn_set[message_epoch]->insert(csn_temp, csn_temp);
+            epoch_abort_txn_set[message_epoch_mod]->insert(csn_temp, csn_temp);
             if(ctx.taasContext.taasMode == TaasMode::MultiMaster && txn_ptr->server_id() == ctx.taasContext.txn_node_ip_index)
                 EpochMessageSendHandler::SendTxnCommitResultToClient(txn_ptr, proto::TxnState::Abort);
         }
