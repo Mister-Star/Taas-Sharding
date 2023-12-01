@@ -98,13 +98,14 @@ namespace Taas {
 
     void Merger::ReadValidateQueueEnqueue(uint64_t &epoch, const std::shared_ptr<proto::Transaction>& txn_ptr) {
         auto epoch_mod_temp = epoch % ctx.taasContext.kCacheMaxLength;
-//        LOG(INFO)<< "ReadValidateQueueEnqueue epoch" <<  epoch << " csn " << txn_ptr->csn();
+        epoch_should_read_validate_txn_num.IncCount(epoch_mod_temp, txn_ptr->server_id(), 1);
         epoch_read_validate_queue[epoch_mod_temp]->enqueue(txn_ptr);
         epoch_read_validate_queue[epoch_mod_temp]->enqueue(nullptr);
     }
 
     void Merger::MergeQueueEnqueue(uint64_t &epoch, const std::shared_ptr<proto::Transaction>& txn_ptr) {
         auto epoch_mod_temp = epoch % ctx.taasContext.kCacheMaxLength;
+        epoch_should_merge_txn_num.IncCount(epoch_mod_temp, txn_ptr->server_id(), 1);
         epoch_merge_queue[epoch_mod_temp]->enqueue(txn_ptr);
         epoch_merge_queue[epoch_mod_temp]->enqueue(nullptr);
     }
@@ -114,6 +115,7 @@ namespace Taas {
     }
     void Merger::CommitQueueEnqueue(uint64_t& epoch, const std::shared_ptr<proto::Transaction>& txn_ptr) {
         auto epoch_mod_temp = epoch % ctx.taasContext.kCacheMaxLength;
+        epoch_should_commit_txn_num.IncCount(epoch_mod_temp, txn_ptr->server_id(), 1);
         epoch_commit_queue[epoch_mod_temp]->enqueue(txn_ptr);
         epoch_commit_queue[epoch_mod_temp]->enqueue(nullptr);
     }
@@ -149,11 +151,6 @@ namespace Taas {
     }
 
     void Merger::Send() {
-        csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->server_id());
-        epoch_txn_map[message_epoch_mod]->getValue(csn_temp, full_txn);
-        assert(full_txn == nullptr);
-        MergeQueueEnqueue(message_epoch, txn_ptr);
-        CommitQueueEnqueue(message_epoch, full_txn);
         if(ctx.taasContext.taasMode == TaasMode::Sharding) {
             /// already send
         }
@@ -173,6 +170,8 @@ namespace Taas {
             EpochMessageReceiveHandler::backup_send_txn_num.IncCount(message_epoch, ctx.taasContext.txn_node_ip_index, 1);
             write_set.reset();
             backup_txn.reset();
+            Merger::MergeQueueEnqueue(message_epoch, txn_ptr);
+            Merger::CommitQueueEnqueue(message_epoch, txn_ptr);
         }
     }
 
@@ -187,7 +186,8 @@ namespace Taas {
             total_read_version_check_failed_txn_num.fetch_add(1);
             csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->server_id());
             epoch_abort_txn_set[message_epoch]->insert(csn_temp, csn_temp);
-            EpochMessageSendHandler::SendTxnCommitResultToClient(txn_ptr, proto::TxnState::Abort);
+            if(ctx.taasContext.taasMode == TaasMode::MultiMaster && txn_ptr->server_id() == ctx.taasContext.txn_node_ip_index)
+                EpochMessageSendHandler::SendTxnCommitResultToClient(txn_ptr, proto::TxnState::Abort);
         }
         epoch_read_validated_txn_num.IncCount(message_epoch, message_server_id, 1);
     }
