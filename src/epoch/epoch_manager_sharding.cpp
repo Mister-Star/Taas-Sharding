@@ -170,6 +170,10 @@ namespace Taas {
             while(!EpochManager::IsTimerStop()){
                 auto time1 = now_to_us();
                 while(epoch >= EpochManager::GetPhysicalEpoch()) usleep(logical_sleep_timme);
+                while(!EpochMessageReceiveHandler::IsEpochLocalTxnHandleComplete(epoch)) usleep(logical_sleep_timme);
+//                workers.push_emergency_task([epoch, &ctx] () {
+//                    EpochMessageSendHandler::SendEpochEndMessage(ctx.taasContext.txn_node_ip_index, epoch, ctx.taasContext.kTxnNodeNum);
+//                });
 //                LOG(INFO) << "**** Start Epoch Merge Epoch : " << epoch << "****\n";
                 while(!Merger::CheckEpochMergeComplete(epoch)) usleep(logical_sleep_timme);
                 EpochManager::SetShardingMergeComplete(epoch, true);

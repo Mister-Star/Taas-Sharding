@@ -28,6 +28,7 @@ namespace Taas {
                 continue;
             }
             if (version != row.data()) {
+                continue; ///only for debug
                 auto csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->server_id());
                 if(ctx.taasContext.taasMode == Sharding)
                     Merger::epoch_abort_txn_set[epoch_mod]->insert(csn_temp, csn_temp);
