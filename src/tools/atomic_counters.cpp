@@ -36,23 +36,6 @@ namespace Taas{
         }
     }
 
-//    void AtomicCounters_Cache::Init(uint64_t length, uint64_t size) {
-//        if(size < _size && length < _length) return ;
-//        _size = size;
-//        _length = length;
-//        vec.resize(length);
-//        for(unsigned int i = 0; i < length; i ++) {
-//            vec[i] = std::make_unique<std::vector<std::unique_ptr<std::atomic<uint64_t>>>>();
-//            auto &v = (*(vec[i]));
-//            vec[i]->resize(size);
-//            assert(vec[i] != nullptr);
-//            v.resize(size);
-//            for(unsigned int j = 0; j < size; j ++) {
-//                v[j] = std::make_unique<std::atomic<uint64_t>>(0);
-//            }
-//        }
-//    }
-
     void AtomicCounters_Cache::Init(uint64_t length, uint64_t size, uint64_t value) {
         if(size < _size && length < _length) return ;
         _size = size;

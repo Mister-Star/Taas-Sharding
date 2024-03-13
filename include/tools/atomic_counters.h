@@ -84,7 +84,6 @@ namespace Taas {
 
         explicit AtomicCounters_Cache(uint64_t length = 1000, uint64_t size = 8);
 
-//        void Init(uint64_t length = 1000, uint64_t size = 8);
         void Init(uint64_t length = 1000, uint64_t size = 8, uint64_t value = 0);
 
         uint64_t IncCount(const uint64_t &epoch, const uint64_t &index, const uint64_t &value) {

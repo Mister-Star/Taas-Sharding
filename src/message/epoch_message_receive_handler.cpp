@@ -2,7 +2,6 @@
 // Created by 周慰星 on 11/9/22.
 //
 #include <queue>
-#include <utility>
 
 #include "epoch/epoch_manager.h"
 #include "message/message.h"
@@ -37,8 +36,10 @@ namespace Taas {
     ///这里需要注意 这几个计数器是以server_id为粒度增加的，不是线程id ！！！
     AtomicCounters_Cache ///epoch, server_id, value
         ///epoch txn counters
-        EpochMessageReceiveHandler::sharding_should_handle_local_txn_num(10, 1), EpochMessageReceiveHandler::sharding_handled_local_txn_num(10, 1),
-        EpochMessageReceiveHandler::sharding_should_handle_remote_txn_num(10, 1), EpochMessageReceiveHandler::sharding_handled_remote_txn_num(10, 1),
+        EpochMessageReceiveHandler::sharding_should_handle_local_txn_num(10, 1),
+        EpochMessageReceiveHandler::sharding_handled_local_txn_num(10, 1),
+        EpochMessageReceiveHandler::sharding_should_handle_remote_txn_num(10, 1),
+        EpochMessageReceiveHandler::sharding_handled_remote_txn_num(10, 1),
         ///local txn counters
         EpochMessageReceiveHandler::sharding_should_send_txn_num(10, 1),
         EpochMessageReceiveHandler::sharding_send_txn_num(10, 1),
@@ -71,6 +72,19 @@ namespace Taas {
         EpochMessageReceiveHandler::redo_log_push_down_ack_num(10, 1),
         EpochMessageReceiveHandler::redo_log_push_down_local_epoch(10, 1);
 
+    std::vector<std::shared_ptr<AtomicCounters_Cache>>
+        EpochMessageReceiveHandler::sharding_should_send_txn_num_local_vec,
+        EpochMessageReceiveHandler::sharding_send_txn_num_local_vec,
+        EpochMessageReceiveHandler::sharding_should_handle_local_txn_num_local_vec,
+        EpochMessageReceiveHandler::sharding_handled_local_txn_num_local_vec,
+
+        EpochMessageReceiveHandler::sharding_should_handle_remote_txn_num_local_vec,
+        EpochMessageReceiveHandler::sharding_handled_remote_txn_num_local_vec,
+        EpochMessageReceiveHandler::sharding_received_txn_num_local_vec,
+
+        EpochMessageReceiveHandler::backup_should_send_txn_num_local_vec,
+        EpochMessageReceiveHandler::backup_send_txn_num_local_vec,
+        EpochMessageReceiveHandler::backup_received_txn_num_local_vec;
 
 
     bool EpochMessageReceiveHandler::Init(const uint64_t &id) {
@@ -78,6 +92,35 @@ namespace Taas {
         txn_ptr.reset();
         thread_id = id;
         sharding_num = ctx.taasContext.kTxnNodeNum;
+
+        sharding_should_send_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, sharding_num),
+        sharding_send_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, sharding_num);
+        sharding_should_handle_local_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, sharding_num),
+        sharding_handled_local_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, sharding_num),
+
+        sharding_should_handle_remote_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, sharding_num),
+        sharding_handled_remote_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, sharding_num),
+        sharding_received_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, sharding_num),
+
+        backup_should_send_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, sharding_num),
+        backup_send_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, sharding_num),
+        backup_received_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, sharding_num);
+
+
+        
+        sharding_should_send_txn_num_local_vec[thread_id] = sharding_should_send_txn_num_local;
+        sharding_send_txn_num_local_vec[thread_id] = sharding_send_txn_num_local;
+        sharding_should_handle_local_txn_num_local_vec[thread_id] = sharding_should_handle_local_txn_num_local;
+        sharding_handled_local_txn_num_local_vec[thread_id] = sharding_handled_local_txn_num_local;
+
+        sharding_should_handle_remote_txn_num_local_vec[thread_id] = sharding_should_handle_remote_txn_num_local;
+        sharding_handled_remote_txn_num_local_vec[thread_id] = sharding_handled_remote_txn_num_local;
+        sharding_received_txn_num_local_vec[thread_id] = sharding_received_txn_num_local;
+
+        backup_should_send_txn_num_local_vec[thread_id] = backup_should_send_txn_num_local;
+        backup_send_txn_num_local_vec[thread_id] = backup_send_txn_num_local;
+        backup_received_txn_num_local_vec[thread_id] = backup_received_txn_num_local;
+
         return true;
     }
 
@@ -105,6 +148,19 @@ namespace Taas {
         epoch_back_up_complete.resize(max_length);
         epoch_abort_set_merge_complete.resize(max_length);
         epoch_insert_set_complete.resize(max_length);
+
+        sharding_should_send_txn_num_local_vec.resize(ctx.taasContext.kEpochMessageThreadNum);
+        sharding_send_txn_num_local_vec.resize(ctx.taasContext.kEpochMessageThreadNum);
+        sharding_should_handle_local_txn_num_local_vec.resize(ctx.taasContext.kEpochMessageThreadNum);
+        sharding_handled_local_txn_num_local_vec.resize(ctx.taasContext.kEpochMessageThreadNum);
+
+        sharding_should_handle_remote_txn_num_local_vec.resize(ctx.taasContext.kEpochMessageThreadNum);
+        sharding_handled_remote_txn_num_local_vec.resize(ctx.taasContext.kEpochMessageThreadNum);
+        sharding_received_txn_num_local_vec.resize(ctx.taasContext.kEpochMessageThreadNum);
+
+        backup_should_send_txn_num_local_vec.resize(ctx.taasContext.kEpochMessageThreadNum);
+        backup_send_txn_num_local_vec.resize(ctx.taasContext.kEpochMessageThreadNum);
+        backup_received_txn_num_local_vec.resize(ctx.taasContext.kEpochMessageThreadNum);
 
         for(int i = 0; i < static_cast<int>(max_length); i ++) {
             epoch_sharding_send_complete[i] = std::make_unique<std::atomic<bool>>(false);
@@ -150,6 +206,8 @@ namespace Taas {
 
         redo_log_push_down_ack_num.Init(max_length, sharding_num);
         redo_log_push_down_local_epoch.Init(max_length, sharding_num);
+
+
 
         return true;
     }
@@ -352,11 +410,11 @@ namespace Taas {
             }
             std::string tempData = txn_ptr->row(0).data();
             std::string tempKey = txn_ptr->row(0).key();
-            uint64_t index = 4294967295;
-            if (tempData.length() > 0) {
+            uint64_t index;
+            if (!tempData.empty()) {
                 index = tempData.find("tid:");
                 if (index < tempData.length()) {
-                    auto tid = std::strtoull(&tempData.at(index), NULL, 10);
+                    auto tid = std::strtoull(&tempData.at(index), nullptr, 10);
                     return tid;
                 }
             }

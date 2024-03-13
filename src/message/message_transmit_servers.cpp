@@ -28,7 +28,7 @@ namespace Taas {
         zmq::context_t context(1);
         zmq::message_t reply(5);
         zmq::send_flags sendFlags = zmq::send_flags::none;
-        int queue_length = 10000000000;
+        int queue_length = 1000000000;
         std::unordered_map<std::uint64_t, std::unique_ptr<zmq::socket_t>> socket_map;
         std::unique_ptr<send_params> params;
         std::unique_ptr<zmq::message_t> msg;
@@ -64,7 +64,7 @@ namespace Taas {
         zmq::context_t context(1);
         zmq::message_t reply(5);
         zmq::send_flags sendFlags = zmq::send_flags::none;
-        int queue_length = 10000000000;
+        int queue_length = 1000000000;
         std::unique_ptr<send_params> params;
         std::unique_ptr<zmq::message_t> msg;
         assert(ctx.taasContext.kServerIp.size() >= ctx.taasContext.kTxnNodeNum);
@@ -99,7 +99,7 @@ namespace Taas {
         zmq::context_t listen_context(1);
         zmq::recv_flags recvFlags = zmq::recv_flags::none;
         zmq::recv_result_t  recvResult;
-        int queue_length = 10000000000;
+        int queue_length = 1000000000;
         zmq::socket_t socket_listen(listen_context, ZMQ_PULL);
         socket_listen.bind("tcp://*:" + std::to_string(20000+ctx.taasContext.txn_node_ip_index));//to server
         socket_listen.set(zmq::sockopt::sndhwm, queue_length);
@@ -135,7 +135,7 @@ namespace Taas {
         zmq::context_t listen_context(1);
         zmq::recv_flags recvFlags = zmq::recv_flags::none;
         zmq::recv_result_t  recvResult;
-        int queue_length = 10000000000;
+        int queue_length = 1000000000;
         zmq::socket_t socket_listen(listen_context, ZMQ_SUB);
         for (uint64_t i = 0; i < ctx.taasContext.kServerIp.size(); i++) {
             if (i == ctx.taasContext.txn_node_ip_index) continue;

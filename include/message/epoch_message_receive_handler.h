@@ -57,7 +57,76 @@ namespace Taas {
         std::shared_ptr<proto::Transaction> empty_txn_ptr;
         std::hash<std::string> _hash;
 
+        ///sharding txns
+        ///接收到来自client的事务，进行分片并将事务发送到指定的txn node
+        std::shared_ptr<AtomicCounters_Cache>
+            ///epoch, server_id, value
+            sharding_should_send_txn_num_local,
+            sharding_send_txn_num_local,
+
+            sharding_should_handle_local_txn_num_local,
+            sharding_handled_local_txn_num_local,
+
+            sharding_should_handle_remote_txn_num_local,
+            sharding_handled_remote_txn_num_local,
+
+            ///remote sharding txn counters
+            sharding_received_txn_num_local,
+            ///backup txn counters
+            backup_should_send_txn_num_local,
+            backup_send_txn_num_local,
+            backup_received_txn_num_local;
     public:
+        static std::vector<std::shared_ptr<AtomicCounters_Cache>>
+            sharding_should_send_txn_num_local_vec,
+            sharding_send_txn_num_local_vec,
+            sharding_should_handle_local_txn_num_local_vec,
+            sharding_handled_local_txn_num_local_vec,
+
+            sharding_should_handle_remote_txn_num_local_vec,
+            sharding_handled_remote_txn_num_local_vec,
+            sharding_received_txn_num_local_vec,
+
+            backup_should_send_txn_num_local_vec,
+            backup_send_txn_num_local_vec,
+            backup_received_txn_num_local_vec;
+
+        ///sharding txns
+        ///接收到来自client的事务，进行分片并将事务发送到指定的txn node
+        static AtomicCounters_Cache ///epoch, index, num
+        sharding_should_handle_local_txn_num, sharding_handled_local_txn_num,
+                sharding_should_handle_remote_txn_num, sharding_handled_remote_txn_num,
+                sharding_should_send_txn_num, sharding_send_txn_num;
+
+        ///这里需要注意 这几个计数器是以server_id为粒度增加的，不是线程id ！！！
+        static AtomicCounters_Cache ///epoch, server_id, value
+        ///remote sharding txn counters
+        sharding_should_receive_pack_num, sharding_received_pack_num,
+                sharding_should_receive_txn_num, sharding_received_txn_num,
+        ///sharding ack
+        sharding_received_ack_num,
+
+        ///backup txn counters
+        backup_should_send_txn_num, backup_send_txn_num,
+                backup_should_receive_pack_num, backup_received_pack_num,
+                backup_should_receive_txn_num, backup_received_txn_num,
+        ///backup ack
+        backup_received_ack_num,
+
+        ///insert set counters
+        insert_set_should_receive_num, insert_set_received_num,
+        ///insert set ack
+        insert_set_received_ack_num,
+
+        ///abort set counters
+        abort_set_should_receive_num, abort_set_received_num,
+        ///abort set ack
+        abort_set_received_ack_num,
+        ///redo log push down state
+        redo_log_push_down_ack_num,
+                redo_log_push_down_local_epoch;
+
+
         static Context ctx;
         static std::vector<uint64_t>
             sharding_send_ack_epoch_num,
@@ -78,44 +147,6 @@ namespace Taas {
             epoch_back_up_complete,
             epoch_abort_set_merge_complete,
             epoch_insert_set_complete;
-
-
-        ///sharding txns
-        ///接收到来自client的事务，进行分片并将事务发送到指定的txn node
-        static AtomicCounters_Cache ///epoch, index, num
-            sharding_should_handle_local_txn_num, sharding_handled_local_txn_num,
-            sharding_should_handle_remote_txn_num, sharding_handled_remote_txn_num,
-            sharding_should_send_txn_num, sharding_send_txn_num;
-
-        ///这里需要注意 这几个计数器是以server_id为粒度增加的，不是线程id ！！！
-        static AtomicCounters_Cache ///epoch, server_id, value
-            ///remote sharding txn counters
-            sharding_should_receive_pack_num, sharding_received_pack_num,
-            sharding_should_receive_txn_num, sharding_received_txn_num,
-            ///sharding ack
-            sharding_received_ack_num,
-
-            ///backup txn counters
-            backup_should_send_txn_num, backup_send_txn_num,
-            backup_should_receive_pack_num, backup_received_pack_num,
-            backup_should_receive_txn_num, backup_received_txn_num,
-            ///backup ack
-            backup_received_ack_num,
-
-            ///insert set counters
-            insert_set_should_receive_num, insert_set_received_num,
-            ///insert set ack
-            insert_set_received_ack_num,
-
-            ///abort set counters
-            abort_set_should_receive_num, abort_set_received_num,
-            ///abort set ack
-            abort_set_received_ack_num,
-            ///redo log push down state
-            redo_log_push_down_ack_num,
-            redo_log_push_down_local_epoch;
-
-        static std::condition_variable txn_cv, epoch_cv;
 
         static bool CheckEpochShardingSendComplete(const uint64_t& epoch) {
             if(epoch_sharding_send_complete[epoch % ctx.taasContext.kCacheMaxLength]->load()) {
@@ -177,16 +208,52 @@ namespace Taas {
         }
 
 
+        static uint64_t getAllThreadLocalCountNum(const uint64_t &epoch, const std::vector<std::shared_ptr<AtomicCounters_Cache>> &vec) {
+            uint64_t ans = 0;
+            for(const auto& i : vec) {
+                if(i != nullptr)
+                    ans += i->GetCount(epoch);
+            }
+            return ans;
+        }
+        static uint64_t getAllThreadLocalCountNum(const uint64_t &epoch, const uint64_t &sharding_id, const std::vector<std::shared_ptr<AtomicCounters_Cache>> &vec) {
+            uint64_t ans = 0;
+            for(const auto& i : vec) {
+                if(i != nullptr)
+                    ans += i->GetCount(epoch, sharding_id);
+            }
+            return ans;
+        }
+
+
+
+
         ///local txn sharding send check
         static bool IsShardingSendFinish(const uint64_t &epoch, const uint64_t &sharding_id) {
             return epoch < EpochManager::GetPhysicalEpoch() &&
-                    sharding_send_txn_num.GetCount(epoch, sharding_id) >= sharding_should_send_txn_num.GetCount(epoch, sharding_id) &&
-                    sharding_handled_local_txn_num.GetCount(epoch) >= sharding_should_handle_local_txn_num.GetCount(epoch);
+
+                    getAllThreadLocalCountNum(epoch, sharding_id, sharding_send_txn_num_local_vec) >=
+                    getAllThreadLocalCountNum(epoch, sharding_id, sharding_should_send_txn_num_local_vec) &&
+
+                    getAllThreadLocalCountNum(epoch, sharding_id, sharding_handled_local_txn_num_local_vec) >=
+                    getAllThreadLocalCountNum(epoch, sharding_id, sharding_should_handle_local_txn_num_local_vec)
+                    ;
+//            return epoch < EpochManager::GetPhysicalEpoch() &&
+//                    sharding_send_txn_num.GetCount(epoch, sharding_id) >= sharding_should_send_txn_num.GetCount(epoch, sharding_id) &&
+//                    sharding_handled_local_txn_num.GetCount(epoch) >= sharding_should_handle_local_txn_num.GetCount(epoch);
         }
         static bool IsShardingSendFinish(const uint64_t &epoch) {
             return epoch < EpochManager::GetPhysicalEpoch() &&
-                    sharding_send_txn_num.GetCount(epoch) >= sharding_should_send_txn_num.GetCount(epoch) &&
-                    sharding_handled_local_txn_num.GetCount(epoch) >= sharding_should_handle_local_txn_num.GetCount(epoch);
+
+                   getAllThreadLocalCountNum(epoch, sharding_send_txn_num_local_vec) >=
+                   getAllThreadLocalCountNum(epoch, sharding_should_send_txn_num_local_vec) &&
+
+                   getAllThreadLocalCountNum(epoch, sharding_handled_local_txn_num_local_vec) >=
+                   getAllThreadLocalCountNum(epoch, sharding_should_handle_local_txn_num_local_vec)
+                    ;
+//            return epoch < EpochManager::GetPhysicalEpoch() &&
+//                    sharding_send_txn_num.GetCount(epoch) >= sharding_should_send_txn_num.GetCount(epoch) &&
+//                    sharding_handled_local_txn_num.GetCount(epoch) >= sharding_should_handle_local_txn_num.GetCount(epoch);
         }
         static bool IsShardingACKReceiveComplete(const uint64_t &epoch) {
             for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i ++) {
@@ -197,12 +264,25 @@ namespace Taas {
         }
         static bool IsEpochLocalTxnHandleComplete(const uint64_t &epoch) {
             return epoch < EpochManager::GetPhysicalEpoch() &&
-                   sharding_handled_local_txn_num.GetCount(epoch) >= sharding_should_handle_local_txn_num.GetCount(epoch);
+
+                   getAllThreadLocalCountNum(epoch, sharding_handled_local_txn_num_local_vec) >=
+                   getAllThreadLocalCountNum(epoch, sharding_should_handle_local_txn_num_local_vec)
+                    ;
+//            return epoch < EpochManager::GetPhysicalEpoch() &&
+//                   sharding_handled_local_txn_num.GetCount(epoch) >= sharding_should_handle_local_txn_num.GetCount(epoch);
         }
         static bool IsEpochTxnHandleComplete(const uint64_t &epoch) {
             return epoch < EpochManager::GetPhysicalEpoch() &&
-                sharding_handled_local_txn_num.GetCount(epoch) >= sharding_should_handle_local_txn_num.GetCount(epoch) &&
-                    sharding_handled_remote_txn_num.GetCount(epoch) >= sharding_should_handle_remote_txn_num.GetCount(epoch);
+
+                   getAllThreadLocalCountNum(epoch, sharding_handled_local_txn_num_local_vec) >=
+                   getAllThreadLocalCountNum(epoch, sharding_should_handle_local_txn_num_local_vec) &&
+
+                    getAllThreadLocalCountNum(epoch, sharding_handled_remote_txn_num_local_vec) >=
+                    getAllThreadLocalCountNum(epoch, sharding_should_handle_remote_txn_num_local_vec)
+                    ;
+//            return epoch < EpochManager::GetPhysicalEpoch() &&
+//                sharding_handled_local_txn_num.GetCount(epoch) >= sharding_should_handle_local_txn_num.GetCount(epoch) &&
+//                    sharding_handled_remote_txn_num.GetCount(epoch) >= sharding_should_handle_remote_txn_num.GetCount(epoch);
         }
         ///remote txn receive check
         static bool IsShardingPackReceiveComplete(const uint64_t &epoch) {
@@ -218,12 +298,18 @@ namespace Taas {
         static bool IsShardingTxnReceiveComplete(const uint64_t &epoch) {
             for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i ++) {
                 if(i == ctx.taasContext.txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
-                if(sharding_received_txn_num.GetCount(epoch, i) < sharding_received_txn_num.GetCount(epoch, i)) return false;
+                if(getAllThreadLocalCountNum(epoch, i, sharding_received_txn_num_local_vec) < sharding_should_receive_txn_num.GetCount(epoch, i)) return false;
             }
             return true;
+//            for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i ++) {
+//                if(i == ctx.taasContext.txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
+//                if(sharding_received_txn_num.GetCount(epoch, i) < sharding_should_receive_txn_num.GetCount(epoch, i)) return false;
+//            }
+//            return true;
         }
         static bool IsShardingTxnReceiveComplete(const uint64_t &epoch, const uint64_t &id) {
-            return sharding_received_txn_num.GetCount(epoch, id) >= sharding_received_txn_num.GetCount(epoch, id);
+            return getAllThreadLocalCountNum(epoch, sharding_received_txn_num_local_vec) >= sharding_should_receive_txn_num.GetCount(epoch);
+//            return sharding_received_txn_num.GetCount(epoch, id) >= sharding_should_receive_txn_num.GetCount(epoch, id);
         }
 
 
@@ -232,8 +318,15 @@ namespace Taas {
         ///backup check
         static bool IsBackUpSendFinish(const uint64_t &epoch) {
             return epoch < EpochManager::GetPhysicalEpoch() &&
-                    backup_send_txn_num.GetCount(epoch) >= backup_should_send_txn_num.GetCount(epoch) &&
-                    sharding_handled_local_txn_num.GetCount(epoch) >= sharding_should_handle_local_txn_num.GetCount(epoch);
+                    getAllThreadLocalCountNum(epoch, backup_send_txn_num_local_vec) >=
+                    getAllThreadLocalCountNum(epoch, backup_should_send_txn_num_local_vec) &&
+
+                    getAllThreadLocalCountNum(epoch, sharding_handled_local_txn_num_local_vec) >=
+                    getAllThreadLocalCountNum(epoch, sharding_should_handle_local_txn_num_local_vec)
+                    ;
+//            return epoch < EpochManager::GetPhysicalEpoch() &&
+//                    backup_send_txn_num.GetCount(epoch) >= backup_should_send_txn_num.GetCount(epoch) &&
+//                    sharding_handled_local_txn_num.GetCount(epoch) >= sharding_should_handle_local_txn_num.GetCount(epoch);
         }
         static bool IsBackUpACKReceiveComplete(const uint64_t &epoch) {
             uint64_t to_id ;
@@ -259,12 +352,12 @@ namespace Taas {
             for(uint64_t i = 0; i < ctx.taasContext.kBackUpNum; i ++) { /// send to i+1, i+2...i+kBackNum-1
                 to_id = (ctx.taasContext.txn_node_ip_index + i + 1) % ctx.taasContext.kTxnNodeNum;
                 if(to_id == ctx.taasContext.txn_node_ip_index || EpochManager::server_state.GetCount(epoch, to_id) == 0) continue;
-                if(backup_received_txn_num.GetCount(epoch, to_id) < backup_received_txn_num.GetCount(epoch, to_id)) return false;
+                if(getAllThreadLocalCountNum(epoch, to_id, backup_received_txn_num_local_vec) < backup_should_receive_txn_num.GetCount(epoch, to_id)) return false;
             }
             return true;
         }
         static bool IsBackUpTxnReceiveComplete(const uint64_t &epoch, const uint64_t &id) {
-            return backup_received_txn_num.GetCount(epoch, id) >= backup_received_txn_num.GetCount(epoch, id);
+            return getAllThreadLocalCountNum(epoch, backup_received_txn_num_local_vec) >= backup_should_receive_txn_num.GetCount(epoch, id);
         }
 
 

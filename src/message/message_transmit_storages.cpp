@@ -29,7 +29,7 @@ namespace Taas {
 
     void ListenStorageThreadMain(const Context& ctx) { //PULL & PUSH
         uint32_t recv_port = 5553;
-        int queue_length = 10000000000;
+        int queue_length = 1000000000;
         zmq::context_t context(1);
         zmq::socket_t recv_socket(context, ZMQ_PULL);
         zmq::send_flags sendFlags = zmq::send_flags::none;
@@ -94,7 +94,7 @@ namespace Taas {
     }
 
     void SendToMOTStorageThreadMain(const Context& ctx) { //PUB Txn
-        int queue_length = 10000000000;
+        int queue_length = 1000000000;
         zmq::context_t context(1);
         zmq::message_t reply(5);
         zmq::send_flags sendFlags = zmq::send_flags::none;
@@ -120,7 +120,7 @@ namespace Taas {
     }
 
     void SendToNebulaStorageThreadMain(const Context& ctx) { //PUB Txn
-        int queue_length = 10000000000;
+        int queue_length = 1000000000;
         zmq::context_t context(1);
         zmq::message_t reply(5);
         zmq::send_flags sendFlags = zmq::send_flags::none;

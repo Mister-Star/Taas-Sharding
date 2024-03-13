@@ -10,7 +10,7 @@ namespace workload {
         zmq::context_t context(1);
         zmq::message_t reply(5);
         zmq::send_flags sendFlags = zmq::send_flags::none;
-        int queue_length = 10000000000;
+        int queue_length = 1000000000;
         std::unordered_map<std::uint64_t, std::unique_ptr<zmq::socket_t>> socket_map;
         std::unique_ptr<send_multimodel_params> params;
         std::unique_ptr<zmq::message_t> msg;
@@ -35,7 +35,7 @@ namespace workload {
 
     void ClientListenTaasThreadMain() {
         printf("ClientListenTaasThreadMain  5552 Start!\n");
-        int queue_length = 10000000000;
+        int queue_length = 1000000000;
         zmq::recv_flags recvFlags = zmq::recv_flags::none;
         zmq::recv_result_t recvResult;
         zmq::context_t listen_context(1);
