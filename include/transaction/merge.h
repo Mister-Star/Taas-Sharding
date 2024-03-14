@@ -13,12 +13,13 @@
 
 #include "zmq.hpp"
 #include "proto/message.pb.h"
+#include "tools/thread_local_counters.h"
 
 #include <cstdint>
 
 namespace Taas {
 
-    class Merger {
+    class Merger : public ThreadLocalCounters {
 
     private:
         std::unique_ptr<zmq::message_t> message_ptr;
@@ -42,31 +43,26 @@ namespace Taas {
 //        CRDTMerge merger;
 //        EpochMessageSendHandler message_transmitter;
 //        EpochMessageReceiveHandler message_handler;
-        ///sharding txns
-        ///接收到来自client的事务，进行分片并将事务发送到指定的txn node
-        std::shared_ptr<AtomicCounters_Cache>
-        ///epoch, server_id, value
-        sharding_should_send_txn_num_local,
-                sharding_send_txn_num_local,
 
-                sharding_should_handle_local_txn_num_local,
-                sharding_handled_local_txn_num_local,
+        std::shared_ptr<AtomicCounters_Cache>///epoch, server_id, value
+            sharding_should_send_txn_num_local,
+            sharding_send_txn_num_local,
+            sharding_should_handle_local_txn_num_local,
+            sharding_handled_local_txn_num_local,
 
-                sharding_should_handle_remote_txn_num_local,
-                sharding_handled_remote_txn_num_local,
+            sharding_should_handle_remote_txn_num_local,
+            sharding_handled_remote_txn_num_local,
+            sharding_received_txn_num_local,
 
-        ///remote sharding txn counters
-        sharding_received_txn_num_local,
-        ///backup txn counters
-        backup_should_send_txn_num_local,
-                backup_send_txn_num_local,
-                backup_received_txn_num_local;
+            backup_should_send_txn_num_local,
+            backup_send_txn_num_local,
+            backup_received_txn_num_local;
 
         std::shared_ptr<AtomicCounters_Cache>
-                epoch_should_read_validate_txn_num_local, epoch_read_validated_txn_num_local,
-                epoch_should_merge_txn_num_local, epoch_merged_txn_num_local,
-                epoch_should_commit_txn_num_local, epoch_committed_txn_num_local,
-                epoch_record_commit_txn_num_local, epoch_record_committed_txn_num_local;
+            epoch_should_read_validate_txn_num_local, epoch_read_validated_txn_num_local,
+            epoch_should_merge_txn_num_local, epoch_merged_txn_num_local,
+            epoch_should_commit_txn_num_local, epoch_committed_txn_num_local,
+            epoch_record_commit_txn_num_local, epoch_record_committed_txn_num_local;
 
         std::atomic<uint64_t> total_merge_txn_num_local, total_merge_latency_local,
             total_commit_txn_num_local, total_commit_latency_local, success_commit_txn_num_local,
@@ -177,42 +173,11 @@ namespace Taas {
         static bool MergeQueueTryDequeue(uint64_t &epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_);
         static bool CommitQueueTryDequeue(uint64_t &epoch_, std::shared_ptr<proto::Transaction> txn_ptr_);
 
-        static bool CheckEpochReadValidateComplete(const uint64_t& epoch) {
-            if(epoch_read_validate_complete[epoch % ctx.taasContext.kCacheMaxLength]->load()) {
-                return true;
-            }
-            if (epoch < EpochManager::GetPhysicalEpoch() && IsReadValidateComplete(epoch)) {
-                epoch_read_validate_complete[epoch % ctx.taasContext.kCacheMaxLength]->store(true);
-                return true;
-            }
-            return false;
-        }
-
-        static bool CheckEpochMergeComplete(const uint64_t& epoch) {
-            if(epoch_merge_complete[epoch % ctx.taasContext.kCacheMaxLength]->load()) {
-                return true;
-            }
-            if (epoch < EpochManager::GetPhysicalEpoch() && IsMergeComplete(epoch)) {
-                epoch_merge_complete[epoch % ctx.taasContext.kCacheMaxLength]->store(true);
-                return true;
-            }
-            return false;
-        }
-        static bool IsEpochMergeComplete(const uint64_t& epoch) {
-            return epoch_merge_complete[epoch % ctx.taasContext.kCacheMaxLength]->load();
-        }
-
-        static bool CheckEpochCommitComplete(const uint64_t& epoch) {
-            if (epoch_commit_complete[epoch % ctx.taasContext.kCacheMaxLength]->load()) return true;
-            if (epoch < EpochManager::GetPhysicalEpoch() && IsCommitComplete(epoch)) {
-                epoch_commit_complete[epoch % ctx.taasContext.kCacheMaxLength]->store(true);
-                return true;
-            }
-            return false;
-        }
-        static bool IsEpochCommitComplete(const uint64_t& epoch) {
-            return epoch_commit_complete[epoch % ctx.taasContext.kCacheMaxLength]->load();
-        }
+        static bool CheckEpochReadValidateComplete(const uint64_t& epoch);
+        static bool CheckEpochMergeComplete(const uint64_t& epoch);
+        static bool IsEpochMergeComplete(const uint64_t& epoch);
+        static bool CheckEpochCommitComplete(const uint64_t& epoch);
+        static bool IsEpochCommitComplete(const uint64_t& epoch);
 
 
 

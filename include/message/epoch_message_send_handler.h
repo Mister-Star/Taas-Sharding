@@ -7,12 +7,13 @@
 
 #pragma once
 
+#include "proto/message.pb.h"
+
 #include "message.h"
 #include "epoch/epoch_manager.h"
-#include "tools/context.h"
 
-#include "proto/message.pb.h"
 #include "epoch_message_receive_handler.h"
+#include "tools/context.h"
 
 namespace Taas {
 

@@ -8,6 +8,7 @@
 #pragma once
 
 #include "tools/atomic_counters.h"
+#include "tools/atomic_counters_cache.h"
 #include "tools/context.h"
 
 #include "proto/transaction.pb.h"

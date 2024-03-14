@@ -12,6 +12,7 @@
 #include "tools/blocking_concurrent_queue.hpp"
 
 #include "brpc/channel.h"
+#include "tools/atomic_counters_cache.h"
 #include <proto/transaction.pb.h>
 
 #include <queue>
