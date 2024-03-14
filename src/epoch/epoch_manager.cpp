@@ -209,7 +209,6 @@ namespace Taas {
 
     bool CheckRedoLogPushDownState(const Context& ctx) {
         auto i = redo_log_epoch.load();
-        auto clear = i;
         shared_ptr<proto::Transaction> empty_txn_ptr;
         while(!EpochManager::IsTimerStop()) {
             while(i >= commit_epoch.load()) usleep(logical_sleep_timme);
@@ -269,6 +268,7 @@ namespace Taas {
 
     void EpochPhysicalTimerManagerThreadMain(Context ctx) {
         InitEpochTimerManager(ctx);
+        while(!EpochManager::IsInitOK()) usleep(sleep_time);
         //==========同步============
         zmq::message_t message;
         zmq::context_t context(1);

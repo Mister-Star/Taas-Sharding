@@ -82,9 +82,9 @@ namespace Taas {
 
         AtomicCounters_Cache() = default;
 
-        explicit AtomicCounters_Cache(uint64_t length = 1000, uint64_t size = 8);
+        explicit AtomicCounters_Cache(uint64_t length = 1000, uint64_t size = 2);
 
-        void Init(uint64_t length = 1000, uint64_t size = 8, uint64_t value = 0);
+        void Init(uint64_t length = 1000, uint64_t size = 2, uint64_t value = 0);
 
         uint64_t IncCount(const uint64_t &epoch, const uint64_t &index, const uint64_t &value) {
             return (*vec[epoch % _length])[index % _size]->fetch_add(value);

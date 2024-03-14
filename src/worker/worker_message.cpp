@@ -16,9 +16,11 @@ namespace Taas {
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         EpochMessageReceiveHandler receiveHandler;
         class TwoPC twoPC;
-        while(!EpochManager::IsInitOK()) usleep(sleep_time);
+        while(init_ok_num.load() < 1) usleep(sleep_time);
         receiveHandler.Init(id);
         twoPC.Init(ctx, id);
+        init_ok_num.fetch_add(1);
+        while(!EpochManager::IsInitOK()) usleep(sleep_time);
         while(!EpochManager::IsTimerStop()){
             switch(ctx.taasContext.taasMode) {
                 case TaasMode::MultiModel :
@@ -46,9 +48,11 @@ namespace Taas {
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         EpochMessageReceiveHandler receiveHandler;
         class TwoPC twoPC;
-        while(!EpochManager::IsInitOK()) usleep(sleep_time);
+        while(init_ok_num.load() < 1) usleep(sleep_time);
         receiveHandler.Init(id);
         twoPC.Init(ctx, id);
+        init_ok_num.fetch_add(1);
+        while(!EpochManager::IsInitOK()) usleep(sleep_time);
         while(!EpochManager::IsTimerStop()){
             switch(ctx.taasContext.taasMode) {
                 case TaasMode::MultiModel :

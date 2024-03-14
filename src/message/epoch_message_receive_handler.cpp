@@ -92,6 +92,8 @@ namespace Taas {
         txn_ptr.reset();
         thread_id = id;
         sharding_num = ctx.taasContext.kTxnNodeNum;
+        local_server_id = ctx.taasContext.txn_node_ip_index;
+        max_length = ctx.taasContext.kCacheMaxLength;
 
         sharding_should_send_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, sharding_num),
         sharding_send_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, sharding_num);
@@ -107,7 +109,7 @@ namespace Taas {
         backup_received_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, sharding_num);
 
 
-        
+
         sharding_should_send_txn_num_local_vec[thread_id] = sharding_should_send_txn_num_local;
         sharding_send_txn_num_local_vec[thread_id] = sharding_send_txn_num_local;
         sharding_should_handle_local_txn_num_local_vec[thread_id] = sharding_should_handle_local_txn_num_local;
@@ -120,6 +122,26 @@ namespace Taas {
         backup_should_send_txn_num_local_vec[thread_id] = backup_should_send_txn_num_local;
         backup_send_txn_num_local_vec[thread_id] = backup_send_txn_num_local;
         backup_received_txn_num_local_vec[thread_id] = backup_received_txn_num_local;
+
+        epoch_should_read_validate_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, sharding_num),
+        epoch_read_validated_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, sharding_num);
+        epoch_should_merge_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, sharding_num),
+        epoch_merged_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, sharding_num),
+        epoch_should_commit_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, sharding_num),
+        epoch_committed_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, sharding_num),
+        epoch_record_commit_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, sharding_num),
+        epoch_record_committed_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, sharding_num);
+
+
+        epoch_should_read_validate_txn_num_local_vec[thread_id] = epoch_should_read_validate_txn_num_local;
+        epoch_read_validated_txn_num_local_vec[thread_id] = epoch_read_validated_txn_num_local;
+        epoch_should_merge_txn_num_local_vec[thread_id] = epoch_should_merge_txn_num_local;
+        epoch_merged_txn_num_local_vec[thread_id] = epoch_merged_txn_num_local;
+        epoch_should_commit_txn_num_local_vec[thread_id] = epoch_should_commit_txn_num_local;
+        epoch_committed_txn_num_local_vec[thread_id] = epoch_committed_txn_num_local;
+        epoch_record_commit_txn_num_local_vec[thread_id] = epoch_record_commit_txn_num_local;
+        epoch_record_committed_txn_num_local_vec[thread_id] = epoch_record_committed_txn_num_local;
+
 
         return true;
     }
@@ -149,18 +171,27 @@ namespace Taas {
         epoch_abort_set_merge_complete.resize(max_length);
         epoch_insert_set_complete.resize(max_length);
 
-        sharding_should_send_txn_num_local_vec.resize(ctx.taasContext.kEpochMessageThreadNum);
-        sharding_send_txn_num_local_vec.resize(ctx.taasContext.kEpochMessageThreadNum);
-        sharding_should_handle_local_txn_num_local_vec.resize(ctx.taasContext.kEpochMessageThreadNum);
-        sharding_handled_local_txn_num_local_vec.resize(ctx.taasContext.kEpochMessageThreadNum);
+        sharding_should_send_txn_num_local_vec.resize(sharding_num);
+        sharding_send_txn_num_local_vec.resize(sharding_num);
+        sharding_should_handle_local_txn_num_local_vec.resize(sharding_num);
+        sharding_handled_local_txn_num_local_vec.resize(sharding_num);
 
-        sharding_should_handle_remote_txn_num_local_vec.resize(ctx.taasContext.kEpochMessageThreadNum);
-        sharding_handled_remote_txn_num_local_vec.resize(ctx.taasContext.kEpochMessageThreadNum);
-        sharding_received_txn_num_local_vec.resize(ctx.taasContext.kEpochMessageThreadNum);
+        sharding_should_handle_remote_txn_num_local_vec.resize(sharding_num);
+        sharding_handled_remote_txn_num_local_vec.resize(sharding_num);
+        sharding_received_txn_num_local_vec.resize(sharding_num);
 
-        backup_should_send_txn_num_local_vec.resize(ctx.taasContext.kEpochMessageThreadNum);
-        backup_send_txn_num_local_vec.resize(ctx.taasContext.kEpochMessageThreadNum);
-        backup_received_txn_num_local_vec.resize(ctx.taasContext.kEpochMessageThreadNum);
+        backup_should_send_txn_num_local_vec.resize(sharding_num);
+        backup_send_txn_num_local_vec.resize(sharding_num);
+        backup_received_txn_num_local_vec.resize(sharding_num);
+
+        epoch_should_read_validate_txn_num_local_vec.resize(sharding_num);
+        epoch_should_merge_txn_num_local_vec.resize(sharding_num);
+        epoch_merged_txn_num_local_vec.resize(sharding_num);
+        epoch_should_commit_txn_num_local_vec.resize(sharding_num);
+        epoch_committed_txn_num_local_vec.resize(sharding_num);
+        epoch_record_commit_txn_num_local_vec.resize(sharding_num);
+        epoch_record_committed_txn_num_local_vec.resize(sharding_num);
+
 
         for(int i = 0; i < static_cast<int>(max_length); i ++) {
             epoch_sharding_send_complete[i] = std::make_unique<std::atomic<bool>>(false);
@@ -210,6 +241,28 @@ namespace Taas {
 
 
         return true;
+    }
+
+    void EpochMessageReceiveHandler::ReadValidateQueueEnqueue(uint64_t &epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_) {
+        auto epoch_mod_temp = epoch_ % ctx.taasContext.kCacheMaxLength;
+        epoch_should_read_validate_txn_num_local->IncCount(epoch_mod_temp, txn_ptr_->server_id(), 1);
+//        epoch_should_read_validate_txn_num.IncCount(epoch_mod_temp, txn_ptr->server_id(), 1);
+        Merger::epoch_read_validate_queue[epoch_mod_temp]->enqueue(txn_ptr_);
+        Merger::epoch_read_validate_queue[epoch_mod_temp]->enqueue(nullptr);
+    }
+    void EpochMessageReceiveHandler::MergeQueueEnqueue(uint64_t &epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_) {
+        auto epoch_mod_temp = epoch_ % ctx.taasContext.kCacheMaxLength;
+        epoch_should_merge_txn_num_local->IncCount(epoch_mod_temp, txn_ptr->server_id(), 1);
+//        epoch_should_merge_txn_num.IncCount(epoch_mod_temp, txn_ptr->server_id(), 1);
+        Merger::epoch_merge_queue[epoch_mod_temp]->enqueue(txn_ptr_);
+        Merger::epoch_merge_queue[epoch_mod_temp]->enqueue(nullptr);
+    }
+    void EpochMessageReceiveHandler::CommitQueueEnqueue(uint64_t& epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_) {
+        auto epoch_mod_temp = epoch_ % ctx.taasContext.kCacheMaxLength;
+        epoch_should_commit_txn_num_local->IncCount(epoch_mod_temp, txn_ptr_->server_id(), 1);
+//        epoch_should_commit_txn_num.IncCount(epoch_mod_temp, txn_ptr->server_id(), 1);
+        Merger::epoch_commit_queue[epoch_mod_temp]->enqueue(txn_ptr_);
+        Merger::epoch_commit_queue[epoch_mod_temp]->enqueue(nullptr);
     }
 
     void EpochMessageReceiveHandler::HandleReceivedMessage() {
@@ -271,23 +324,27 @@ namespace Taas {
             }
             for(uint64_t i = 0; i < sharding_num; i ++) {
                 if(i == ctx.taasContext.txn_node_ip_index) {
-                    Merger::ReadValidateQueueEnqueue(message_epoch, (*sharding_row_vector)[i]);
-                    Merger::MergeQueueEnqueue(message_epoch, (*sharding_row_vector)[i]);
+                    ReadValidateQueueEnqueue(message_epoch, (*sharding_row_vector)[i]);
+                    MergeQueueEnqueue(message_epoch, (*sharding_row_vector)[i]);
                 } else {
                     if((*sharding_row_vector)[i]->row_size() > 0) {
-                        EpochMessageReceiveHandler::sharding_should_send_txn_num.IncCount(message_epoch, i, 1);
+                        sharding_should_send_txn_num_local->IncCount(message_epoch, i, 1);
+//                        EpochMessageReceiveHandler::sharding_should_send_txn_num.IncCount(message_epoch, i, 1);
                         EpochMessageSendHandler::SendTxnToServer(message_epoch, i, (*sharding_row_vector)[i], proto::TxnType::RemoteServerTxn);
-                        EpochMessageReceiveHandler::sharding_send_txn_num.IncCount(message_epoch, i, 1);
+                        sharding_send_txn_num_local->IncCount(message_epoch, i, 1);
+//                        EpochMessageReceiveHandler::sharding_send_txn_num.IncCount(message_epoch, i, 1);
                     }
                 }
             }
-            EpochMessageReceiveHandler::backup_should_send_txn_num.IncCount(message_epoch, message_server_id, 1);
+            backup_should_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
+//            EpochMessageReceiveHandler::backup_should_send_txn_num.IncCount(message_epoch, message_server_id, 1);
             EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, txn_ptr, proto::TxnType::BackUpTxn);
-            EpochMessageReceiveHandler::backup_send_txn_num.IncCount(message_epoch, message_server_id, 1);
-            Merger::CommitQueueEnqueue(message_epoch, txn_ptr);
+            backup_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
+//            EpochMessageReceiveHandler::backup_send_txn_num.IncCount(message_epoch, message_server_id, 1);
+            CommitQueueEnqueue(message_epoch, txn_ptr);
         }
         else if(ctx.taasContext.taasMode == TaasMode::MultiMaster) {/// validate and then send
-            Merger::ReadValidateQueueEnqueue(message_epoch, txn_ptr);
+            ReadValidateQueueEnqueue(message_epoch, txn_ptr);
         }
     }
 
@@ -309,27 +366,32 @@ namespace Taas {
                 }
                 else {
                     message_epoch = EpochManager::GetPhysicalEpoch();
-                    sharding_should_handle_local_txn_num.IncCount(message_epoch, thread_id, 1);
+                    sharding_should_handle_local_txn_num_local->IncCount(message_epoch, local_server_id, 1);
+//                    sharding_should_handle_local_txn_num.IncCount(message_epoch, thread_id, 1);
                     txn_ptr->set_commit_epoch(message_epoch);
                     txn_ptr->set_csn(now_to_us());
                     txn_ptr->set_server_id(ctx.taasContext.txn_node_ip_index);
                     txn_ptr->set_txn_type(proto::RemoteServerTxn);/// change to server txn, then, use server_id to check
                     SetMessageRelatedCountersInfo();
                     Sharding();
-                    sharding_handled_local_txn_num.IncCount(message_epoch, thread_id, 1);
+                    sharding_handled_local_txn_num_local->IncCount(message_epoch, local_server_id, 1);
+//                    sharding_handled_local_txn_num.IncCount(message_epoch, thread_id, 1);
                 }
                 break;
             }
             case proto::TxnType::RemoteServerTxn : {
-                sharding_should_handle_remote_txn_num.IncCount(message_epoch, thread_id, 1);
+//                sharding_should_handle_remote_txn_num.IncCount(message_epoch, thread_id, 1);
+                sharding_should_handle_remote_txn_num_local->IncCount(message_epoch, local_server_id, 1);
                 Merger::epoch_txn_map[message_epoch_mod]->insert(csn_temp, txn_ptr);
                 if(ctx.taasContext.taasMode == TaasMode::Sharding) { /// multi-master mode, remote txn no need to do read validate.
-                    Merger::ReadValidateQueueEnqueue(message_epoch, txn_ptr);
+                    ReadValidateQueueEnqueue(message_epoch, txn_ptr);
                 }
-                Merger::MergeQueueEnqueue(message_epoch, txn_ptr);
-                Merger::CommitQueueEnqueue(message_epoch, txn_ptr);
-                sharding_received_txn_num.IncCount(message_epoch,message_server_id, 1);
-                sharding_handled_remote_txn_num.IncCount(message_epoch, thread_id, 1);
+                MergeQueueEnqueue(message_epoch, txn_ptr);
+                CommitQueueEnqueue(message_epoch, txn_ptr);
+                sharding_received_txn_num_local->IncCount(message_epoch,message_server_id, 1);
+                sharding_handled_remote_txn_num_local->IncCount(message_epoch, local_server_id, 1);
+//                sharding_received_txn_num.IncCount(message_epoch,message_server_id, 1);
+//                sharding_handled_remote_txn_num.IncCount(message_epoch, thread_id, 1);
                 break;
             }
             case proto::TxnType::EpochEndFlag : {
@@ -341,7 +403,8 @@ namespace Taas {
             }
             case proto::TxnType::BackUpTxn : {
                 Merger::epoch_back_txn_map[message_epoch_mod]->insert(csn_temp, txn_ptr);
-                backup_received_txn_num.IncCount(message_epoch,message_server_id, 1);
+                backup_received_txn_num_local->IncCount(message_epoch,message_server_id, 1);
+//                backup_received_txn_num.IncCount(message_epoch,message_server_id, 1);
                 break;
             }
             case proto::TxnType::BackUpEpochEndFlag : {
@@ -423,15 +486,17 @@ namespace Taas {
     }
 
     void EpochMessageReceiveHandler::HandleMultiModelClientSubTxn(const uint64_t& txn_id) {
-        sharding_should_handle_local_txn_num.IncCount(message_epoch, thread_id, 1);
+//        sharding_should_handle_local_txn_num.IncCount(message_epoch, thread_id, 1);
+        sharding_should_handle_local_txn_num_local->IncCount(message_epoch, local_server_id, 1);
         txn_ptr->set_commit_epoch(message_epoch);
         txn_ptr->set_csn(txn_id);
         txn_ptr->set_server_id(ctx.taasContext.txn_node_ip_index);
         SetMessageRelatedCountersInfo();
-        Merger::ReadValidateQueueEnqueue(message_epoch, txn_ptr);
+        ReadValidateQueueEnqueue(message_epoch, txn_ptr);
 //        HandleClientTxn();
-        Merger::CommitQueueEnqueue(message_epoch, txn_ptr);
-        sharding_handled_local_txn_num.IncCount(message_epoch, thread_id, 1);
+        CommitQueueEnqueue(message_epoch, txn_ptr);
+        sharding_handled_local_txn_num_local->IncCount(message_epoch, local_server_id, 1);
+//        sharding_handled_local_txn_num.IncCount(message_epoch, thread_id, 1);
     }
 
     bool EpochMessageReceiveHandler::HandleMultiModelClientTxn() {
@@ -450,7 +515,8 @@ namespace Taas {
         multiModelTxn->received_txn_num += 1;
         if(multiModelTxn->total_txn_num == multiModelTxn->received_txn_num) {
             message_epoch = EpochManager::GetPhysicalEpoch();
-            sharding_should_handle_local_txn_num.IncCount(message_epoch, thread_id, 1);
+            sharding_should_handle_local_txn_num_local->IncCount(message_epoch, local_server_id, 1);
+//            sharding_should_handle_local_txn_num.IncCount(message_epoch, thread_id, 1);
             txn_ptr = multiModelTxn->kv;
             HandleMultiModelClientSubTxn(txn_id);
             if(multiModelTxn->sql != nullptr) {
@@ -461,7 +527,8 @@ namespace Taas {
                 txn_ptr = multiModelTxn->gql;
                 HandleMultiModelClientSubTxn(txn_id);
             }
-            sharding_handled_local_txn_num.IncCount(message_epoch, thread_id, 1);
+            sharding_handled_local_txn_num_local->IncCount(message_epoch, local_server_id, 1);
+//            sharding_handled_local_txn_num.IncCount(message_epoch, thread_id, 1);
         }
         return true;
     }
@@ -510,6 +577,28 @@ namespace Taas {
         epoch_back_up_complete[cache_clear_epoch_num_mod]->store(false);
         epoch_abort_set_merge_complete[cache_clear_epoch_num_mod]->store(false);
         epoch_insert_set_complete[cache_clear_epoch_num_mod]->store(false);
+
+        clearAllThreadLocalCountNum(epoch, sharding_should_send_txn_num_local_vec);
+        clearAllThreadLocalCountNum(epoch, sharding_send_txn_num_local_vec);
+        clearAllThreadLocalCountNum(epoch, sharding_should_handle_local_txn_num_local_vec);
+        clearAllThreadLocalCountNum(epoch, sharding_handled_local_txn_num_local_vec);
+
+        clearAllThreadLocalCountNum(epoch, sharding_should_handle_remote_txn_num_local_vec);
+        clearAllThreadLocalCountNum(epoch, sharding_handled_remote_txn_num_local_vec);
+        clearAllThreadLocalCountNum(epoch, sharding_received_txn_num_local_vec);
+
+        clearAllThreadLocalCountNum(epoch, backup_should_send_txn_num_local_vec);
+        clearAllThreadLocalCountNum(epoch, backup_send_txn_num_local_vec);
+        clearAllThreadLocalCountNum(epoch, backup_received_txn_num_local_vec);
+
+        clearAllThreadLocalCountNum(epoch, epoch_should_read_validate_txn_num_local_vec);
+        clearAllThreadLocalCountNum(epoch, epoch_read_validated_txn_num_local_vec);
+        clearAllThreadLocalCountNum(epoch, epoch_should_merge_txn_num_local_vec);
+        clearAllThreadLocalCountNum(epoch, epoch_merged_txn_num_local_vec);
+        clearAllThreadLocalCountNum(epoch, epoch_should_commit_txn_num_local_vec);
+        clearAllThreadLocalCountNum(epoch, epoch_committed_txn_num_local_vec);
+        clearAllThreadLocalCountNum(epoch, epoch_record_commit_txn_num_local_vec);
+        clearAllThreadLocalCountNum(epoch, epoch_record_committed_txn_num_local_vec);
 
 //        epoch_backup_txn[cache_clear_epoch_num_mod] = std::make_unique<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>();
 //        epoch_insert_set[cache_clear_epoch_num_mod] = std::make_unique<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>();

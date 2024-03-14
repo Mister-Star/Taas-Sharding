@@ -142,7 +142,9 @@ namespace Taas {
         }
 
         static bool IsInitOK() {
-            return init_ok_num.load() >= 1;
+            return init_ok_num.load() >= (int)(ctx.taasContext.kEpochMessageThreadNum +
+            ctx.taasContext.kEpochTxnThreadNum + ctx.taasContext.kMergeThreadNum + 1);
+
         }
     };
 }

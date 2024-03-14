@@ -15,9 +15,7 @@ namespace Taas {
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         SetCPU();
         EpochPhysicalTimerManagerThreadMain(ctx);
-        return ;
-
-    }
+   }
 
     void WorkerForLogicalThreadMain(const Context& ctx) {
         std::string name = "EpochLogical";
@@ -37,7 +35,6 @@ namespace Taas {
                 TwoPhaseCommitManager::TwoPhaseCommitManagerThreadMain(ctx);
             }
         }
-        return ;
     }
 
     void WorkerForLogicalRedoLogPushDownCheckThreadMain(const Context& ctx) {
