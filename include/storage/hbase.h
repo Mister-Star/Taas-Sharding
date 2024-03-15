@@ -10,6 +10,7 @@
 #include "tools/context.h"
 #include "tools/atomic_counters.h"
 #include "tools/blocking_concurrent_queue.hpp"
+#include "tools/atomic_counters_cache.h"
 
 #include <proto/transaction.pb.h>
 

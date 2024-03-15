@@ -15,6 +15,7 @@
 #include "string"
 #include "algorithm"
 #include "storage/tikv.h"
+#include "transaction/transaction_cache.h"
 
 namespace Taas {
 
@@ -160,27 +161,47 @@ namespace Taas {
        MOT::pushed_down_epoch.load(),                                                EpochManager::GetPushDownEpoch(),
        merge_epoch.load(), abort_set_epoch.load(), commit_epoch.load(), redo_log_epoch.load(),clear_epoch.load(),
        epoch_mod,                                                                         EpochManager::GetPhysicalEpoch() - EpochManager::GetLogicalEpoch(),
-       (uint64_t)EpochMessageReceiveHandler::IsShardingPackReceiveComplete(epoch_mod),(uint64_t)EpochMessageReceiveHandler::IsShardingTxnReceiveComplete(epoch_mod),
-       (uint64_t)EpochMessageReceiveHandler::IsShardingSendFinish(epoch_mod),                        (uint64_t)EpochMessageReceiveHandler::IsShardingACKReceiveComplete(epoch_mod),
-       (uint64_t)EpochMessageReceiveHandler::IsBackUpSendFinish(epoch_mod),                 (uint64_t)EpochMessageReceiveHandler::IsBackUpACKReceiveComplete(epoch_mod),
-       (uint64_t)EpochMessageReceiveHandler::IsEpochTxnHandleComplete(epoch_mod), (uint64_t)Merger::IsEpochMergeComplete(epoch_mod),
-       (uint64_t)EpochManager::IsShardingMergeComplete(epoch_mod),                  (uint64_t)EpochManager::IsAbortSetMergeComplete(epoch_mod),
-       (uint64_t)EpochManager::IsCommitComplete(epoch_mod),                         (uint64_t)EpochManager::IsRecordCommitted(epoch_mod),
+       (uint64_t)EpochMessageReceiveHandler::IsShardingPackReceiveComplete(epoch_mod),
+       (uint64_t)EpochMessageReceiveHandler::IsShardingTxnReceiveComplete(epoch_mod),
+       (uint64_t)EpochMessageReceiveHandler::IsShardingSendFinish(epoch_mod),
+       (uint64_t)EpochMessageReceiveHandler::IsShardingACKReceiveComplete(epoch_mod),
+       (uint64_t)EpochMessageReceiveHandler::IsBackUpSendFinish(epoch_mod),
+       (uint64_t)EpochMessageReceiveHandler::IsBackUpACKReceiveComplete(epoch_mod),
+       (uint64_t)EpochMessageReceiveHandler::IsEpochTxnHandleComplete(epoch_mod),
+       (uint64_t)Merger::IsEpochMergeComplete(epoch_mod),
+       (uint64_t)EpochManager::IsShardingMergeComplete(epoch_mod),
+       (uint64_t)EpochManager::IsAbortSetMergeComplete(epoch_mod),
+       (uint64_t)EpochManager::IsCommitComplete(epoch_mod),
+       (uint64_t)EpochManager::IsRecordCommitted(epoch_mod),
 
-       EpochMessageReceiveHandler::sharding_handled_local_txn_num.GetCount(epoch_mod), EpochMessageReceiveHandler::sharding_should_handle_local_txn_num.GetCount(epoch_mod),
-       EpochMessageReceiveHandler::sharding_handled_remote_txn_num.GetCount(epoch_mod),EpochMessageReceiveHandler::sharding_should_handle_remote_txn_num.GetCount(epoch_mod),
-       Merger::epoch_read_validated_txn_num.GetCount(epoch_mod),                    Merger::epoch_should_read_validate_txn_num.GetCount(epoch_mod),
-       Merger::epoch_merged_txn_num.GetCount(epoch_mod),                            Merger::epoch_should_merge_txn_num.GetCount(epoch_mod),
-       Merger::epoch_committed_txn_num.GetCount(epoch_mod),                         Merger::epoch_should_commit_txn_num.GetCount(epoch_mod),
-       Merger::epoch_record_committed_txn_num.GetCount(epoch_mod),                  Merger::epoch_record_commit_txn_num.GetCount(epoch_mod),
-       EpochMessageReceiveHandler::sharding_should_receive_pack_num.GetCount(epoch_mod), EpochMessageReceiveHandler::sharding_received_pack_num.GetCount(epoch_mod),
-       EpochMessageReceiveHandler::sharding_should_receive_txn_num.GetCount(epoch_mod),  EpochMessageReceiveHandler::sharding_received_txn_num.GetCount(epoch_mod),
-       EpochMessageReceiveHandler::backup_should_receive_pack_num.GetCount(epoch_mod),   EpochMessageReceiveHandler::backup_received_pack_num.GetCount(epoch_mod),
-       EpochMessageReceiveHandler::backup_should_receive_txn_num.GetCount(epoch_mod),    EpochMessageReceiveHandler::backup_received_txn_num.GetCount(epoch_mod),
-       EpochMessageReceiveHandler::insert_set_should_receive_num.GetCount(epoch_mod),          EpochMessageReceiveHandler::insert_set_received_num.GetCount(epoch_mod),
-       EpochMessageReceiveHandler::abort_set_should_receive_num.GetCount(epoch_mod),  EpochMessageReceiveHandler::abort_set_received_num.GetCount(epoch_mod),
-       EpochMessageReceiveHandler::sharding_received_ack_num.GetCount(epoch_mod),        EpochMessageReceiveHandler::backup_received_ack_num.GetCount(epoch_mod),
-       EpochMessageReceiveHandler::insert_set_received_ack_num.GetCount(epoch_mod),      EpochMessageReceiveHandler::abort_set_received_ack_num.GetCount(epoch_mod),
+       EpochMessageReceiveHandler::GetAllThreadLocalCountNum(epoch_mod, EpochMessageReceiveHandler::sharding_handled_local_txn_num_local_vec),
+       EpochMessageReceiveHandler::GetAllThreadLocalCountNum(epoch_mod, EpochMessageReceiveHandler::sharding_should_handle_local_txn_num_local_vec),
+       EpochMessageReceiveHandler::GetAllThreadLocalCountNum(epoch_mod, EpochMessageReceiveHandler::sharding_handled_remote_txn_num_local_vec),
+       EpochMessageReceiveHandler::GetAllThreadLocalCountNum(epoch_mod, EpochMessageReceiveHandler::sharding_should_handle_remote_txn_num_local_vec),
+       Merger::GetAllThreadLocalCountNum(epoch_mod, Merger::epoch_read_validated_txn_num_local_vec),
+       Merger::GetAllThreadLocalCountNum(epoch_mod, Merger::epoch_should_read_validate_txn_num_local_vec),
+       Merger::GetAllThreadLocalCountNum(epoch_mod, Merger::epoch_merged_txn_num_local_vec),
+       Merger::GetAllThreadLocalCountNum(epoch_mod, Merger::epoch_should_merge_txn_num_local_vec),
+       Merger::GetAllThreadLocalCountNum(epoch_mod, Merger::epoch_committed_txn_num_local_vec),
+       Merger::GetAllThreadLocalCountNum(epoch_mod, Merger::epoch_should_commit_txn_num_local_vec),
+       Merger::GetAllThreadLocalCountNum(epoch_mod, Merger::epoch_record_committed_txn_num_local_vec),
+       Merger::GetAllThreadLocalCountNum(epoch_mod, Merger::epoch_record_commit_txn_num_local_vec),
+       EpochMessageReceiveHandler::sharding_should_receive_pack_num.GetCount(epoch_mod),
+       EpochMessageReceiveHandler::sharding_received_pack_num.GetCount(epoch_mod),
+       EpochMessageReceiveHandler::sharding_should_receive_txn_num.GetCount(epoch_mod),
+       EpochMessageReceiveHandler::sharding_received_txn_num.GetCount(epoch_mod),
+       EpochMessageReceiveHandler::backup_should_receive_pack_num.GetCount(epoch_mod),
+       EpochMessageReceiveHandler::backup_received_pack_num.GetCount(epoch_mod),
+       EpochMessageReceiveHandler::backup_should_receive_txn_num.GetCount(epoch_mod),
+       EpochMessageReceiveHandler::backup_received_txn_num.GetCount(epoch_mod),
+       EpochMessageReceiveHandler::insert_set_should_receive_num.GetCount(epoch_mod),
+       EpochMessageReceiveHandler::insert_set_received_num.GetCount(epoch_mod),
+       EpochMessageReceiveHandler::abort_set_should_receive_num.GetCount(epoch_mod),
+       EpochMessageReceiveHandler::abort_set_received_num.GetCount(epoch_mod),
+       EpochMessageReceiveHandler::sharding_received_ack_num.GetCount(epoch_mod),
+       EpochMessageReceiveHandler::backup_received_ack_num.GetCount(epoch_mod),
+       EpochMessageReceiveHandler::insert_set_received_ack_num.GetCount(epoch_mod),
+       EpochMessageReceiveHandler::abort_set_received_ack_num.GetCount(epoch_mod),
        (uint64_t)0, now_to_us(),
        MessageQueue::client_send_message_num.load(), MessageQueue::client_receive_message_num.load(),
        EpochMessageSendHandler::TotalTxnNum.load()
@@ -223,7 +244,8 @@ namespace Taas {
 
                 EpochManager::ClearMergeEpochState(i); //清空当前epoch的merge信息
                 EpochMessageReceiveHandler::StaticClear(i);//清空current epoch的receive cache num信息
-                Merger::ClearMergerEpochState(i);
+                TransactionCache::EpochCacheClear(i);
+                ThreadLocalCounters::StaticClear(i);
                 RedoLoger::ClearRedoLog(i);
                 redo_log_epoch.fetch_add(1);
                 clear_epoch.fetch_add(1);

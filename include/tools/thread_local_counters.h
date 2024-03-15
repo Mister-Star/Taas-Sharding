@@ -17,6 +17,7 @@ namespace Taas {
     private:
 
         uint64_t thread_id = 0, max_length = 0, sharding_num = 0, local_server_id;
+        static std::atomic<uint64_t> inc_id;
 
     public:
         static Context ctx;
@@ -65,23 +66,30 @@ namespace Taas {
                 epoch_insert_set_complete;
 
         static AtomicCounters_Cache
-            sharding_should_receive_pack_num, sharding_received_pack_num,
-            sharding_should_receive_txn_num, sharding_received_txn_num,
+            sharding_should_receive_pack_num,
+            sharding_received_pack_num,
+            sharding_should_receive_txn_num,
+            sharding_received_txn_num,
             sharding_received_ack_num,
 
-            backup_should_send_txn_num, backup_send_txn_num,
-            backup_should_receive_pack_num, backup_received_pack_num,
-            backup_should_receive_txn_num, backup_received_txn_num,
-
+            backup_should_send_txn_num,
+            backup_send_txn_num,
+            backup_should_receive_pack_num,
+            backup_received_pack_num,
+            backup_should_receive_txn_num,
+            backup_received_txn_num,
             backup_received_ack_num,
 
-            insert_set_should_receive_num, insert_set_received_num,
+            insert_set_should_receive_num,
+            insert_set_received_num,
             insert_set_received_ack_num,
 
-            abort_set_should_receive_num, abort_set_received_num,
+            abort_set_should_receive_num,
+            abort_set_received_num,
             abort_set_received_ack_num,
 
-            redo_log_push_down_ack_num, redo_log_push_down_local_epoch;
+            redo_log_push_down_ack_num,
+            redo_log_push_down_local_epoch;
 
         static bool CheckEpochShardingSendComplete(const uint64_t& epoch) ;
         static bool CheckEpochShardingReceiveComplete(uint64_t& epoch) ;
@@ -119,29 +127,52 @@ namespace Taas {
 
 
 
-
-
     ///Merge
     public:
         std::shared_ptr<AtomicCounters_Cache>
-                epoch_should_read_validate_txn_num_local, epoch_read_validated_txn_num_local,
-                epoch_should_merge_txn_num_local, epoch_merged_txn_num_local,
-                epoch_should_commit_txn_num_local, epoch_committed_txn_num_local,
-                epoch_record_commit_txn_num_local, epoch_record_committed_txn_num_local;
+                epoch_should_read_validate_txn_num_local,
+                epoch_read_validated_txn_num_local,
+                epoch_should_merge_txn_num_local,
+                epoch_merged_txn_num_local,
+                epoch_should_commit_txn_num_local,
+                epoch_committed_txn_num_local,
+                epoch_record_commit_txn_num_local,
+                epoch_record_committed_txn_num_local;
+
+        std::atomic<uint64_t>
+                total_merge_txn_num_local,
+                total_merge_latency_local,
+                total_commit_txn_num_local,
+                total_commit_latency_local,
+                success_commit_txn_num_local,
+                success_commit_latency_local,
+                total_read_version_check_failed_txn_num_local,
+                total_failed_txn_num_local;
     public:
         static std::vector<std::shared_ptr<AtomicCounters_Cache>>
-                epoch_should_read_validate_txn_num_local_vec, epoch_read_validated_txn_num_local_vec,
-                epoch_should_merge_txn_num_local_vec, epoch_merged_txn_num_local_vec,
-                epoch_should_commit_txn_num_local_vec, epoch_committed_txn_num_local_vec,
-                epoch_record_commit_txn_num_local_vec, epoch_record_committed_txn_num_local_vec;
+                epoch_should_read_validate_txn_num_local_vec,
+                epoch_read_validated_txn_num_local_vec,
+                epoch_should_merge_txn_num_local_vec,
+                epoch_merged_txn_num_local_vec,
+                epoch_should_commit_txn_num_local_vec,
+                epoch_committed_txn_num_local_vec,
+                epoch_record_commit_txn_num_local_vec,
+                epoch_record_committed_txn_num_local_vec;
 
         static std::vector<std::unique_ptr<std::atomic<bool>>>
                 epoch_read_validate_complete,
                 epoch_merge_complete,
                 epoch_commit_complete;
 
-        static std::atomic<uint64_t> total_merge_txn_num, total_merge_latency, total_commit_txn_num, total_commit_latency, success_commit_txn_num, success_commit_latency,
-                total_read_version_check_failed_txn_num, total_failed_txn_num;
+        static std::atomic<uint64_t>
+                total_merge_txn_num,
+                total_merge_latency,
+                total_commit_txn_num,
+                total_commit_latency,
+                success_commit_txn_num,
+                success_commit_latency,
+                total_read_version_check_failed_txn_num,
+                total_failed_txn_num;
 
 
         static bool CheckEpochReadValidateComplete(const uint64_t& epoch);
@@ -157,19 +188,14 @@ namespace Taas {
 
 
     public:
-        std::atomic<uint64_t> total_merge_txn_num_local, total_merge_latency_local,
-                total_commit_txn_num_local, total_commit_latency_local, success_commit_txn_num_local,
-                success_commit_latency_local, total_read_version_check_failed_txn_num_local,
-                total_failed_txn_num_local;
 
-    public:
         void Init(const uint64_t &id_, const Context& context);
         static bool StaticInit(const Context& context);
         static bool StaticClear(uint64_t& epoch);
 
-        static void clearAllThreadLocalCountNum(const uint64_t &epoch, const std::vector<std::shared_ptr<AtomicCounters_Cache>> &vec) ;
-        static uint64_t getAllThreadLocalCountNum(const uint64_t &epoch, const std::vector<std::shared_ptr<AtomicCounters_Cache>> &vec) ;
-        static uint64_t getAllThreadLocalCountNum(const uint64_t &epoch, const uint64_t &sharding_id, const std::vector<std::shared_ptr<AtomicCounters_Cache>> &vec);
+        static void ClearAllThreadLocalCountNum(const uint64_t &epoch, const std::vector<std::shared_ptr<AtomicCounters_Cache>> &vec) ;
+        static uint64_t GetAllThreadLocalCountNum(const uint64_t &epoch, const std::vector<std::shared_ptr<AtomicCounters_Cache>> &vec) ;
+        static uint64_t GetAllThreadLocalCountNum(const uint64_t &epoch, const uint64_t &sharding_id, const std::vector<std::shared_ptr<AtomicCounters_Cache>> &vec);
 
     };
 

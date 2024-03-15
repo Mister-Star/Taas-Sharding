@@ -63,8 +63,10 @@ namespace Taas {
             auto pull_msg_resp = std::make_unique<proto::Message>();
             auto pull_resp = pull_msg_resp->mutable_storage_pull_response();
 
-            if (Merger::epoch_committed_txn_num.GetCount(epoch_id) ==
-                    Merger::epoch_should_commit_txn_num.GetCount(epoch_id)) { // the epoch's txns all have been c committed
+            if (Merger::GetAllThreadLocalCountNum(epoch_id,
+                    Merger::epoch_committed_txn_num_local_vec)==
+                Merger::GetAllThreadLocalCountNum(epoch_id,
+                      Merger::epoch_should_commit_txn_num_local_vec)) { // the epoch's txns all have been c committed
                 auto s = std::to_string(epoch_id) + ":";
                 auto epoch_mod = epoch_id % EpochManager::max_length;
                 auto total_num = RedoLoger::epoch_log_lsn.GetCount(epoch_id);

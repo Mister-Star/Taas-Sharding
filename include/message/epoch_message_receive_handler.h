@@ -62,16 +62,7 @@ class EpochMessageReceiveHandler : public Taas::ThreadLocalCounters {
 
 
     public:
-
         static Context ctx;
-
-        static std::vector<std::unique_ptr<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>>
-            epoch_backup_txn,
-            epoch_insert_set,
-            epoch_abort_set;
-
-        static concurrent_unordered_map<std::string, std::shared_ptr<MultiModelTxn>> multiModelTxnMap;
-
         void Sharding();
 
     };

@@ -5,6 +5,7 @@
 #include "message/epoch_message_receive_handler.h"
 #include "tools/utilities.h"
 #include "transaction/merge.h"
+#include "transaction/transaction_cache.h"
 
 namespace Taas {
 
@@ -190,10 +191,12 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
             txn_end->set_commit_epoch(epoch);
             txn_end->set_sharding_id(server_id);
             if(ctx.taasContext.taasMode == MultiMaster) {
-                txn_end->set_csn(EpochMessageReceiveHandler::sharding_should_send_txn_num.GetCount(epoch)); /// 不同server由不同的数量
+                txn_end->set_csn(EpochMessageReceiveHandler::GetAllThreadLocalCountNum(epoch,
+                       EpochMessageReceiveHandler::sharding_should_send_txn_num_local_vec)); /// 不同server由不同的数量
             }
             else {
-                txn_end->set_csn(EpochMessageReceiveHandler::sharding_should_send_txn_num.GetCount(epoch, server_id)); /// 不同server由不同的数量
+                txn_end->set_csn(EpochMessageReceiveHandler::GetAllThreadLocalCountNum(epoch, server_id,
+                        EpochMessageReceiveHandler::sharding_should_send_txn_num_local_vec)); /// 不同server由不同的数量
             }
             auto serialized_txn_str_ptr = std::make_unique<std::string>();
             Gzip(msg.get(), serialized_txn_str_ptr.get());
@@ -232,7 +235,7 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
         txn_end->set_commit_epoch(epoch);
         txn_end->set_sharding_id(0);
         std::vector<std::string> keys, values;
-        Merger::local_epoch_abort_txn_set[epoch % kCacheMaxLength]->getValue(keys, values);
+        TransactionCache::local_epoch_abort_txn_set[epoch % kCacheMaxLength]->getValue(keys, values);
         for (uint64_t i = 0; i < keys.size(); i++) {
             auto row = txn_end->add_row();
             row->set_key(keys[i]);

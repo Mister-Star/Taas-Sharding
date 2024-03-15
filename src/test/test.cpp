@@ -5,6 +5,7 @@
 #include "test/test.h"
 #include "transaction/merge.h"
 #include "tools/utilities.h"
+#include "transaction/transaction_cache.h"
 #include <random>
 
 namespace Taas {
@@ -39,7 +40,7 @@ namespace Taas {
                 row->set_key(key);
                 switch (op_type) {
                     case 0 : {
-                        Merger::read_version_map_data.getValue(key, read_version);
+                        TransactionCache::read_version_map_data.getValue(key, read_version);
                         row->set_op_type(proto::Read);
                         write_version = read_version;
                         break;

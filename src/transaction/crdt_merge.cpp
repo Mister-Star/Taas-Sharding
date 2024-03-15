@@ -5,6 +5,7 @@
 #include "epoch/epoch_manager.h"
 #include "transaction/merge.h"
 #include "transaction/crdt_merge.h"
+#include "transaction/transaction_cache.h"
 
 namespace Taas {
     Context CRDTMerge::ctx;
@@ -22,7 +23,7 @@ namespace Taas {
             }
             /// indeed, we should use the csn to check the read version,
             /// but there are some bugs in updating the csn to the storage(tikv).
-            if (!Merger::read_version_map_data.getValue(key, version)) {
+            if (!TransactionCache::read_version_map_data.getValue(key, version)) {
                 /// should be abort, but Taas do not connect load data,
                 /// so read the init snap will get empty in read_version_map
                 continue;
@@ -31,7 +32,7 @@ namespace Taas {
                 continue; ///only for debug
                 auto csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->server_id());
                 if(ctx.taasContext.taasMode == Sharding)
-                    Merger::epoch_abort_txn_set[epoch_mod]->insert(csn_temp, csn_temp);
+                    TransactionCache::epoch_abort_txn_set[epoch_mod]->insert(csn_temp, csn_temp);
 //                LOG(INFO) <<"Txn read version check failed";
 //                LOG(INFO) <<"read version check failed version : " << version << ", row.data() : " << row.data();
                 txn_ptr.reset();
@@ -45,7 +46,7 @@ namespace Taas {
     bool CRDTMerge::ValidateWriteSet(std::shared_ptr<proto::Transaction> txn_ptr) {
         auto epoch_mod = txn_ptr->commit_epoch() % ctx.taasContext.kCacheMaxLength;
         auto csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->server_id());
-        if(Merger::epoch_abort_txn_set[epoch_mod]->contain(csn_temp, csn_temp)) {
+        if(TransactionCache::epoch_abort_txn_set[epoch_mod]->contain(csn_temp, csn_temp)) {
             txn_ptr.reset();
             return false;
         }
@@ -64,8 +65,8 @@ namespace Taas {
                 continue;
             }
             auto key = txn_ptr->storage_type() + ":" + row.key();
-            if (!Merger::epoch_merge_map[epoch_mod]->insert(key, csn_temp, csn_result)) {
-                Merger::epoch_abort_txn_set[epoch_mod]->insert(csn_result, csn_result);
+            if (!TransactionCache::epoch_merge_map[epoch_mod]->insert(key, csn_temp, csn_result)) {
+                TransactionCache::epoch_abort_txn_set[epoch_mod]->insert(csn_result, csn_result);
                 result = false;
             }
         }
@@ -82,16 +83,16 @@ namespace Taas {
                 continue;
             }
             else if(row.op_type() == proto::OpType::Insert) {
-                Merger::insert_set.insert(key, csn_temp);
+                TransactionCache::insert_set.insert(key, csn_temp);
             }
             else if(row.op_type() == proto::OpType::Delete) {
-                Merger::insert_set.remove(key, csn_temp);
+                TransactionCache::insert_set.remove(key, csn_temp);
             }
             else {
                 //nothing to do
             }
-            Merger::read_version_map_data.insert(key, row.data());
-            Merger::read_version_map_csn.insert(key, csn_temp);
+            TransactionCache::read_version_map_data.insert(key, row.data());
+            TransactionCache::read_version_map_csn.insert(key, csn_temp);
         }
         txn_ptr.reset();
         return true;
