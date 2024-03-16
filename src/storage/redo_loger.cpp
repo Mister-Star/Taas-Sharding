@@ -36,7 +36,7 @@ namespace Taas {
         Nebula::StaticInit(ctx);
     }
 
-    void RedoLoger::ClearRedoLog(uint64_t& epoch) {
+    void RedoLoger::ClearRedoLog(const uint64_t& epoch) {
         auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
         committed_txn_cache[epoch_mod]->clear();
 //        committed_txn_cache[epoch_mod] = std::make_unique<concurrent_unordered_map<std::string, std::shared_ptr<proto::Transaction>>>();
@@ -56,28 +56,28 @@ namespace Taas {
     }
 
 
-    bool RedoLoger::RedoLog(std::shared_ptr<proto::Transaction> txn_ptr) {
+    bool RedoLoger::RedoLog(const uint64_t& thread_id, std::shared_ptr<proto::Transaction> txn_ptr) {
         uint64_t epoch_id = txn_ptr->commit_epoch();
         auto lsn = epoch_log_lsn.IncCount(epoch_id, 1);
         auto key = std::to_string(epoch_id) + ":" + std::to_string(lsn);
         committed_txn_cache[epoch_id % ctx.taasContext.kCacheMaxLength]->insert(key, txn_ptr);
         if(ctx.storageContext.is_mot_enable) {
             if(txn_ptr->storage_type() == "mot")
-                MOT::DBRedoLogQueueEnqueue(epoch_id, txn_ptr);
+                MOT::DBRedoLogQueueEnqueue(thread_id, epoch_id, txn_ptr);
             if(txn_ptr->storage_type() == "nebula")
-                Nebula::DBRedoLogQueueEnqueue(epoch_id, txn_ptr);
+                Nebula::DBRedoLogQueueEnqueue(thread_id, epoch_id, txn_ptr);
         }
         if(ctx.storageContext.is_tikv_enable) {
             if(txn_ptr->storage_type() == "kv")
-                TiKV::DBRedoLogQueueEnqueue(epoch_id, txn_ptr);
+                TiKV::DBRedoLogQueueEnqueue(thread_id, epoch_id, txn_ptr);
         }
         if(ctx.storageContext.is_leveldb_enable) {
             if(txn_ptr->storage_type() == "kv")
-                LevelDB::DBRedoLogQueueEnqueue(epoch_id, txn_ptr);
+                LevelDB::DBRedoLogQueueEnqueue(thread_id, epoch_id, txn_ptr);
         }
         if(ctx.storageContext.is_hbase_enable) {
             if(txn_ptr->storage_type() == "kv")
-                HBase::DBRedoLogQueueEnqueue(epoch_id, txn_ptr);
+                HBase::DBRedoLogQueueEnqueue(thread_id, epoch_id, txn_ptr);
         }
         txn_ptr.reset();
         return true;

@@ -18,7 +18,7 @@ namespace Taas {
         message_ptr = nullptr;
         sharding_num = ctx.taasContext.kTxnNodeNum;
         local_server_id = ctx.taasContext.txn_node_ip_index;
-        ThreadLocalCountersInit(ctx);
+        ThreadCountersInit(ctx);
     }
 
 
@@ -123,7 +123,7 @@ namespace Taas {
             epoch_record_commit_txn_num_local->IncCount(epoch, txn_ptr->server_id(), 1);
             CRDTMerge::Commit(txn_ptr);
             if(txn_ptr->server_id() == ctx.taasContext.txn_node_ip_index) { /// only local txn do redo log
-                RedoLoger::RedoLog(txn_ptr);
+                RedoLoger::RedoLog(thread_id, txn_ptr);
             }
             epoch_record_committed_txn_num_local->IncCount(epoch, txn_ptr->server_id(), 1);
             success_commit_txn_num_local.fetch_add(1);

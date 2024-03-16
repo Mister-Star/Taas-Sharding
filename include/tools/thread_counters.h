@@ -2,8 +2,8 @@
 // Created by zwx on 24-3-14.
 //
 
-#ifndef TAAS_THTEAD_LOCAL_COUNTERS_H
-#define TAAS_THTEAD_LOCAL_COUNTERS_H
+#ifndef TAAS_THTEAD_COUNTERS_H
+#define TAAS_THTEAD_COUNTERS_H
 
 #pragma once
 
@@ -13,14 +13,12 @@
 
 namespace Taas {
 
-    class ThreadLocalCounters{
-    private:
-
-        uint64_t thread_id = 0, max_length = 0, sharding_num = 0, local_server_id;
-        static std::atomic<uint64_t> inc_id;
-
+    class ThreadCounters{
     public:
+        uint64_t thread_id = 0, max_length = 0, sharding_num = 0, local_server_id;
+
         static Context ctx;
+        static std::atomic<uint64_t> inc_id;
 
     ///message handling
     public:
@@ -189,7 +187,7 @@ namespace Taas {
 
     public:
 
-        void ThreadLocalCountersInit(const Context& context);
+        void ThreadCountersInit(const Context& context);
         static bool StaticInit(const Context& context);
         static bool StaticClear(uint64_t& epoch);
 
@@ -201,4 +199,4 @@ namespace Taas {
 
 }
 
-#endif //TAAS_THTEAD_LOCAL_COUNTERS_H
+#endif //TAAS_THTEAD_COUNTERS_H

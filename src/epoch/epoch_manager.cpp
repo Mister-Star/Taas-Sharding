@@ -50,7 +50,7 @@ namespace Taas {
         CRDTMerge::ctx = ctx;
         Merger::StaticInit(ctx);
         TransactionCache::CacheInit(ctx);
-        ThreadLocalCounters::StaticInit(ctx);
+        ThreadCounters::StaticInit(ctx);
         MessageQueue::StaticInitMessageQueue(ctx);
         EpochMessageSendHandler::StaticInit(ctx);
         EpochMessageReceiveHandler::StaticInit(ctx);
@@ -247,7 +247,7 @@ namespace Taas {
                 EpochManager::ClearMergeEpochState(i); //清空当前epoch的merge信息
                 EpochMessageReceiveHandler::StaticClear(i);//清空current epoch的receive cache num信息
                 TransactionCache::EpochCacheClear(i);
-                ThreadLocalCounters::StaticClear(i);
+                ThreadCounters::StaticClear(i);
                 RedoLoger::ClearRedoLog(i);
                 redo_log_epoch.fetch_add(1);
                 clear_epoch.fetch_add(1);

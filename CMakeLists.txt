@@ -197,7 +197,6 @@ add_library(
         ${PROJECT_NAME}
         ${headers}
         ${sources}
-        include/transaction/transaction_cache.h
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
 

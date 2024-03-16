@@ -58,7 +58,7 @@ namespace Taas {
                 ) {
             EpochManager::SetCommitComplete(i, true);
             auto epoch_commit_success_txn_num =
-                    ThreadLocalCounters::GetAllThreadLocalCountNum(i, ThreadLocalCounters::epoch_record_committed_txn_num_local_vec);
+                    ThreadCounters::GetAllThreadLocalCountNum(i, ThreadCounters::epoch_record_committed_txn_num_local_vec);
             total_commit_txn_num += epoch_commit_success_txn_num;///success
             if(i % ctx.taasContext.print_mode_size == 0) {
                 LOG(INFO) << PrintfToString("************ 完成一个Epoch的合并 Epoch: %lu, EpochSuccessCommitTxnNum: %lu, EpochCommitTxnNum: %lu ************\n",
@@ -144,8 +144,8 @@ namespace Taas {
                 commit_epoch.fetch_add(1);
                 EpochManager::AddLogicalEpoch();
                 auto time7 = now_to_us();
-                auto epoch_commit_success_txn_num = ThreadLocalCounters::GetAllThreadLocalCountNum(epoch,
-                                                ThreadLocalCounters::epoch_record_committed_txn_num_local_vec);
+                auto epoch_commit_success_txn_num = ThreadCounters::GetAllThreadLocalCountNum(epoch,
+                                                ThreadCounters::epoch_record_committed_txn_num_local_vec);
                 total_commit_txn_num += epoch_commit_success_txn_num;///success
 //                if(epoch % ctx.taasContext.print_mode_size == 0)
 //                    LOG(INFO) << PrintfToString("************ 完成一个Epoch的合并 Physical Epoch %lu, Logical Epoch: %lu, Local EpochSuccessCommitTxnNum: %lu,TotalSuccessTxnNum: %lu, EpochCommitTxnNum: %lu ",
@@ -199,8 +199,8 @@ namespace Taas {
                 commit_epoch.fetch_add(1);
                 EpochManager::AddLogicalEpoch();
                 auto time7 = now_to_us();
-                auto epoch_commit_success_txn_num = ThreadLocalCounters::GetAllThreadLocalCountNum(epoch,
-                                                           ThreadLocalCounters::epoch_record_committed_txn_num_local_vec);
+                auto epoch_commit_success_txn_num = ThreadCounters::GetAllThreadLocalCountNum(epoch,
+                                                           ThreadCounters::epoch_record_committed_txn_num_local_vec);
                 total_commit_txn_num += epoch_commit_success_txn_num;///success
 //                if(epoch % ctx.taasContext.print_mode_size == 0)
 //                    LOG(INFO) << PrintfToString("************ 完成一个Epoch的合并 Physical Epoch %lu, Logical Epoch: %lu, Local EpochSuccessCommitTxnNum: %lu,TotalSuccessTxnNum: %lu, EpochCommitTxnNum: %lu ",

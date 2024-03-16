@@ -13,32 +13,101 @@ namespace Taas {
     std::unique_ptr<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>  HBase::task_queue, HBase::redo_log_queue;
     std::vector<std::unique_ptr<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>> HBase::epoch_redo_log_queue;
     std::atomic<uint64_t> HBase::pushed_down_epoch(1);
-    AtomicCounters_Cache HBase::epoch_should_push_down_txn_num(10, 1), HBase::epoch_pushed_down_txn_num(10, 1);
     std::atomic<uint64_t> HBase::total_commit_txn_num(0), HBase::success_commit_txn_num(0), HBase::failed_commit_txn_num(0);
     std::vector<std::unique_ptr<std::atomic<bool>>> HBase::epoch_redo_log_complete;
     std::condition_variable HBase::commit_cv;
 
 
+    std::atomic<uint64_t> HBase::inc_id;
+
+    std::vector<std::shared_ptr<AtomicCounters_Cache>>
+            HBase::epoch_should_push_down_txn_num_local_vec,
+            HBase::epoch_pushed_down_txn_num_local_vec;
+
+    void HBase::Init() {
+        thread_id = inc_id.fetch_add(1);
+        sharding_num = ctx.taasContext.kTxnNodeNum;
+        max_length = ctx.taasContext.kCacheMaxLength;
+        local_server_id = ctx.taasContext.txn_node_ip_index;
+        epoch_should_push_down_txn_num_local= std::make_shared<AtomicCounters_Cache>(max_length, sharding_num);
+        epoch_pushed_down_txn_num_local= std::make_shared<AtomicCounters_Cache>(max_length, sharding_num);
+        epoch_should_push_down_txn_num_local_vec[thread_id] = epoch_should_push_down_txn_num_local;
+        epoch_pushed_down_txn_num_local_vec[thread_id] = epoch_pushed_down_txn_num_local;
+    }
+
     void HBase::StaticInit(const Context &ctx_) {
         ctx = ctx_;
+
         task_queue = std::make_unique<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>();
         redo_log_queue = std::make_unique<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>();
-        pushed_down_epoch.store(1);
-        epoch_should_push_down_txn_num.Init(ctx.taasContext.kCacheMaxLength, ctx.taasContext.kTxnNodeNum);
-        epoch_pushed_down_txn_num.Init(ctx.taasContext.kCacheMaxLength, ctx.taasContext.kTxnNodeNum);
         epoch_redo_log_complete.resize(ctx.taasContext.kCacheMaxLength);
         epoch_redo_log_queue.resize(ctx.taasContext.kCacheMaxLength);
         for(int i = 0; i < static_cast<int>(ctx.taasContext.kCacheMaxLength); i ++) {
             epoch_redo_log_complete[i] = std::make_unique<std::atomic<bool>>(false);
             epoch_redo_log_queue[i] = std::make_unique<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>();
         }
+        epoch_should_push_down_txn_num_local_vec.resize(ctx.storageContext.kHbaseThreadNum);
+        epoch_pushed_down_txn_num_local_vec.resize(ctx.storageContext.kHbaseThreadNum);
     }
 
     void HBase::StaticClear(const uint64_t &epoch) {
-        epoch_should_push_down_txn_num.Clear(epoch);
-        epoch_pushed_down_txn_num.Clear(epoch);
         epoch_redo_log_complete[epoch % ctx.taasContext.kCacheMaxLength]->store(false);
 //        epoch_redo_log_queue[epoch % ctx.taasContext.kCacheMaxLength] = std::make_unique<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>();
+        ClearAllThreadLocalCountNum(epoch, epoch_should_push_down_txn_num_local_vec);
+        ClearAllThreadLocalCountNum(epoch, epoch_pushed_down_txn_num_local_vec);
+    }
+
+    void HBase::ClearAllThreadLocalCountNum(const uint64_t &epoch, const std::vector<std::shared_ptr<AtomicCounters_Cache>> &vec) {
+        for(const auto& i : vec) {
+            if(i != nullptr)
+                i->Clear(epoch);
+        }
+    }
+    uint64_t HBase::GetAllThreadLocalCountNum(const uint64_t &epoch, const std::vector<std::shared_ptr<AtomicCounters_Cache>> &vec) {
+        uint64_t ans = 0;
+        for(const auto& i : vec) {
+            if(i != nullptr)
+                ans += i->GetCount(epoch);
+        }
+        return ans;
+    }
+    uint64_t HBase::GetAllThreadLocalCountNum(const uint64_t &epoch, const uint64_t &sharding_id, const std::vector<std::shared_ptr<AtomicCounters_Cache>> &vec) {
+        uint64_t ans = 0;
+        for(const auto& i : vec) {
+            if(i != nullptr)
+                ans += i->GetCount(epoch, sharding_id);
+        }
+        return ans;
+    }
+
+    bool HBase::CheckEpochPushDownComplete(const uint64_t &epoch) {
+        if(epoch_redo_log_complete[epoch % ctx.taasContext.kCacheMaxLength]->load()) return true;
+//        if(epoch < EpochManager::GetLogicalEpoch() &&
+//           epoch_pushed_down_txn_num_local->GetCount(epoch) >= epoch_should_push_down_txn_num.GetCount(epoch)) {
+//            epoch_redo_log_complete[epoch % ctx.taasContext.kCacheMaxLength]->store(true);
+//            return true;
+//        }
+        if(epoch < EpochManager::GetLogicalEpoch() &&
+           GetAllThreadLocalCountNum(epoch, epoch_should_push_down_txn_num_local_vec) >
+           GetAllThreadLocalCountNum(epoch, epoch_pushed_down_txn_num_local_vec)
+                ) {
+            epoch_redo_log_complete[epoch % ctx.taasContext.kCacheMaxLength]->store(true);
+            return true;
+        }
+        return false;
+    }
+    void HBase::DBRedoLogQueueEnqueue(const uint64_t& thread_id, const uint64_t &epoch, std::shared_ptr<proto::Transaction> txn_ptr) {
+//        epoch_should_push_down_txn_num_local->IncCount(epoch, txn_ptr->server_id(), 1);
+        epoch_should_push_down_txn_num_local_vec[thread_id % inc_id.load() ]->IncCount(epoch, txn_ptr->server_id(), 1);
+        auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
+        epoch_redo_log_queue[epoch_mod]->enqueue(txn_ptr);
+        epoch_redo_log_queue[epoch_mod]->enqueue(nullptr);
+        txn_ptr.reset();
+    }
+
+    bool HBase::DBRedoLogQueueTryDequeue(const uint64_t &epoch, std::shared_ptr<proto::Transaction> txn_ptr) {
+        auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
+        return epoch_redo_log_queue[epoch_mod]->try_dequeue(txn_ptr);
     }
 
     bool HBase::GeneratePushDownTask(const uint64_t &epoch) {
@@ -48,6 +117,7 @@ namespace Taas {
         task_queue->enqueue(nullptr);
         return true;
     }
+
 
     ///YCSB
     const std::string table_name("usertable");
@@ -73,14 +143,6 @@ namespace Taas {
                 if(txn_ptr == nullptr || txn_ptr->txn_type() == proto::TxnType::NullMark) {
                     continue;
                 }
-                redo_log_queue->enqueue(std::move(txn_ptr));
-                redo_log_queue->enqueue(nullptr);
-            }
-
-            while(redo_log_queue->try_dequeue(txn_ptr)) {
-                if (txn_ptr == nullptr || txn_ptr->txn_type() == proto::TxnType::NullMark) {
-                    continue;
-                }
                 hbase_txn.connect(ctx.storageContext.kHbaseIP,9090);
                 try{
                     total_commit_txn_num.fetch_add(1);
@@ -99,7 +161,7 @@ namespace Taas {
                     failed_commit_txn_num.fetch_add(1);
                 }
                 hbase_txn.disconnect();
-                epoch_pushed_down_txn_num.IncCount(txn_ptr->commit_epoch(), txn_ptr->server_id(), 1);
+                epoch_pushed_down_txn_num_local->IncCount(txn_ptr->commit_epoch(), txn_ptr->server_id(), 1);
                 txn_ptr.reset();
                 sleep_flag = false;
             }
@@ -146,34 +208,12 @@ namespace Taas {
                     LOG(INFO) << "*** Commit Txn To Hbase Failed: " << e.what();
                     failed_commit_txn_num.fetch_add(1);
                 }
-                epoch_pushed_down_txn_num.IncCount(txn_ptr->commit_epoch(), txn_ptr->server_id(), 1);
+                epoch_pushed_down_txn_num_local->IncCount(txn_ptr->commit_epoch(), txn_ptr->server_id(), 1);
                 txn_ptr.reset();
                 sleep_flag = false;
             }
             if(sleep_flag)
                 usleep(storage_sleep_time);
         }
-    }
-
-    void HBase::DBRedoLogQueueEnqueue(const uint64_t &epoch, std::shared_ptr<proto::Transaction> txn_ptr) {
-        epoch_should_push_down_txn_num.IncCount(epoch, txn_ptr->server_id(), 1);
-        auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
-        epoch_redo_log_queue[epoch_mod]->enqueue(txn_ptr);
-        epoch_redo_log_queue[epoch_mod]->enqueue(nullptr);
-        txn_ptr.reset();
-    }
-    bool HBase::DBRedoLogQueueTryDequeue(const uint64_t &epoch, std::shared_ptr<proto::Transaction> txn_ptr) {
-        auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
-        return epoch_redo_log_queue[epoch_mod]->try_dequeue(txn_ptr);
-    }
-
-    bool HBase::CheckEpochPushDownComplete(const uint64_t &epoch) {
-        if(epoch_redo_log_complete[epoch % ctx.taasContext.kCacheMaxLength]->load()) return true;
-        if(epoch < EpochManager::GetLogicalEpoch() &&
-           epoch_pushed_down_txn_num.GetCount(epoch) >= epoch_should_push_down_txn_num.GetCount(epoch)) {
-            epoch_redo_log_complete[epoch % ctx.taasContext.kCacheMaxLength]->store(true);
-            return true;
-        }
-        return false;
     }
 }

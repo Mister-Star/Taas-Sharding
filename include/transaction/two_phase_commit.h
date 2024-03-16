@@ -174,7 +174,7 @@ namespace Taas {
     std::unique_ptr<proto::Transaction> local_txn_ptr;
     std::unique_ptr<pack_params> pack_param;
     std::string csn_temp, key_temp, key_str, table_name, csn_result;
-    uint64_t thread_id, server_dequeue_id, epoch_mod, epoch, max_length,
+    uint64_t thread_id = 0, server_dequeue_id, epoch_mod, epoch, max_length,
                                                          /// cache check
         message_epoch, message_sharding_id, message_server_id;  /// message epoch info
     static uint64_t  sharding_num;

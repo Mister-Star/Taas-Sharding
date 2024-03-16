@@ -90,7 +90,7 @@ namespace Taas {
                 }
             }
             if(ctx.storageContext.is_hbase_enable) {
-                for(int i = 0; i < (int)ctx.storageContext.kHbaseTxnThreadNum; i ++) {
+                for(int i = 0; i < (int)ctx.storageContext.kHbaseThreadNum; i ++) {
                     threads.push_back(std::make_unique<std::thread>(WorkerFroHBaseStorageThreadMain, ctx, i)); cnt++;///tikv push down
                 }
             }

@@ -75,7 +75,7 @@ namespace Taas {
         /// storage info
         bool is_tikv_enable = true, is_leveldb_enable = true, is_hbase_enable = true, is_mot_enable = true;
         std::string kMasterIp, kPrivateIp, kTiKVIP, kLevelDBIP, kHbaseIP;
-        uint64_t kTikvThreadNum = 10, kLeveldbThreadNum = 10, kHbaseTxnThreadNum = 10, kMOTThreadNum = 10;
+        uint64_t kTikvThreadNum = 10, kLeveldbThreadNum = 10, kHbaseThreadNum = 10, kMOTThreadNum = 10;
 
 
         void GetStorageInfo(const std::string &config_file_path = "../Storage_config.xml");

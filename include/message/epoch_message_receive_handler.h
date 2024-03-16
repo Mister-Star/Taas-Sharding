@@ -14,11 +14,11 @@
 #include "message/message.h"
 #include "tools/utilities.h"
 #include "tools/thread_pool_light.h"
-#include "tools/thread_local_counters.h"
+#include "tools/thread_counters.h"
 
 namespace Taas {
 
-class EpochMessageReceiveHandler : public ThreadLocalCounters {
+class EpochMessageReceiveHandler : public ThreadCounters {
     public:
         bool Init(const uint64_t &id, const Context& context);
 

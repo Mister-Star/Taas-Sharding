@@ -13,13 +13,13 @@
 
 #include "zmq.hpp"
 #include "proto/message.pb.h"
-#include "tools/thread_local_counters.h"
+#include "tools/thread_counters.h"
 
 #include <cstdint>
 
 namespace Taas {
 
-    class Merger : public ThreadLocalCounters {
+    class Merger : public ThreadCounters {
 
     private:
         Context ctx;

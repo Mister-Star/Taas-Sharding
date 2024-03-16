@@ -4,7 +4,7 @@
 #include "epoch/epoch_manager.h"
 #include "epoch/two_phase_commit.h"
 
-#include "tools/thread_local_counters.h"
+#include "tools/thread_counters.h"
 #include "message/epoch_message_receive_handler.h"
 
 namespace Taas {

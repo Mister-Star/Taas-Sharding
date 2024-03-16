@@ -118,7 +118,7 @@ namespace Taas {
         auto hbase_ip=hbase_ip_port->GetText();
         kHbaseIP = std::string(hbase_ip);
         tinyxml2::XMLElement* hbase_thread_num = root->FirstChildElement("hbase_thread_num");
-        kHbaseTxnThreadNum = std::stoull(hbase_thread_num->GetText());
+        kHbaseThreadNum = std::stoull(hbase_thread_num->GetText());
 
     }
 
