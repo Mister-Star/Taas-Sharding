@@ -45,8 +45,6 @@ namespace Taas {
 
         tinyxml2::XMLElement* merge_thread_num = root->FirstChildElement("merge_thread_num");
         kMergeThreadNum = std::stoull(merge_thread_num->GetText());
-        tinyxml2::XMLElement* commit_thread_num = root->FirstChildElement("commit_thread_num");
-        kCommitThreadNum = std::stoull(commit_thread_num->GetText());
         tinyxml2::XMLElement* epoch_txn_thread_num = root->FirstChildElement("epoch_txn_thread_num");
         kEpochTxnThreadNum = std::stoull(epoch_txn_thread_num->GetText());
         tinyxml2::XMLElement* epoch_message_thread_num = root->FirstChildElement("epoch_message_thread_num");

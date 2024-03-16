@@ -32,6 +32,7 @@ namespace Taas {
         socket_listen.set(zmq::sockopt::sndhwm, queue_length);
         socket_listen.set(zmq::sockopt::rcvhwm, queue_length);
         socket_listen.bind("tcp://*:5551");
+        bool res;
         printf("线程开始工作 ListenClientThread ZMQ_PULL tcp://*:5551\n");
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         while (!EpochManager::IsTimerStop()) {
@@ -40,7 +41,7 @@ namespace Taas {
             assert(recvResult != -1);
             if (is_epoch_advance_started.load()) {
                 MessageQueue::client_receive_message_num.fetch_add(1);
-                auto res = MessageQueue::listen_message_txn_queue->enqueue(std::move(message_ptr));
+                res = MessageQueue::listen_message_txn_queue->enqueue(std::move(message_ptr));
                 assert(res);
                 res = MessageQueue::listen_message_txn_queue->enqueue(nullptr);
                 assert(res); //防止moodycamel取不出
@@ -53,7 +54,7 @@ namespace Taas {
             recvResult = socket_listen.recv((*message_ptr), recvFlags);
             assert(recvResult != -1);
             MessageQueue::client_receive_message_num.fetch_add(1);
-            auto res = MessageQueue::listen_message_txn_queue->enqueue(std::move(message_ptr));
+            res = MessageQueue::listen_message_txn_queue->enqueue(std::move(message_ptr));
 //            printf("线程开始工作 ListenClientThread receive a message\n");
             assert(res);
             res = MessageQueue::listen_message_txn_queue->enqueue(nullptr);
