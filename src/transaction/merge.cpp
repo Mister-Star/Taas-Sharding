@@ -11,17 +11,14 @@
 
 namespace Taas {
 
-    Context Merger::ctx;
 
-    void Merger::Init(uint64_t id_) {
+    void Merger::MergeInit(const uint64_t &id, const Context &ctx_) {
+        ctx = ctx_;
         txn_ptr.reset();
         message_ptr = nullptr;
         sharding_num = ctx.taasContext.kTxnNodeNum;
         local_server_id = ctx.taasContext.txn_node_ip_index;
-    }
-
-    void Merger::StaticInit(const Context &ctx_) {
-        ctx = ctx_;
+        ThreadLocalCountersInit(ctx);
     }
 
 

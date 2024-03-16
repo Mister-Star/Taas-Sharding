@@ -12,20 +12,21 @@
 
 
 namespace Taas {
-    Context EpochMessageReceiveHandler::ctx;
 
-    bool EpochMessageReceiveHandler::Init(const uint64_t &id) {
+    bool EpochMessageReceiveHandler::Init(const uint64_t &id, const Context& context) {
+        ctx = context;
         message_ptr = nullptr;
         txn_ptr.reset();
         thread_id = id;
         sharding_num = ctx.taasContext.kTxnNodeNum;
         local_server_id = ctx.taasContext.txn_node_ip_index;
         max_length = ctx.taasContext.kCacheMaxLength;
+        ThreadLocalCountersInit(ctx);
         return true;
     }
 
     bool EpochMessageReceiveHandler::StaticInit(const Context& context) {
-        ctx = context;
+
         return true;
     }
 

@@ -189,7 +189,7 @@ namespace Taas {
 
     public:
 
-        void Init(const uint64_t &id_, const Context& context);
+        void ThreadLocalCountersInit(const Context& context);
         static bool StaticInit(const Context& context);
         static bool StaticClear(uint64_t& epoch);
 

@@ -17,7 +17,7 @@ namespace Taas {
         EpochMessageReceiveHandler receiveHandler;
         class TwoPC twoPC;
         while(init_ok_num.load() < 1) usleep(sleep_time);
-        receiveHandler.Init(id);
+        receiveHandler.Init(id, ctx);
         twoPC.Init(ctx, id);
         init_ok_num.fetch_add(1);
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
@@ -49,7 +49,7 @@ namespace Taas {
         EpochMessageReceiveHandler receiveHandler;
         class TwoPC twoPC;
         while(init_ok_num.load() < 1) usleep(sleep_time);
-        receiveHandler.Init(id);
+        receiveHandler.Init(id, ctx);
         twoPC.Init(ctx, id);
         init_ok_num.fetch_add(1);
         while(!EpochManager::IsInitOK()) usleep(sleep_time);

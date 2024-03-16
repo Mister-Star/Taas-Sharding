@@ -13,7 +13,7 @@ namespace Taas {
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         Merger merger;
         while(init_ok_num.load() < 1) usleep(sleep_time);
-        merger.Init(id);
+        merger.MergeInit(id, ctx);
         init_ok_num.fetch_add(1);
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         auto txn_ptr = std::make_shared<proto::Transaction>();

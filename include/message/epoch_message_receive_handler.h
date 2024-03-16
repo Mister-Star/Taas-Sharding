@@ -18,9 +18,9 @@
 
 namespace Taas {
 
-class EpochMessageReceiveHandler : public Taas::ThreadLocalCounters {
+class EpochMessageReceiveHandler : public ThreadLocalCounters {
     public:
-        bool Init(const uint64_t &id);
+        bool Init(const uint64_t &id, const Context& context);
 
         void HandleReceivedMessage();
         void HandleReceivedControlMessage();
@@ -43,6 +43,7 @@ class EpochMessageReceiveHandler : public Taas::ThreadLocalCounters {
         static bool StaticClear(uint64_t& epoch);
 
     private:
+        Context ctx;
         std::unique_ptr<zmq::message_t> message_ptr;
         std::unique_ptr<std::string> message_string_ptr;
         std::unique_ptr<proto::Message> msg_ptr;
@@ -62,7 +63,6 @@ class EpochMessageReceiveHandler : public Taas::ThreadLocalCounters {
 
 
     public:
-        static Context ctx;
         void Sharding();
 
     };

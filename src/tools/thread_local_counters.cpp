@@ -99,7 +99,7 @@ namespace Taas{
 
 
 
-    void ThreadLocalCounters::Init(const uint64_t& id_, const Context& context) {
+    void ThreadLocalCounters::ThreadLocalCountersInit(const Context& context) {
         thread_id = inc_id.fetch_add(1);
         sharding_num = context.taasContext.kTxnNodeNum;
         max_length = context.taasContext.kCacheMaxLength;
@@ -150,7 +150,7 @@ namespace Taas{
 
     bool ThreadLocalCounters::StaticInit(const Context& context) {
         ctx = context;
-        auto thread_total_num = ctx.taasContext.kMergeThreadNum + ctx.taasContext.kEpochMessageThreadNum;
+        auto thread_total_num = ctx.taasContext.kMergeThreadNum + ctx.taasContext.kEpochMessageThreadNum + ctx.taasContext.kEpochTxnThreadNum;
         auto max_length = context.taasContext.kCacheMaxLength;
         auto sharding_num = context.taasContext.kTxnNodeNum;
 
@@ -220,6 +220,7 @@ namespace Taas{
 
         ///Merge
         epoch_should_read_validate_txn_num_local_vec.resize(thread_total_num);
+        epoch_read_validated_txn_num_local_vec.resize(thread_total_num);
         epoch_should_merge_txn_num_local_vec.resize(thread_total_num);
         epoch_merged_txn_num_local_vec.resize(thread_total_num);
         epoch_should_commit_txn_num_local_vec.resize(thread_total_num);
@@ -236,14 +237,6 @@ namespace Taas{
             epoch_merge_complete[i] = std::make_unique<std::atomic<bool>>(false);
             epoch_commit_complete[i] = std::make_unique<std::atomic<bool>>(false);
         }
-
-        epoch_should_read_validate_txn_num_local_vec.resize(thread_total_num);
-        epoch_should_merge_txn_num_local_vec.resize(thread_total_num);
-        epoch_merged_txn_num_local_vec.resize(thread_total_num);
-        epoch_should_commit_txn_num_local_vec.resize(thread_total_num);
-        epoch_committed_txn_num_local_vec.resize(thread_total_num);
-        epoch_record_commit_txn_num_local_vec.resize(thread_total_num);
-        epoch_record_committed_txn_num_local_vec.resize(thread_total_num);
         return true;
     }
 

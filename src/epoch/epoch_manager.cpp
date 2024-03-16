@@ -49,6 +49,8 @@ namespace Taas {
     void InitEpochTimerManager(const Context& ctx){
         CRDTMerge::ctx = ctx;
         Merger::StaticInit(ctx);
+        TransactionCache::CacheInit(ctx);
+        ThreadLocalCounters::StaticInit(ctx);
         MessageQueue::StaticInitMessageQueue(ctx);
         EpochMessageSendHandler::StaticInit(ctx);
         EpochMessageReceiveHandler::StaticInit(ctx);
