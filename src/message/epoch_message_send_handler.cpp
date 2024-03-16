@@ -210,7 +210,7 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
             txn_end->set_txn_type(proto::TxnType::BackUpEpochEndFlag);
             txn_end->set_commit_epoch(epoch);
             txn_end->set_sharding_id(0);
-            txn_end->set_csn(static_cast<uint64_t>(EpochMessageReceiveHandler::backup_should_send_txn_num.GetCount(epoch)));
+            txn_end->set_csn(static_cast<uint64_t>(EpochMessageReceiveHandler::GetAllThreadLocalCountNum(epoch, EpochMessageReceiveHandler::backup_should_send_txn_num_local_vec)));
             auto serialized_txn_str_ptr = std::make_unique<std::string>();
             Gzip(msg.get(), serialized_txn_str_ptr.get());
             uint64_t to_id ;

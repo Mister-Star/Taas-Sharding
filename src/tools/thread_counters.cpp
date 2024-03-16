@@ -40,15 +40,11 @@ namespace Taas{
             ThreadCounters::sharding_should_receive_pack_num(10, 1),
             ThreadCounters::sharding_received_pack_num(10, 1),
             ThreadCounters::sharding_should_receive_txn_num(10, 1),
-            ThreadCounters::sharding_received_txn_num(10, 1),
             ThreadCounters::sharding_received_ack_num(10, 1),
 
-            ThreadCounters::backup_should_send_txn_num(10, 1),
-            ThreadCounters::backup_send_txn_num(10, 1),
             ThreadCounters::backup_should_receive_pack_num(10, 1),
             ThreadCounters::backup_received_pack_num(10, 1),
             ThreadCounters::backup_should_receive_txn_num(10, 1),
-            ThreadCounters::backup_received_txn_num(10, 1),
 
             ThreadCounters::backup_received_ack_num(10, 1),
 
@@ -192,15 +188,11 @@ namespace Taas{
         sharding_should_receive_pack_num.Init(max_length, sharding_num, 1),
         sharding_received_pack_num.Init(max_length, sharding_num),
         sharding_should_receive_txn_num.Init(max_length, sharding_num, 0),
-        sharding_received_txn_num.Init(max_length, sharding_num),
         sharding_received_ack_num.Init(max_length, sharding_num),
 
-        backup_should_send_txn_num.Init(max_length, sharding_num),
-        backup_send_txn_num.Init(max_length, sharding_num),
         backup_should_receive_pack_num.Init(max_length, sharding_num, 1),
         backup_received_pack_num.Init(max_length, sharding_num),
         backup_should_receive_txn_num.Init(max_length, sharding_num, 0),
-        backup_received_txn_num.Init(max_length, sharding_num),
         backup_received_ack_num.Init(max_length, sharding_num),
 
         insert_set_should_receive_num.Init(max_length, sharding_num, 1),
@@ -248,14 +240,10 @@ namespace Taas{
         sharding_should_receive_pack_num.Clear(cache_clear_epoch_num_mod, 1),///relate to server state
         sharding_received_pack_num.Clear(cache_clear_epoch_num_mod, 0),
         sharding_should_receive_txn_num.Clear(cache_clear_epoch_num_mod, 0),
-        sharding_received_txn_num.Clear(cache_clear_epoch_num_mod, 0),
         sharding_received_ack_num.Clear(cache_clear_epoch_num_mod, 0),
-        backup_should_send_txn_num.Clear(cache_clear_epoch_num_mod, 0),
-        backup_send_txn_num.Clear(cache_clear_epoch_num_mod, 0),
         backup_should_receive_pack_num.Clear(cache_clear_epoch_num_mod, 1),///relate to server state
         backup_received_pack_num.Clear(cache_clear_epoch_num_mod, 0),
         backup_should_receive_txn_num.Clear(cache_clear_epoch_num_mod, 0),
-        backup_received_txn_num.Clear(cache_clear_epoch_num_mod, 0),
         backup_received_ack_num.Clear(cache_clear_epoch_num_mod, 0),
         insert_set_should_receive_num.Clear(cache_clear_epoch_num_mod, 1),///relate to server state
         insert_set_received_num.Clear(cache_clear_epoch_num_mod, 0),

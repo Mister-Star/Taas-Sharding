@@ -67,15 +67,11 @@ namespace Taas {
             sharding_should_receive_pack_num,
             sharding_received_pack_num,
             sharding_should_receive_txn_num,
-            sharding_received_txn_num,
             sharding_received_ack_num,
 
-            backup_should_send_txn_num,
-            backup_send_txn_num,
             backup_should_receive_pack_num,
             backup_received_pack_num,
             backup_should_receive_txn_num,
-            backup_received_txn_num,
             backup_received_ack_num,
 
             insert_set_should_receive_num,

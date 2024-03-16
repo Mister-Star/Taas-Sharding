@@ -224,17 +224,17 @@ namespace Taas {
             }
             case proto::TxnType::EpochShardingACK : {
                 sharding_received_ack_num.IncCount(message_epoch,message_server_id, 1);
-                CheckEpochShardingSendComplete(message_epoch);
+//                CheckEpochShardingSendComplete(message_epoch);
                 break;
             }
             case proto::TxnType::BackUpACK : {
                 backup_received_ack_num.IncCount(message_epoch,message_server_id, 1);
-                CheckEpochBackUpComplete(message_epoch);
+//                CheckEpochBackUpComplete(message_epoch);
                 break;
             }
             case proto::TxnType::AbortSetACK : {
                 abort_set_received_ack_num.IncCount(message_epoch,message_server_id, 1);
-                CheckEpochAbortSetMergeComplete(message_epoch);
+//                CheckEpochAbortSetMergeComplete(message_epoch);
                 break;
             }
             case proto::TxnType::InsertSetACK : {
