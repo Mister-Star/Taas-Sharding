@@ -137,8 +137,6 @@ namespace Taas {
 
     void Merger::EpochMerge() {
         epoch = EpochManager::GetLogicalEpoch();
-        std::mutex mtx;
-        std::unique_lock lck(mtx);
         while (!EpochManager::IsTimerStop()) {
             sleep_flag = true;
             epoch = EpochManager::GetLogicalEpoch();

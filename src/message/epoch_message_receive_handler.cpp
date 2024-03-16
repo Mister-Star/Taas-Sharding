@@ -82,6 +82,20 @@ namespace Taas {
         }
     }
 
+    void EpochMessageReceiveHandler::TryHandleReceivedMessage() {
+        begin:
+        if(MessageQueue::listen_message_txn_queue->try_dequeue(message_ptr)) {
+            if (message_ptr == nullptr || message_ptr->empty()) goto begin;
+            message_string_ptr = std::make_unique<std::string>(static_cast<const char *>(message_ptr->data()),message_ptr->size());
+            msg_ptr = std::make_unique<proto::Message>();
+            res = UnGzip(msg_ptr.get(), message_string_ptr.get());
+            assert(res);
+            txn_ptr = std::make_shared<proto::Transaction>(msg_ptr->txn());
+            HandleReceivedTxn();
+            txn_ptr.reset();
+        }
+    }
+
     void EpochMessageReceiveHandler::HandleReceivedControlMessage() {
         while(!EpochManager::IsTimerStop()) {
             MessageQueue::listen_message_epoch_queue->wait_dequeue(message_ptr);
@@ -106,6 +120,21 @@ namespace Taas {
 //            else {
 //                usleep(50);
 //            }
+        }
+    }
+
+    void EpochMessageReceiveHandler::TryHandleReceivedControlMessage() {
+        begin:
+        if(MessageQueue::listen_message_epoch_queue->try_dequeue(message_ptr)) {
+            if (message_ptr == nullptr || message_ptr->empty()) goto begin;
+            message_string_ptr = std::make_unique<std::string>(static_cast<const char *>(message_ptr->data()),message_ptr->size());
+            msg_ptr = std::make_unique<proto::Message>();
+            res = UnGzip(msg_ptr.get(), message_string_ptr.get());
+            assert(res);
+            txn_ptr = std::make_shared<proto::Transaction>(msg_ptr->txn());
+            HandleReceivedTxn();
+            txn_ptr.reset();
+            sleep_flag = false;
         }
     }
 

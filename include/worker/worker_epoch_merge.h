@@ -11,6 +11,7 @@ namespace Taas {
 
     extern void WorkerFroMergeThreadMain(const Context& ctx, uint64_t id);
     extern void WorkerFroCommitThreadMain(const Context& ctx, uint64_t id);
+    extern void EpochWorkerThreadMain(const Context& ctx, uint64_t id);
 
 }
 

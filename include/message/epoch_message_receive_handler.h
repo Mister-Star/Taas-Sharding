@@ -23,7 +23,9 @@ class EpochMessageReceiveHandler : public ThreadCounters {
         bool Init(const uint64_t &id, const Context& context);
 
         void HandleReceivedMessage();
+        void TryHandleReceivedMessage();
         void HandleReceivedControlMessage();
+        void TryHandleReceivedControlMessage();
         bool SetMessageRelatedCountersInfo();
         bool HandleReceivedTxn();
         void HandleMultiModelClientSubTxn(const uint64_t& txn_id);
@@ -56,7 +58,7 @@ class EpochMessageReceiveHandler : public ThreadCounters {
                 server_reply_ack_id = 0,
                 cache_clear_epoch_num = 0, cache_clear_epoch_num_mod = 0,
                 redo_log_push_down_reply = 1;
-
+    public:
         bool res, sleep_flag;
         std::shared_ptr<proto::Transaction> empty_txn_ptr;
         std::hash<std::string> _hash;

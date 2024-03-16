@@ -21,7 +21,7 @@ namespace Taas {
 
     class Merger : public ThreadCounters {
 
-    private:
+    public:
         Context ctx;
         std::unique_ptr<zmq::message_t> message_ptr;
         std::unique_ptr<std::string> message_string_ptr;
