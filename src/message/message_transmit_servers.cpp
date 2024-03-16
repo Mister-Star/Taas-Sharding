@@ -81,7 +81,7 @@ namespace Taas {
         printf("Send Server bind ZMQ_PUB %s", ("tcp://*:" + std::to_string(22000+ctx.taasContext.txn_node_ip_index) + "\n").c_str());
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         while (!EpochManager::IsTimerStop()) {
-            MessageQueue::send_to_server_queue->wait_dequeue(params);
+            MessageQueue::send_to_server_pub_queue->wait_dequeue(params);
             if (params == nullptr || params->type == proto::TxnType::NullMark || params->str == nullptr) continue;
             assert(params->id != ctx.taasContext.txn_node_ip_index);
             assert(params->id < ctx.taasContext.kTxnNodeNum);
