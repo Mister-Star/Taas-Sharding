@@ -86,8 +86,8 @@ namespace Taas {
 //            return true;
 //        }
         if(epoch < EpochManager::GetLogicalEpoch() &&
-           GetAllThreadLocalCountNum(epoch, epoch_should_push_down_txn_num_local_vec) >
-           GetAllThreadLocalCountNum(epoch, epoch_pushed_down_txn_num_local_vec)
+            GetAllThreadLocalCountNum(epoch, epoch_pushed_down_txn_num_local_vec) >=
+            GetAllThreadLocalCountNum(epoch, epoch_should_push_down_txn_num_local_vec)
                 ) {
             epoch_redo_log_complete[epoch % ctx.taasContext.kCacheMaxLength]->store(true);
             return true;
