@@ -26,7 +26,6 @@ namespace Taas {
     }
 
     bool EpochMessageReceiveHandler::StaticInit(const Context& context) {
-
         return true;
     }
 

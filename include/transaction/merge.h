@@ -30,12 +30,9 @@ namespace Taas {
         std::shared_ptr<std::vector<std::shared_ptr<proto::Transaction>>> sharding_row_vector;
         std::unique_ptr<pack_params> pack_param;
         std::string csn_temp, key_temp, key_str, table_name, csn_result;
-        uint64_t local_server_id,
-                server_dequeue_id = 0, epoch_mod = 0, epoch = 0, max_length = 0, sharding_num = 0,///cache check
+        uint64_t local_server_id, server_dequeue_id = 0, epoch_mod = 0, epoch = 0, max_length = 0, sharding_num = 0,///cache check
         message_epoch = 0, message_epoch_mod = 0, message_sharding_id = 0, message_server_id = 0, ///message epoch info
-        server_reply_ack_id = 0,
-                cache_clear_epoch_num = 0, cache_clear_epoch_num_mod = 0,
-                redo_log_push_down_reply = 1, txn_server_id = 0;;
+        server_reply_ack_id = 0, cache_clear_epoch_num = 0, cache_clear_epoch_num_mod = 0, redo_log_push_down_reply = 1, txn_server_id = 0;;
 
         bool res, sleep_flag;
         std::shared_ptr<proto::Transaction> empty_txn_ptr;

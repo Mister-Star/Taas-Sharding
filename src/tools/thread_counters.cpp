@@ -353,16 +353,15 @@ namespace Taas{
         return false;
     }
 
-    bool ThreadCounters::IsShardingSendFinish(const uint64_t &epoch, const uint64_t &sharding_id) {
-        return epoch < EpochManager::GetPhysicalEpoch() &&
-
-               GetAllThreadLocalCountNum(epoch, sharding_id, sharding_send_txn_num_local_vec) >=
-               GetAllThreadLocalCountNum(epoch, sharding_id, sharding_should_send_txn_num_local_vec) &&
-
-               GetAllThreadLocalCountNum(epoch, sharding_id, sharding_handled_local_txn_num_local_vec) >=
-               GetAllThreadLocalCountNum(epoch, sharding_id, sharding_should_handle_local_txn_num_local_vec)
-                ;
-    }
+//    bool ThreadCounters::IsShardingSendFinish(const uint64_t &epoch, const uint64_t &sharding_id) {
+//        return epoch < EpochManager::GetPhysicalEpoch() &&
+//
+//               GetAllThreadLocalCountNum(epoch, sharding_id, sharding_send_txn_num_local_vec) >=
+//               GetAllThreadLocalCountNum(epoch, sharding_id, sharding_should_send_txn_num_local_vec) &&
+//
+//               GetAllThreadLocalCountNum(epoch, sharding_id, sharding_handled_local_txn_num_local_vec) >=
+//               GetAllThreadLocalCountNum(epoch, sharding_id, sharding_should_handle_local_txn_num_local_vec);
+//    }
     bool ThreadCounters::IsShardingSendFinish(const uint64_t &epoch) {
         return epoch < EpochManager::GetPhysicalEpoch() &&
 
@@ -400,14 +399,12 @@ namespace Taas{
                GetAllThreadLocalCountNum(epoch, sharding_should_handle_remote_txn_num_local_vec);
     }
     bool ThreadCounters::IsShardingTxnReceiveComplete(const uint64_t &epoch) {
-        for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i ++) {
-            if(i == ctx.taasContext.txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
-            if(GetAllThreadLocalCountNum(epoch, i, sharding_received_txn_num_local_vec) < sharding_should_receive_txn_num.GetCount(epoch, i)) return false;
-        }
+        if(GetAllThreadLocalCountNum(epoch, sharding_received_txn_num_local_vec) < sharding_should_receive_txn_num.GetCount(epoch))
+                return false;
         return true;
     }
     bool ThreadCounters::IsShardingTxnReceiveComplete(const uint64_t &epoch, const uint64_t &id) {
-        return GetAllThreadLocalCountNum(epoch, id, sharding_received_txn_num_local_vec) >= sharding_should_receive_txn_num.GetCount(epoch, id);
+        return GetAllThreadLocalCountNum(epoch, sharding_received_txn_num_local_vec) >= sharding_should_receive_txn_num.GetCount(epoch, id);
     }
     bool ThreadCounters::IsShardingPackReceiveComplete(const uint64_t &epoch) {
         for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i ++) {
@@ -429,7 +426,7 @@ namespace Taas{
         return true;
     }
     bool ThreadCounters::IsBackUpTxnReceiveComplete(const uint64_t &epoch, const uint64_t &id) {
-        return GetAllThreadLocalCountNum(epoch, backup_received_txn_num_local_vec) >= backup_should_receive_txn_num.GetCount(epoch, id);
+        return GetAllThreadLocalCountNum(epoch, id, backup_received_txn_num_local_vec) >= backup_should_receive_txn_num.GetCount(epoch, id);
     }
     bool ThreadCounters::IsBackUpPackReceiveComplete(const uint64_t &epoch) {
         for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i ++) {
@@ -550,38 +547,30 @@ namespace Taas{
     }
 
     bool ThreadCounters::IsReadValidateComplete(const uint64_t& epoch) {
-        for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i++) {
-            if(GetAllThreadLocalCountNum(epoch,i, epoch_should_read_validate_txn_num_local_vec) >
-               GetAllThreadLocalCountNum(epoch,i, epoch_read_validated_txn_num_local_vec))
-                return false;
-        }
+        if(GetAllThreadLocalCountNum(epoch, epoch_should_read_validate_txn_num_local_vec) >
+           GetAllThreadLocalCountNum(epoch, epoch_read_validated_txn_num_local_vec))
+            return false;
         return true;
     }
     bool ThreadCounters::IsMergeComplete(const uint64_t& epoch) {
-        for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i++) {
-            if(GetAllThreadLocalCountNum(epoch,i, epoch_should_read_validate_txn_num_local_vec) >
-               GetAllThreadLocalCountNum(epoch,i, epoch_read_validated_txn_num_local_vec))
+        if(GetAllThreadLocalCountNum(epoch,epoch_should_read_validate_txn_num_local_vec) >
+           GetAllThreadLocalCountNum(epoch,epoch_read_validated_txn_num_local_vec))
                 return false;
-            if(GetAllThreadLocalCountNum(epoch,i, epoch_should_merge_txn_num_local_vec) >
-               GetAllThreadLocalCountNum(epoch,i, epoch_merged_txn_num_local_vec))
+        if(GetAllThreadLocalCountNum(epoch, epoch_should_merge_txn_num_local_vec) >
+           GetAllThreadLocalCountNum(epoch, epoch_merged_txn_num_local_vec))
                 return false;
-        }
         return true;
     }
     bool ThreadCounters::IsCommitComplete(const uint64_t & epoch) {
-        for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i++) {
-            if(GetAllThreadLocalCountNum(epoch,i, epoch_should_commit_txn_num_local_vec) >
-               GetAllThreadLocalCountNum(epoch,i, epoch_committed_txn_num_local_vec))
-                return false;
-        }
+        if(GetAllThreadLocalCountNum(epoch, epoch_should_commit_txn_num_local_vec) >
+           GetAllThreadLocalCountNum(epoch, epoch_committed_txn_num_local_vec))
+            return false;
         return true;
     }
     bool ThreadCounters::IsRedoLogComplete(const uint64_t & epoch) {
-        for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i++) {
-            if(GetAllThreadLocalCountNum(epoch,i, epoch_record_commit_txn_num_local_vec) >
-               GetAllThreadLocalCountNum(epoch,i, epoch_record_committed_txn_num_local_vec))
-                return false;
-        }
+        if(GetAllThreadLocalCountNum(epoch, epoch_record_commit_txn_num_local_vec) >
+           GetAllThreadLocalCountNum(epoch, epoch_record_committed_txn_num_local_vec))
+            return false;
         return true;
     }
 
