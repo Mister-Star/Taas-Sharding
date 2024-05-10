@@ -70,7 +70,6 @@ namespace Taas {
         TransactionCache::epoch_redo_log_queue[epoch_mod_temp]->enqueue(nullptr);
     }
 
-
     void EpochMessageReceiveHandler::HandleReceivedMessage() {
         while(!EpochManager::IsTimerStop()) {
             MessageQueue::listen_message_txn_queue->wait_dequeue(message_ptr);
@@ -176,8 +175,8 @@ namespace Taas {
         }
         backup_should_send_txn_num_local->IncCount(message_epoch, txn_server_id, 1);
         EpochMessageSendHandler::SendTxnToServer(message_epoch, txn_server_id, txn_ptr, proto::TxnType::BackUpTxn);
-        backup_send_txn_num_local->IncCount(message_epoch, txn_server_id, 1);
         RedoLogQueueEnqueue(message_epoch, txn_ptr); /// full txn for redo log
+        backup_send_txn_num_local->IncCount(message_epoch, txn_server_id, 1);
     }
 
     bool EpochMessageReceiveHandler::SetMessageRelatedCountersInfo() {
@@ -246,7 +245,7 @@ namespace Taas {
             case proto::EpochRemoteServerEndFlag : {
                 remote_server_should_receive_txn_num.IncCount(message_epoch, message_server_id,txn_ptr->csn());
                 remote_server_received_pack_num.IncCount(message_epoch, message_server_id, 1);
-                CheckEpochShardReceiveComplete(message_epoch);
+                CheckEpochRemoteServerReceiveComplete(message_epoch);
                 EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, empty_txn_ptr, proto::TxnType::EpochShardACK);
                 break;
             }

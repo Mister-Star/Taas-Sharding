@@ -11,27 +11,27 @@
 namespace Taas {
 
     void WorkerFroMergeThreadMain(const Context& ctx, uint64_t id) {
-        std::string name = "EpochMerge-" + std::to_string(id);
-        pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
-        Merger merger;
-        while(init_ok_num.load() < 1) usleep(sleep_time);
-        merger.MergeInit(id, ctx);
-        init_ok_num.fetch_add(1);
-        while(!EpochManager::IsInitOK()) usleep(sleep_time);
-        auto txn_ptr = std::make_shared<proto::Transaction>();
-        switch(ctx.taasContext.taasMode) {
-            case TaasMode::MultiModel :
-            case TaasMode::MultiMaster :
-            case TaasMode::Shard : {
-                while(!EpochManager::IsTimerStop()) {
-                    merger.EpochMerge();
-                }
-                break;
-            }
-            case TaasMode::TwoPC : {
-                break;
-            }
-        }
+//        std::string name = "EpochMerge-" + std::to_string(id);
+//        pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+//        Merger merger;
+//        while(init_ok_num.load() < 1) usleep(sleep_time);
+//        merger.MergeInit(id, ctx);
+//        init_ok_num.fetch_add(1);
+//        while(!EpochManager::IsInitOK()) usleep(sleep_time);
+//        auto txn_ptr = std::make_shared<proto::Transaction>();
+//        switch(ctx.taasContext.taasMode) {
+//            case TaasMode::MultiModel :
+//            case TaasMode::MultiMaster :
+//            case TaasMode::Shard : {
+//                while(!EpochManager::IsTimerStop()) {
+//                    merger.EpochMerge();
+//                }
+//                break;
+//            }
+//            case TaasMode::TwoPC : {
+//                break;
+//            }
+//        }
     }
 
     void EpochWorkerThreadMain(const Context& ctx, uint64_t id) {
@@ -47,6 +47,7 @@ namespace Taas {
         auto sleep_flag = true;
         init_ok_num.fetch_add(1);
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
+        auto safe_length = ctx.taasContext.kCacheMaxLength / 2;
         switch(ctx.taasContext.taasMode) {
             case TaasMode::MultiModel :
             case TaasMode::MultiMaster :
@@ -85,8 +86,20 @@ namespace Taas {
                         }
                     }
 
+                    if(EpochManager::IsAbortSetMergeComplete(merger.epoch) && !EpochManager::IsRecordCommitted(merger.epoch)) {
+                        while (!EpochManager::IsRecordCommitted(merger.epoch) && TransactionCache::epoch_redo_log_queue[merger.epoch_mod]->try_dequeue(merger.txn_ptr)) {
+                            if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() != proto::TxnType::NullMark) { /// only local txn do redo log
+                                merger.RedoLog();
+                                merger.txn_ptr.reset();
+                                sleep_flag = false;
+                            }
+                        }
+                    }
+
+
                     receiveHandler.TryHandleReceivedControlMessage();
-                    receiveHandler.TryHandleReceivedMessage();
+                    if( EpochManager::GetLogicalEpoch() + safe_length > EpochManager::GetPhysicalEpoch() ) /// avoid task backlogs, stop handling txn comes from the client
+                        receiveHandler.TryHandleReceivedMessage();
 
                     sleep_flag = sleep_flag & receiveHandler.sleep_flag;
 

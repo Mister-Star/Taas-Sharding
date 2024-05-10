@@ -26,12 +26,12 @@
 
 
     <glog_path>/tmp</glog_path>
-    <print_mode_size>100</print_mode_size>
+    <print_mode_size>1</print_mode_size>
 <!-- end TaaS config-->
 <!-- test config   -->
     <duration_time_us>0</duration_time_us>
-    <test_client_num>1</test_client_num>
+    <test_client_num>5</test_client_num>
     <test_key_range>10000</test_key_range>
-    <test_txn_op_num>2</test_txn_op_num>
+    <test_txn_op_num>10</test_txn_op_num>
 <!-- end test config   -->
 </root>

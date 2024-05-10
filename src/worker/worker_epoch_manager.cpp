@@ -21,20 +21,7 @@ namespace Taas {
         std::string name = "EpochLogical";
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         SetCPU();
-        switch(ctx.taasContext.taasMode) {
-            case TaasMode::MultiModel :
-            case TaasMode::MultiMaster : {
-                MultiMasterEpochManager::EpochLogicalTimerManagerThreadMain(ctx);
-                break;
-            }
-            case TaasMode::Shard : {
-                ShardEpochManager::EpochLogicalTimerManagerThreadMain(ctx);
-                break;
-            }
-            case TaasMode::TwoPC : {
-                TwoPhaseCommitManager::TwoPhaseCommitManagerThreadMain(ctx);
-            }
-        }
+        ShardEpochManager::EpochLogicalTimerManagerThreadMain(ctx);
     }
 
     void WorkerForLogicalRedoLogPushDownCheckThreadMain(const Context& ctx) {

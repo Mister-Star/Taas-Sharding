@@ -20,7 +20,7 @@
 namespace Taas {
 
     using namespace std;
-    const uint64_t sleep_time = 100, logical_sleep_timme = 100, storage_sleep_time = 100, merge_sleep_time = 100, message_sleep_time = 50;
+    const uint64_t sleep_time = 100, logical_sleep_timme = 50, storage_sleep_time = 100, merge_sleep_time = 100, message_sleep_time = 50;
     uint64_t cache_server_available = 1, total_commit_txn_num = 0;
     std::atomic<uint64_t> merge_epoch = 1, abort_set_epoch = 1,
             commit_epoch = 1, redo_log_epoch = 1, clear_epoch = 1;
@@ -186,8 +186,8 @@ namespace Taas {
        Merger::GetAllThreadLocalCountNum(epoch_mod, Merger::epoch_should_merge_txn_num_local_vec),
        Merger::GetAllThreadLocalCountNum(epoch_mod, Merger::epoch_committed_txn_num_local_vec),
        Merger::GetAllThreadLocalCountNum(epoch_mod, Merger::epoch_should_commit_txn_num_local_vec),
-       Merger::GetAllThreadLocalCountNum(epoch_mod, Merger::epoch_record_committed_txn_num_local_vec),
        Merger::GetAllThreadLocalCountNum(epoch_mod, Merger::epoch_record_commit_txn_num_local_vec),
+       Merger::GetAllThreadLocalCountNum(epoch_mod, Merger::epoch_record_committed_txn_num_local_vec),
        EpochMessageReceiveHandler::shard_should_receive_pack_num.GetCount(epoch_mod),
        EpochMessageReceiveHandler::shard_received_pack_num.GetCount(epoch_mod),
        EpochMessageReceiveHandler::shard_should_receive_txn_num.GetCount(epoch_mod),

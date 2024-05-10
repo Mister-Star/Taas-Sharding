@@ -196,7 +196,7 @@ namespace Taas {
         bool sleep_flag;
         while(!EpochManager::IsTimerStop()) {
             epoch = EpochManager::GetPushDownEpoch();
-            while (!EpochManager::IsCommitComplete(epoch)) {
+            while (!EpochManager::IsRecordCommitted(epoch)) {
                 commit_cv.wait(lck);
                 epoch = EpochManager::GetPushDownEpoch();
             }
