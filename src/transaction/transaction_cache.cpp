@@ -32,7 +32,8 @@ namespace Taas{
     std::vector<std::unique_ptr<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>>
             TransactionCache::epoch_read_validate_queue,
             TransactionCache::epoch_merge_queue,
-            TransactionCache::epoch_commit_queue;
+            TransactionCache::epoch_commit_queue,
+            TransactionCache::epoch_redo_log_queue;
 
 
     void TransactionCache::CacheInit(const Context &context) {
@@ -61,6 +62,7 @@ namespace Taas{
         epoch_read_validate_queue.resize(max_length);
         epoch_merge_queue.resize(max_length);
         epoch_commit_queue.resize(max_length);
+        epoch_redo_log_queue.resize(max_length);
 
         for(int i = 0; i < static_cast<int>(max_length); i ++) {
             epoch_merge_map[i] = std::make_unique<concurrent_crdt_unordered_map<std::string, std::string, std::string>>();
@@ -73,6 +75,7 @@ namespace Taas{
             epoch_read_validate_queue[i] = std::make_unique<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>();
             epoch_merge_queue[i] = std::make_unique<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>();
             epoch_commit_queue[i] = std::make_unique<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>();
+            epoch_redo_log_queue[i] = std::make_unique<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>();
         }
     }
 

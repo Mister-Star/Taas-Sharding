@@ -12,24 +12,24 @@
 namespace Taas {
     std::atomic<uint64_t> TwoPCMessageSendHandler::TotalLatency(0), TwoPCMessageSendHandler::TotalTxnNum(0),
             TwoPCMessageSendHandler::TotalSuccessTxnNUm(0), TwoPCMessageSendHandler::TotalSuccessLatency(0);
-    std::vector<std::unique_ptr<std::atomic<uint64_t>>> TwoPCMessageSendHandler::sharding_send_epoch,
+    std::vector<std::unique_ptr<std::atomic<uint64_t>>> TwoPCMessageSendHandler::shard_send_epoch,
             TwoPCMessageSendHandler::backup_send_epoch,
             TwoPCMessageSendHandler::abort_set_send_epoch,
             TwoPCMessageSendHandler::insert_set_send_epoch;
 
-    uint64_t TwoPCMessageSendHandler::sharding_sent_epoch = 1, TwoPCMessageSendHandler::backup_sent_epoch = 1,
+    uint64_t TwoPCMessageSendHandler::shard_sent_epoch = 1, TwoPCMessageSendHandler::backup_sent_epoch = 1,
             TwoPCMessageSendHandler::abort_sent_epoch = 1,
             TwoPCMessageSendHandler::insert_set_sent_epoch = 1, TwoPCMessageSendHandler::abort_set_sent_epoch = 1;
 
     void TwoPCMessageSendHandler::StaticInit(const Context& ctx) {
-        sharding_send_epoch.resize(ctx.taasContext.kTxnNodeNum);
+        shard_send_epoch.resize(ctx.taasContext.kTxnNodeNum);
         backup_send_epoch.resize(ctx.taasContext.kTxnNodeNum);
         abort_set_send_epoch.resize(ctx.taasContext.kTxnNodeNum);
         insert_set_send_epoch.resize(ctx.taasContext.kTxnNodeNum);
         for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i ++) {
             backup_send_epoch [i] = std::make_unique<std::atomic<uint64_t>>(1);
             abort_set_send_epoch [i] = std::make_unique<std::atomic<uint64_t>>(1);
-            sharding_send_epoch[i] = std::make_unique<std::atomic<uint64_t>>(1);
+            shard_send_epoch[i] = std::make_unique<std::atomic<uint64_t>>(1);
             insert_set_send_epoch[i] = std::make_unique<std::atomic<uint64_t>>(1);
         }
     }
@@ -45,7 +45,7 @@ namespace Taas {
  * @param txn_state 告诉client此txn的状态(Success or Abort)
  */
     bool TwoPCMessageSendHandler::SendTxnCommitResultToClient(const Context &ctx, const std::shared_ptr<proto::Transaction>& txn_ptr, proto::TxnState txn_state) {
-        if(txn_ptr->server_id() != ctx.taasContext.txn_node_ip_index) return true;
+        if(txn_ptr->txn_server_id() != ctx.taasContext.txn_node_ip_index) return true;
 
         txn_ptr->set_txn_state(txn_state);
         auto msg = std::make_unique<proto::Message>();
@@ -72,19 +72,23 @@ namespace Taas {
             case proto::TxnType::RemoteServerTxn : {
                 return SendRemoteServerTxn(ctx, to_whom, txn_ptr, txn_type);
             }
+            case proto::TxnType::ShardedClientTxn:
             case proto::TxnType::BackUpTxn :
             case proto::TxnType::BackUpACK :
             case proto::TxnType::AbortSetACK :
             case proto::TxnType::InsertSetACK :
-            case proto::TxnType::EpochShardingACK :
+            case proto::TxnType::EpochShardACK :
+            case proto::EpochRemoteServerACK :
             case  proto::TxnType::EpochLogPushDownComplete :
             case proto::NullMark:
             case proto::TxnType_INT_MIN_SENTINEL_DO_NOT_USE_:
             case proto::TxnType_INT_MAX_SENTINEL_DO_NOT_USE_:
             case proto::ClientTxn:
-            case proto::EpochEndFlag:
+            case proto::EpochShardEndFlag:
+            case proto::EpochRemoteServerEndFlag:
+            case proto::EpochBackUpEndFlag:
+            case proto::EpochCommittedTxnEndFlag:
             case proto::CommittedTxn:
-            case proto::BackUpEpochEndFlag:
             case proto::AbortSet:
             case proto::InsertSet:
             case proto::Lock_ok:
@@ -97,6 +101,7 @@ namespace Taas {
             case proto::Commit_abort:
             case proto::Abort_txn:
                 break;
+
         }
         return true;
     }
@@ -127,10 +132,10 @@ namespace Taas {
         if(to_whom == ctx.taasContext.txn_node_ip_index) return true;
         auto msg = std::make_unique<proto::Message>();
         auto* txn_end = msg->mutable_txn();
-        txn_end->set_server_id(ctx.taasContext.txn_node_ip_index);
+        txn_end->set_txn_server_id(ctx.taasContext.txn_node_ip_index);
         txn_end->set_txn_type(txn_type);
         txn_end->set_commit_epoch(epoch);
-        txn_end->set_sharding_id(0);
+        txn_end->set_shard_id(0);
         std::vector<std::string> keys, values;
         auto serialized_txn_str_ptr = std::make_unique<std::string>();
         Gzip(msg.get(), serialized_txn_str_ptr.get());
@@ -141,9 +146,9 @@ namespace Taas {
     bool TwoPCMessageSendHandler::SendMessageToAll(const Context &ctx, proto::TxnType txn_type) {
         auto msg = std::make_unique<proto::Message>();
         auto* txn_end = msg->mutable_txn();
-        txn_end->set_server_id(ctx.taasContext.txn_node_ip_index);
+        txn_end->set_txn_server_id(ctx.taasContext.txn_node_ip_index);
         txn_end->set_txn_type(txn_type);
-        txn_end->set_sharding_id(0);
+        txn_end->set_shard_id(0);
         auto serialized_txn_str_ptr = std::make_unique<std::string>();
         Gzip(msg.get(), serialized_txn_str_ptr.get());
         for (uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i++) {

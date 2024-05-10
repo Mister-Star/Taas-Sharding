@@ -33,16 +33,18 @@ class EpochMessageReceiveHandler : public ThreadCounters {
         bool HandleMultiModelClientTxn();
         bool UpdateEpochAbortSet();
 
+
         [[nodiscard]] uint64_t GetHashValue(const std::string& key) const {
-            return _hash(key) % sharding_num;
+            return _hash(key) % shard_num;
         }
 
         void ReadValidateQueueEnqueue(uint64_t &epoch_, const std::shared_ptr<proto::Transaction> &txn_ptr_);
         void MergeQueueEnqueue(uint64_t &epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_);
         void CommitQueueEnqueue(uint64_t &epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_);
+        void RedoLogQueueEnqueue(uint64_t &epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_);
 
         static bool StaticInit(const Context& context);
-        static bool StaticClear(uint64_t& epoch);
+        static bool StaticClear([[maybe_unused]] uint64_t& epoch);
 
     private:
         Context ctx;
@@ -52,12 +54,13 @@ class EpochMessageReceiveHandler : public ThreadCounters {
         std::shared_ptr<proto::Transaction> txn_ptr;
         std::unique_ptr<pack_params> pack_param;
         std::string csn_temp, key_temp, key_str, table_name, csn_result;
-        uint64_t thread_id = 0, local_server_id = 0,
-                server_dequeue_id = 0, epoch_mod = 0, epoch = 0, max_length = 0, sharding_num = 0,///cache check
-                message_epoch = 0, message_epoch_mod = 0, message_sharding_id = 0, message_server_id = 0, ///message epoch info
+        uint64_t thread_id = 0, local_server_id = 0, epoch_mod = 0, epoch = 0, max_length = 0, server_num = 1, shard_num = 0, replica_num = 1,
+                round_robin = 0, sent_to = 0,///cache check
+                message_epoch = 0, message_epoch_mod = 0, message_server_id = 0, txn_server_id = 0,shard_id = 0, shard_server_id =0, ///message epoch info
                 server_reply_ack_id = 0,
                 cache_clear_epoch_num = 0, cache_clear_epoch_num_mod = 0,
                 redo_log_push_down_reply = 1;
+        std::vector<bool> is_local_shard;
     public:
         bool res, sleep_flag;
         std::shared_ptr<proto::Transaction> empty_txn_ptr;
@@ -65,7 +68,7 @@ class EpochMessageReceiveHandler : public ThreadCounters {
 
 
     public:
-        void Sharding();
+        void Shard();
 
     };
 

@@ -31,7 +31,7 @@ namespace Taas {
 
         FLAGS_log_dir = "/tmp";
         FLAGS_alsologtostderr = true;
-        google::InitGoogleLogging("Taas-sharding");
+        google::InitGoogleLogging("Taas-shard");
         LOG(INFO) << "System Start\n";
         auto res = ctx.taasContext.Print();
         LOG(INFO) << res;

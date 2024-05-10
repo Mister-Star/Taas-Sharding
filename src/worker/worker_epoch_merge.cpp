@@ -22,7 +22,7 @@ namespace Taas {
         switch(ctx.taasContext.taasMode) {
             case TaasMode::MultiModel :
             case TaasMode::MultiMaster :
-            case TaasMode::Sharding : {
+            case TaasMode::Shard : {
                 while(!EpochManager::IsTimerStop()) {
                     merger.EpochMerge();
                 }
@@ -50,7 +50,7 @@ namespace Taas {
         switch(ctx.taasContext.taasMode) {
             case TaasMode::MultiModel :
             case TaasMode::MultiMaster :
-            case TaasMode::Sharding : {
+            case TaasMode::Shard : {
                 while(!EpochManager::IsTimerStop()) {
                     sleep_flag = false;
 
@@ -65,7 +65,7 @@ namespace Taas {
                     }
 
 
-                    if(!EpochManager::IsShardingMergeComplete(merger.epoch)) {
+                    if(!EpochManager::IsShardMergeComplete(merger.epoch)) {
                         while (TransactionCache::epoch_merge_queue[merger.epoch_mod]->try_dequeue(merger.txn_ptr)) {
                             if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() != proto::TxnType::NullMark) {
                                 merger.Merge();

@@ -43,6 +43,15 @@ namespace Taas {
         tinyxml2::XMLElement* cachemaxlength = root->FirstChildElement("cache_max_length");
         kCacheMaxLength = std::stoull(cachemaxlength->GetText());
 
+        tinyxml2::XMLElement* shard_num = root->FirstChildElement("shard_num");
+        kShardNum= std::stoull(shard_num->GetText());
+        tinyxml2::XMLElement* replica_num = root->FirstChildElement("replica_num");
+        kReplicaNum = std::stoull(replica_num->GetText());
+
+        if(kReplicaNum > kTxnNodeNum) kReplicaNum = kTxnNodeNum;
+        if(kShardNum > kTxnNodeNum) kShardNum = kTxnNodeNum;
+        kBackUpNum = kReplicaNum;
+
         tinyxml2::XMLElement* merge_thread_num = root->FirstChildElement("merge_thread_num");
         kMergeThreadNum = std::stoull(merge_thread_num->GetText());
         tinyxml2::XMLElement* epoch_txn_thread_num = root->FirstChildElement("epoch_txn_thread_num");

@@ -30,8 +30,8 @@ namespace Taas {
             }
             if (version != row.data()) {
                 continue; ///only for debug
-                auto csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->server_id());
-                if(ctx.taasContext.taasMode == Sharding)
+                auto csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
+                if(ctx.taasContext.taasMode == Shard)
                     TransactionCache::epoch_abort_txn_set[epoch_mod]->insert(csn_temp, csn_temp);
 //                LOG(INFO) <<"Txn read version check failed";
 //                LOG(INFO) <<"read version check failed version : " << version << ", row.data() : " << row.data();
@@ -45,7 +45,7 @@ namespace Taas {
 
     bool CRDTMerge::ValidateWriteSet(std::shared_ptr<proto::Transaction> txn_ptr) {
         auto epoch_mod = txn_ptr->commit_epoch() % ctx.taasContext.kCacheMaxLength;
-        auto csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->server_id());
+        auto csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
         if(TransactionCache::epoch_abort_txn_set[epoch_mod]->contain(csn_temp, csn_temp)) {
             txn_ptr.reset();
             return false;
@@ -56,7 +56,7 @@ namespace Taas {
 
     bool CRDTMerge::MultiMasterCRDTMerge(std::shared_ptr<proto::Transaction> txn_ptr) {
         auto epoch_mod = txn_ptr->commit_epoch() % ctx.taasContext.kCacheMaxLength;
-        auto csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->server_id());
+        auto csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
         std::string csn_result;
         bool result = true;
         for(auto i = 0; i < txn_ptr->row_size(); i ++) {
@@ -75,7 +75,7 @@ namespace Taas {
     }
 
     bool CRDTMerge::Commit(std::shared_ptr<proto::Transaction> txn_ptr) {
-        auto csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->server_id());
+        auto csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
         for(auto i = 0; i < txn_ptr->row_size(); i ++) {
             const auto& row = txn_ptr->row(i);
             auto key = txn_ptr->storage_type() + ":" + row.key();

@@ -9,7 +9,7 @@
 #include "tools/context.h"
 
 namespace Taas {
-    class ShardingEpochManager {
+    class ShardEpochManager {
     public:
         static bool CheckEpochMergeState(const Context& ctx);
         static bool CheckEpochAbortMergeState(const Context& ctx);
