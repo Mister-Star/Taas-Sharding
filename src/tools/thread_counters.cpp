@@ -651,11 +651,17 @@ namespace Taas{
 
 
 
-    bool ThreadCounters::IsEpochLocalTxnHandleComplete(const uint64_t &epoch) {
+    bool ThreadCounters::IsEpochClientTxnHandleComplete(const uint64_t &epoch) {
         return epoch < EpochManager::GetPhysicalEpoch() &&
 
                GetAllThreadLocalCountNum(epoch, shard_handled_local_txn_num_local_vec) >=
                GetAllThreadLocalCountNum(epoch, shard_should_handle_local_txn_num_local_vec);
+    }
+    bool ThreadCounters::IsEpochShardTxnHandleComplete(const uint64_t &epoch) {
+        return epoch < EpochManager::GetPhysicalEpoch() &&
+            CheckEpochShardReceiveComplete(epoch) &&
+               GetAllThreadLocalCountNum(epoch, remote_server_handled_txn_num_local_vec) >=
+               GetAllThreadLocalCountNum(epoch, remote_server_should_handle_txn_num_local_vec);
     }
     bool ThreadCounters::IsEpochTxnHandleComplete(const uint64_t &epoch) {
         return epoch < EpochManager::GetPhysicalEpoch() &&

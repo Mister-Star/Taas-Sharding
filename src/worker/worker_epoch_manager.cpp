@@ -24,6 +24,49 @@ namespace Taas {
         ShardEpochManager::EpochLogicalTimerManagerThreadMain(ctx);
     }
 
+    void WorkerForEpochControlMessageThreadMain(const Context& ctx) {
+        SetCPU();
+        while(!EpochManager::IsInitOK()) usleep(sleep_time);
+        while(!EpochManager::IsTimerStop()){
+            switch(ctx.taasContext.taasMode) {
+                case TaasMode::MultiModel :
+                case TaasMode::MultiMaster :
+                case TaasMode::Shard : {
+                    uint64_t local_server_id = ctx.taasContext.txn_node_ip_index;
+                    uint64_t shard_epoch = 1, remote_server_epoch = 1, abort_send_epoch = 1, server_num = ctx.taasContext.kTxnNodeNum;
+                    bool sleep_flag;
+                    while(!EpochManager::IsInitOK()) usleep(sleep_time);
+                    while(!EpochManager::IsTimerStop()) {
+                        sleep_flag = true;
+                        if (EpochMessageReceiveHandler::IsEpochClientTxnHandleComplete(shard_epoch)) {
+                            EpochMessageSendHandler::SendEpochShardEndMessage(local_server_id, shard_epoch, server_num);
+                            shard_epoch ++;
+                            sleep_flag = false;
+                        }
+
+//                        if(EpochMessageReceiveHandler::IsEpochShardTxnHandleComplete(remote_server_epoch)) {
+//                            EpochMessageSendHandler::SendEpochRemoteServerEndMessage(local_server_id, remote_server_epoch, server_num);
+//                            remote_server_epoch ++;
+//                            sleep_flag = false;
+//                        }
+//
+//                        if(EpochManager::IsEpochMergeComplete(abort_send_epoch)) {
+//                            EpochMessageSendHandler::SendAbortSet(local_server_id, abort_send_epoch, ctx.taasContext.kCacheMaxLength);
+//                            abort_send_epoch ++;
+//                            sleep_flag = false;
+//                        }
+                        if(sleep_flag) usleep(200);
+                    }
+                    break;
+                }
+                case TaasMode::TwoPC : {
+                    //
+                    break;
+                }
+            }
+        }
+    }
+
     void WorkerForLogicalRedoLogPushDownCheckThreadMain(const Context& ctx) {
         SetCPU();
         while(!EpochManager::IsInitOK()) usleep(sleep_time);

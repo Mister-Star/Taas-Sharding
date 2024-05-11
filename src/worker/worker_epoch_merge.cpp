@@ -66,7 +66,7 @@ namespace Taas {
                     }
 
 
-                    if(!EpochManager::IsShardMergeComplete(merger.epoch)) {
+                    if(!EpochManager::IsEpochMergeComplete(merger.epoch)) {
                         while (TransactionCache::epoch_merge_queue[merger.epoch_mod]->try_dequeue(merger.txn_ptr)) {
                             if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() != proto::TxnType::NullMark) {
                                 merger.Merge();

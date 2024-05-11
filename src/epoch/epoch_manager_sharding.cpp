@@ -91,67 +91,71 @@ namespace Taas {
         OUTPUTLOG("===== Start Epoch的合并 ===== ", epoch);
         util::thread_pool_light workers(ctx.taasContext.kMergeThreadNum);
         while(!EpochManager::IsTimerStop()){
-            auto time1 = now_to_us();
+
             while(epoch >= EpochManager::GetPhysicalEpoch()) usleep(logical_sleep_timme);
+            auto time1 = now_to_us();
 //                LOG(INFO) << "**** Start Epoch Merge Epoch : " << epoch << "****\n";
-            while(!EpochMessageReceiveHandler::IsEpochLocalTxnHandleComplete(epoch)) usleep(logical_sleep_timme);
-            workers.push_emergency_task([epoch, &ctx] () {
-                EpochMessageSendHandler::SendEpochShardEndMessage(ctx.taasContext.txn_node_ip_index, epoch, ctx.taasContext.kTxnNodeNum);
-            });
-            while(!EpochMessageReceiveHandler::IsShardSendFinish(epoch)) usleep(logical_sleep_timme);
-//                LOG(INFO) << "**** finished IsShardSendFinish : " << epoch << "****\n";
-            while(!EpochMessageReceiveHandler::IsShardACKReceiveComplete(epoch)) usleep(logical_sleep_timme);
+            while(!EpochMessageReceiveHandler::IsEpochClientTxnHandleComplete(epoch)) usleep(logical_sleep_timme);
+//            workers.push_emergency_task([epoch, &ctx] () {
+//                EpochMessageSendHandler::SendEpochShardEndMessage(ctx.taasContext.txn_node_ip_index, epoch, ctx.taasContext.kTxnNodeNum);
+//            });
+//            while(!EpochMessageReceiveHandler::IsShardSendFinish(epoch)) usleep(logical_sleep_timme);
+////                LOG(INFO) << "**** finished IsShardSendFinish : " << epoch << "****\n";
+//            while(!EpochMessageReceiveHandler::IsShardACKReceiveComplete(epoch)) usleep(logical_sleep_timme);
 //                LOG(INFO) << "**** finished IsShardACKReceiveComplete : " << epoch << "****\n";
             while(!EpochMessageReceiveHandler::CheckEpochShardSendComplete(epoch)) usleep(logical_sleep_timme);
 
-                auto time2 = now_to_us();
-                LOG(INFO) << "**** Finished CheckEpochShardSendComplete Epoch : " << epoch << ",time cost : " << time2 - time1 << "****\n";
 
-            while(!EpochMessageReceiveHandler::IsShardPackReceiveComplete(epoch)) usleep(logical_sleep_timme);
-//                LOG(INFO) << "**** finished IsShardPackReceiveComplete : " << epoch << "****\n";
-            while(!EpochMessageReceiveHandler::IsShardTxnReceiveComplete(epoch)) usleep(logical_sleep_timme);
+//            while(!EpochMessageReceiveHandler::IsShardPackReceiveComplete(epoch)) usleep(logical_sleep_timme);
+////                LOG(INFO) << "**** finished IsShardPackReceiveComplete : " << epoch << "****\n";
+//            while(!EpochMessageReceiveHandler::IsShardTxnReceiveComplete(epoch)) usleep(logical_sleep_timme);
 //            LOG(INFO) << "**** finished ShardTxn : " << epoch << "****\n";
+            while(!EpochMessageReceiveHandler::CheckEpochShardReceiveComplete(epoch)) usleep(logical_sleep_timme);
 
+            auto time2 = now_to_us();
+            LOG(INFO) << "**** Finished CheckEpochShardReceiveComplete Epoch : " << epoch << ",time cost : " << time2 - time1 << "****\n";
+
+            while(!EpochMessageReceiveHandler::IsEpochShardTxnHandleComplete(epoch)) usleep(logical_sleep_timme);
             workers.push_emergency_task([epoch, &ctx] () {
                 EpochMessageSendHandler::SendEpochRemoteServerEndMessage(ctx.taasContext.txn_node_ip_index, epoch, ctx.taasContext.kTxnNodeNum);
             });
-            while(!EpochMessageReceiveHandler::IsRemoteServerSendFinish(epoch)) usleep(logical_sleep_timme);
-//                LOG(INFO) << "**** finished IsRemoteServerSendFinish : " << epoch << "****\n";
-            while(!EpochMessageReceiveHandler::IsRemoteServerACKReceiveComplete(epoch)) usleep(logical_sleep_timme);
+//            while(!EpochMessageReceiveHandler::IsRemoteServerSendFinish(epoch)) usleep(logical_sleep_timme);
+////                LOG(INFO) << "**** finished IsRemoteServerSendFinish : " << epoch << "****\n";
+//            while(!EpochMessageReceiveHandler::IsRemoteServerACKReceiveComplete(epoch)) usleep(logical_sleep_timme);
 //                LOG(INFO) << "**** finished IsRemoteServerACKReceiveComplete : " << epoch << "****\n";
             while(!EpochMessageReceiveHandler::CheckEpochRemoteServerSendComplete(epoch)) usleep(logical_sleep_timme);
 //            LOG(INFO) << "**** finished RemoteServerTxn : " << epoch << "****\n";
                 auto time3 = now_to_us();
                 LOG(INFO) << "**** Finished CheckEpochRemoteServerReceiveComplete Epoch : " << epoch << ",time cost : " << time3 - time2 << "****\n";
 
-            while(!EpochMessageReceiveHandler::IsBackUpACKReceiveComplete(epoch)) usleep(logical_sleep_timme);
-//                LOG(INFO) << "**** finished IsBackUpACKReceiveComplete : " << epoch << "****\n";
-            while(!EpochMessageReceiveHandler::IsBackUpSendFinish(epoch)) usleep(logical_sleep_timme);
+//            while(!EpochMessageReceiveHandler::IsBackUpACKReceiveComplete(epoch)) usleep(logical_sleep_timme);
+////                LOG(INFO) << "**** finished IsBackUpACKReceiveComplete : " << epoch << "****\n";
+//            while(!EpochMessageReceiveHandler::IsBackUpSendFinish(epoch)) usleep(logical_sleep_timme);
 //                LOG(INFO) << "**** finished IsBackUpSendFinish : " << epoch << "****\n";
             while(!EpochMessageReceiveHandler::CheckEpochBackUpComplete(epoch)) usleep(logical_sleep_timme);
-                auto time4 = now_to_us();
-                LOG(INFO) << "**** Finished CheckEpochBackUpComplete Epoch : " << epoch << "****\n";
+//                auto time4 = now_to_us();
+//                LOG(INFO) << "**** Finished CheckEpochBackUpComplete Epoch : " << epoch << "****\n";
 
-            while(!EpochMessageReceiveHandler::IsRemoteServerPackReceiveComplete(epoch)) usleep(logical_sleep_timme);
-//                LOG(INFO) << "**** finished IsRemoteServerReceiveComplete : " << epoch << "****\n";
-            while(!EpochMessageReceiveHandler::IsRemoteServerTxnReceiveComplete(epoch)) usleep(logical_sleep_timme);
+//            while(!EpochMessageReceiveHandler::IsRemoteServerPackReceiveComplete(epoch)) usleep(logical_sleep_timme);
+////                LOG(INFO) << "**** finished IsRemoteServerReceiveComplete : " << epoch << "****\n";
+//            while(!EpochMessageReceiveHandler::IsRemoteServerTxnReceiveComplete(epoch)) usleep(logical_sleep_timme);
 //                LOG(INFO) << "**** finished IsRemoteServerTxnReceiveComplete : " << epoch << "****\n";
             while(!EpochMessageReceiveHandler::CheckEpochRemoteServerReceiveComplete(epoch)) usleep(logical_sleep_timme);
 
 
             while(!Merger::CheckEpochMergeComplete(epoch)) usleep(logical_sleep_timme);
-            EpochManager::SetShardMergeComplete(epoch, true);
+            EpochManager::SetEpochMergeComplete(epoch, true);
             workers.push_emergency_task([epoch, &ctx] () {
                 EpochMessageSendHandler::SendAbortSet(ctx.taasContext.txn_node_ip_index, epoch, ctx.taasContext.kTxnNodeNum);
             });
             merge_epoch.fetch_add(1);
             auto time5 = now_to_us();
-                LOG(INFO) << "**** Finished Epoch Merge Epoch : " << epoch << ",time cost : " << time5 - time1 << ",rest time cost : " << time5 - time4 << "****\n";
+                LOG(INFO) << "**** Finished Epoch Merge Epoch : " << epoch << ",time cost : " << time5 - time1 << "****\n";
 
-            while(!EpochMessageReceiveHandler::IsAbortSetACKReceiveComplete(epoch)) usleep(logical_sleep_timme);
-//                LOG(INFO) << "**** finished IsAbortSetACKReceiveComplete : " << epoch << "****\n";
-            while(!EpochMessageReceiveHandler::IsAbortSetReceiveComplete(epoch)) usleep(logical_sleep_timme);
-//                LOG(INFO) << "**** finished IsAbortSetReceiveComplete : " << epoch << "****\n";
+//            while(!EpochMessageReceiveHandler::IsAbortSetACKReceiveComplete(epoch)) usleep(logical_sleep_timme);
+////                LOG(INFO) << "**** finished IsAbortSetACKReceiveComplete : " << epoch << "****\n";
+//            while(!EpochMessageReceiveHandler::IsAbortSetReceiveComplete(epoch)) usleep(logical_sleep_timme);
+////                LOG(INFO) << "**** finished IsAbortSetReceiveComplete : " << epoch << "****\n";
             while(!EpochMessageReceiveHandler::CheckEpochAbortSetMergeComplete(epoch)) usleep(logical_sleep_timme);
             EpochManager::SetAbortSetMergeComplete(epoch, true);
             abort_set_epoch.fetch_add(1);

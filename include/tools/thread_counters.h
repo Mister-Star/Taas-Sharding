@@ -159,7 +159,8 @@ namespace Taas {
 
 
 
-        static bool IsEpochLocalTxnHandleComplete(const uint64_t &epoch) ;
+        static bool IsEpochClientTxnHandleComplete(const uint64_t &epoch) ;
+        static bool IsEpochShardTxnHandleComplete(const uint64_t &epoch) ;
         static bool IsEpochTxnHandleComplete(const uint64_t &epoch) ;
 
 

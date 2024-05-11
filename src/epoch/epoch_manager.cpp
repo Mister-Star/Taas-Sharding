@@ -177,7 +177,7 @@ namespace Taas {
        (uint64_t)EpochMessageReceiveHandler::IsBackUpACKReceiveComplete(epoch_mod),
        (uint64_t)EpochMessageReceiveHandler::IsEpochTxnHandleComplete(epoch_mod),
        (uint64_t)Merger::CheckEpochMergeComplete(epoch_mod),
-       (uint64_t)EpochManager::IsShardMergeComplete(epoch_mod),
+       (uint64_t)EpochManager::IsEpochMergeComplete(epoch_mod),
        (uint64_t)EpochManager::IsAbortSetMergeComplete(epoch_mod),
        (uint64_t)EpochManager::IsCommitComplete(epoch_mod),
        (uint64_t)EpochManager::IsRecordCommitted(epoch_mod),

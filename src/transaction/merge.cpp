@@ -181,7 +181,7 @@ namespace Taas {
                 }
             }
 
-            if(!EpochManager::IsShardMergeComplete(epoch)) {
+            if(!EpochManager::IsEpochMergeComplete(epoch)) {
                 while (TransactionCache::epoch_merge_queue[epoch_mod]->try_dequeue(txn_ptr)) {
                     if (txn_ptr != nullptr && txn_ptr->txn_type() != proto::TxnType::NullMark) {
                         Merge();

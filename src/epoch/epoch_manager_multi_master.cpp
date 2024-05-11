@@ -90,7 +90,7 @@ namespace Taas {
                 auto time1 = now_to_us();
                 while(epoch >= EpochManager::GetPhysicalEpoch()) usleep(logical_sleep_timme);
 //                LOG(INFO) << "**** Start Epoch Merge Epoch : " << epoch << "****\n";
-                while(!EpochMessageReceiveHandler::IsEpochLocalTxnHandleComplete(epoch)) usleep(logical_sleep_timme);
+                while(!EpochMessageReceiveHandler::IsEpochClientTxnHandleComplete(epoch)) usleep(logical_sleep_timme);
                 while(!Merger::CheckEpochReadValidateComplete(epoch)) usleep(logical_sleep_timme);
                 workers.push_emergency_task([epoch, &ctx] () {
                     EpochMessageSendHandler::SendEpochShardEndMessage(ctx.taasContext.txn_node_ip_index, epoch, ctx.taasContext.kTxnNodeNum);
@@ -121,7 +121,7 @@ namespace Taas {
 //                LOG(INFO) << "**** Finished CheckEpochBackUpComplete Epoch : " << epoch << ",time cost : " << time4 - time3 << "****\n";
 
                 while(!Merger::CheckEpochMergeComplete(epoch)) usleep(logical_sleep_timme);
-                EpochManager::SetShardMergeComplete(epoch, true);
+                EpochManager::SetEpochMergeComplete(epoch, true);
                 merge_epoch.fetch_add(1);
                 auto time5 = now_to_us();
 //                LOG(INFO) << "**** Finished Epoch Merge Epoch : " << epoch << ",time cost : " << time5 - time1 << ",rest time cost : " << time5 - time4 << "****\n";
@@ -180,13 +180,13 @@ namespace Taas {
                 auto time1 = now_to_us();
                 while(epoch >= EpochManager::GetPhysicalEpoch()) usleep(logical_sleep_timme);
 //                LOG(INFO) << "**** Start Epoch Merge Epoch : " << epoch << "****\n";
-                while(!EpochMessageReceiveHandler::IsEpochLocalTxnHandleComplete(epoch)) usleep(logical_sleep_timme);
+                while(!EpochMessageReceiveHandler::IsEpochClientTxnHandleComplete(epoch)) usleep(logical_sleep_timme);
                 while(!Merger::CheckEpochReadValidateComplete(epoch)) usleep(logical_sleep_timme);
 //                workers.push_emergency_task([epoch, &ctx] () {
 //                    EpochMessageSendHandler::SendEpochEndMessage(ctx.taasContext.txn_node_ip_index, epoch, ctx.taasContext.kTxnNodeNum);
 //                });
                 while(!Merger::CheckEpochMergeComplete(epoch)) usleep(logical_sleep_timme);
-                EpochManager::SetShardMergeComplete(epoch, true);
+                EpochManager::SetEpochMergeComplete(epoch, true);
                 merge_epoch.fetch_add(1);
                 auto time5 = now_to_us();
 //                LOG(INFO) << "**** Finished Epoch Merge Epoch : " << epoch << ",time cost : " << time5 - time1 << "****\n";

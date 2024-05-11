@@ -196,6 +196,7 @@ namespace Taas {
                 }
                 else {
                     message_epoch = EpochManager::GetPhysicalEpoch();
+                    message_epoch += 1;
                     shard_should_handle_local_txn_num_local->IncCount(message_epoch, local_server_id, 1);
                     txn_ptr->set_commit_epoch(message_epoch);
                     txn_ptr->set_csn(now_to_us());
