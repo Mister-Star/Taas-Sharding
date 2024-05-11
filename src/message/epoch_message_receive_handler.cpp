@@ -85,6 +85,7 @@ namespace Taas {
     }
 
     void EpochMessageReceiveHandler::TryHandleReceivedMessage() {
+        sleep_flag = true;
         if(MessageQueue::listen_message_txn_queue->try_dequeue(message_ptr)) {
             if (message_ptr == nullptr || message_ptr->empty()) return;
             message_string_ptr = std::make_unique<std::string>(static_cast<const char *>(message_ptr->data()),message_ptr->size());
@@ -94,6 +95,7 @@ namespace Taas {
             txn_ptr = std::make_shared<proto::Transaction>(msg_ptr->txn());
             HandleReceivedTxn();
             txn_ptr.reset();
+            sleep_flag = false;
         }
     }
 
@@ -112,6 +114,7 @@ namespace Taas {
     }
 
     void EpochMessageReceiveHandler::TryHandleReceivedControlMessage() {
+        sleep_flag = true;
         while(MessageQueue::listen_message_epoch_queue->try_dequeue(message_ptr)) {
             if (message_ptr == nullptr || message_ptr->empty()) continue;
             message_string_ptr = std::make_unique<std::string>(static_cast<const char *>(message_ptr->data()),message_ptr->size());
