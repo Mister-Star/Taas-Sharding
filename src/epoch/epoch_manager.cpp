@@ -135,6 +135,8 @@ namespace Taas {
         epoch_mod                    %6lu, disstance                    %6lu  \n\
         ShardPackReceiveOK?       %6lu, ShardTxnReceiveOK?        %6lu    \
         ShardSendOK?              %6lu, ShardACKReceiveOK?        %6lu  \n\
+        RemotePackReceiveOK?       %6lu, RemoteTxnReceiveOK?        %6lu    \
+        RemoteSendOK?              %6lu, RemoteACKReceiveOK?        %6lu  \n\
         backupSendOK?                %6lu, backupACKReceiveOK?          %6lu,   \
         EnqueueMergeQueue            %6lu, MergeOk                      %6lu  \n\
         IsShardMergeComplete      %6lu, IsAbortSetMergeComplete      %6lu    \
@@ -167,6 +169,10 @@ namespace Taas {
        (uint64_t)EpochMessageReceiveHandler::IsShardTxnReceiveComplete(epoch_mod),
        (uint64_t)EpochMessageReceiveHandler::IsShardSendFinish(epoch_mod),
        (uint64_t)EpochMessageReceiveHandler::IsShardACKReceiveComplete(epoch_mod),
+        (uint64_t)EpochMessageReceiveHandler::IsRemoteServerPackReceiveComplete(epoch_mod),
+        (uint64_t)EpochMessageReceiveHandler::IsRemoteServerTxnReceiveComplete(epoch_mod),
+        (uint64_t)EpochMessageReceiveHandler::IsRemoteServerSendFinish(epoch_mod),
+        (uint64_t)EpochMessageReceiveHandler::IsRemoteServerACKReceiveComplete(epoch_mod),
        (uint64_t)EpochMessageReceiveHandler::IsBackUpSendFinish(epoch_mod),
        (uint64_t)EpochMessageReceiveHandler::IsBackUpACKReceiveComplete(epoch_mod),
        (uint64_t)EpochMessageReceiveHandler::IsEpochTxnHandleComplete(epoch_mod),

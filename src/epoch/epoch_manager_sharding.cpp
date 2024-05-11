@@ -115,6 +115,10 @@ namespace Taas {
             workers.push_emergency_task([epoch, &ctx] () {
                 EpochMessageSendHandler::SendEpochRemoteServerEndMessage(ctx.taasContext.txn_node_ip_index, epoch, ctx.taasContext.kTxnNodeNum);
             });
+            while(!EpochMessageReceiveHandler::IsRemoteServerSendFinish(epoch)) usleep(logical_sleep_timme);
+                LOG(INFO) << "**** finished IsRemoteServerSendFinish : " << epoch << "****\n";
+            while(!EpochMessageReceiveHandler::IsRemoteServerACKReceiveComplete(epoch)) usleep(logical_sleep_timme);
+                LOG(INFO) << "**** finished IsRemoteServerACKReceiveComplete : " << epoch << "****\n";
             while(!EpochMessageReceiveHandler::CheckEpochRemoteServerSendComplete(epoch)) usleep(logical_sleep_timme);
             LOG(INFO) << "**** finished RemoteServerTxn : " << epoch << "****\n";
 //                auto time3 = now_to_us();
@@ -126,12 +130,12 @@ namespace Taas {
 //                LOG(INFO) << "**** finished IsBackUpSendFinish : " << epoch << "****\n";
             while(!EpochMessageReceiveHandler::CheckEpochBackUpComplete(epoch)) usleep(logical_sleep_timme);
 //                auto time4 = now_to_us();
-//                LOG(INFO) << "**** Finished CheckEpochBackUpComplete Epoch : " << epoch << ",time cost : " << time4 - time3 << "****\n";
+                LOG(INFO) << "**** Finished CheckEpochBackUpComplete Epoch : " << epoch << "****\n";
 
             while(!EpochMessageReceiveHandler::IsRemoteServerPackReceiveComplete(epoch)) usleep(logical_sleep_timme);
-//                LOG(INFO) << "**** finished IsShardPackReceiveComplete : " << epoch << "****\n";
+                LOG(INFO) << "**** finished IsRemoteServerReceiveComplete : " << epoch << "****\n";
             while(!EpochMessageReceiveHandler::IsRemoteServerTxnReceiveComplete(epoch)) usleep(logical_sleep_timme);
-//                LOG(INFO) << "**** finished IsShardTxnReceiveComplete : " << epoch << "****\n";
+                LOG(INFO) << "**** finished IsRemoteServerTxnReceiveComplete : " << epoch << "****\n";
             while(!EpochMessageReceiveHandler::CheckEpochRemoteServerReceiveComplete(epoch)) usleep(logical_sleep_timme);
 
 
@@ -145,9 +149,9 @@ namespace Taas {
 //                LOG(INFO) << "**** Finished Epoch Merge Epoch : " << epoch << ",time cost : " << time5 - time1 << ",rest time cost : " << time5 - time4 << "****\n";
 
             while(!EpochMessageReceiveHandler::IsAbortSetACKReceiveComplete(epoch)) usleep(logical_sleep_timme);
-//                LOG(INFO) << "**** finished IsAbortSetACKReceiveComplete : " << epoch << "****\n";
+                LOG(INFO) << "**** finished IsAbortSetACKReceiveComplete : " << epoch << "****\n";
             while(!EpochMessageReceiveHandler::IsAbortSetReceiveComplete(epoch)) usleep(logical_sleep_timme);
-//                LOG(INFO) << "**** finished IsAbortSetReceiveComplete : " << epoch << "****\n";
+                LOG(INFO) << "**** finished IsAbortSetReceiveComplete : " << epoch << "****\n";
             while(!EpochMessageReceiveHandler::CheckEpochAbortSetMergeComplete(epoch)) usleep(logical_sleep_timme);
             EpochManager::SetAbortSetMergeComplete(epoch, true);
             abort_set_epoch.fetch_add(1);
