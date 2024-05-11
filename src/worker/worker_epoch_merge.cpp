@@ -35,7 +35,7 @@ namespace Taas {
     }
 
     void EpochWorkerThreadMain(const Context& ctx, uint64_t id) {
-        std::string name = "EpochWorker-" + std::to_string(id);
+        std::string name = "EpochMerger-" + std::to_string(id);
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         Merger merger;
         EpochMessageReceiveHandler receiveHandler;
@@ -45,15 +45,15 @@ namespace Taas {
         receiveHandler.Init(id, ctx);
         Taas::TwoPC::Init(ctx, id);
         auto sleep_flag = true;
+        auto safe_length = ctx.taasContext.kCacheMaxLength / 2;
         init_ok_num.fetch_add(1);
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
-        auto safe_length = ctx.taasContext.kCacheMaxLength / 2;
         switch(ctx.taasContext.taasMode) {
             case TaasMode::MultiModel :
             case TaasMode::MultiMaster :
             case TaasMode::Shard : {
                 while(!EpochManager::IsTimerStop()) {
-                    sleep_flag = false;
+                    sleep_flag = true;
 
                     merger.epoch = EpochManager::GetLogicalEpoch();
                     merger.epoch_mod = merger.epoch % ctx.taasContext.kCacheMaxLength;
@@ -95,7 +95,6 @@ namespace Taas {
                             }
                         }
                     }
-
 
                     receiveHandler.TryHandleReceivedControlMessage();
                     if( EpochManager::GetLogicalEpoch() + safe_length > EpochManager::GetPhysicalEpoch() ) /// avoid task backlogs, stop handling txn comes from the client
