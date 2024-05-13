@@ -44,7 +44,8 @@ namespace Taas {
         receiveHandler.Init(id, ctx);
         Taas::TwoPC::Init(ctx, id);
         bool sleep_flag;
-        auto safe_length = ctx.taasContext.kCacheMaxLength / 10;
+        auto safe_length = 500 * 1000/ ctx.taasContext.kEpochSize_us;
+        if(safe_length < 10) safe_length = 10;
         init_ok_num.fetch_add(1);
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         switch(ctx.taasContext.taasMode) {
