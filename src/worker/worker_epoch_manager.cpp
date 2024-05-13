@@ -26,7 +26,7 @@ namespace Taas {
 
     void WorkerForEpochControlMessageThreadMain(const Context& ctx) {
         SetCPU();
-        while(!EpochManager::IsInitOK() || EpochManager::GetPhysicalEpoch() < 2) usleep(sleep_time);
+        while(!EpochManager::IsInitOK() || EpochManager::GetPhysicalEpoch() < 100) usleep(sleep_time);
         while(!EpochManager::IsTimerStop()){
             switch(ctx.taasContext.taasMode) {
                 case TaasMode::MultiModel :
