@@ -163,7 +163,7 @@ namespace Taas {
             EpochManager::SetAbortSetMergeComplete(epoch, true);
             abort_set_epoch.fetch_add(1);
             auto time6 = now_to_us();
-//            LOG(INFO) << "******* Finished Abort Set Merge Epoch : " << epoch << "********\n";
+            LOG(INFO) << "******* Finished Abort Set Merge Epoch : " << epoch << "Time cost :" << time6 - time5 << "********\n";
 
 
             while(!Merger::CheckEpochCommitComplete(epoch)) usleep(logical_sleep_timme);

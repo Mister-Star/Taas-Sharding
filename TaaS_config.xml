@@ -22,11 +22,11 @@
 
     <merge_thread_num>8</merge_thread_num> <!--handle txn merge-->
     <epoch_txn_thread_num>4</epoch_txn_thread_num> <!--handle client txn, sharding, send txn to remote server, send backup, be same as the core num-->
-    <epoch_message_thread_num>4</epoch_message_thread_num> <!--handle remote server message, be same as the core num-->
+    <epoch_message_thread_num>8</epoch_message_thread_num> <!--handle remote server message, be same as the core num-->
 
 
     <glog_path>/tmp</glog_path>
-    <print_mode_size>100</print_mode_size>
+    <print_mode_size>10</print_mode_size>
 <!-- end TaaS config-->
 <!-- test config   -->
     <duration_time_us>0</duration_time_us>

@@ -84,9 +84,9 @@ namespace Taas {
     void EpochMessageReceiveHandler::HandleReceivedMessage() {
         auto safe_length = ctx.taasContext.kCacheMaxLength / 10;
         while(!EpochManager::IsTimerStop()) {
-            while( EpochManager::GetLogicalEpoch() + safe_length > EpochManager::GetPhysicalEpoch() ) {
-                usleep(ctx.taasContext.kEpochSize_us);
-            }
+//            while( EpochManager::GetLogicalEpoch() + safe_length > EpochManager::GetPhysicalEpoch() ) {
+//                usleep(ctx.taasContext.kEpochSize_us);
+//            }
             MessageQueue::listen_message_txn_queue->wait_dequeue(message_ptr);
             if (message_ptr == nullptr || message_ptr->empty()) continue;
             message_string_ptr = std::make_unique<std::string>(static_cast<const char *>(message_ptr->data()), message_ptr->size());
