@@ -25,6 +25,11 @@ namespace Taas {
  * @param ctx 暂未使用
  */
     void SendServerThreadMain(const Context& ctx) {
+        auto server_num = ctx.taasContext.kTxnNodeNum,
+                shard_num = ctx.taasContext.kShardNum,
+                replica_num = ctx.taasContext.kReplicaNum,
+                local_server_id = ctx.taasContext.txn_node_ip_index,
+                max_length = ctx.taasContext.kCacheMaxLength;
         zmq::context_t context(1);
         zmq::message_t reply(5);
         zmq::send_flags sendFlags = zmq::send_flags::none;
@@ -34,7 +39,7 @@ namespace Taas {
         std::unique_ptr<zmq::message_t> msg;
         assert(ctx.taasContext.kServerIp.size() >= ctx.taasContext.kTxnNodeNum);
 //        if(ctx.taasContext.kServerIp.size() < ctx.taasContext.kTxnNodeNum) assert(false);
-        for (uint64_t i = 0; i < ctx.taasContext.kServerIp.size(); i++) {
+        for (uint64_t i = 0; i < server_num; i++) {
             if (i ==  ctx.taasContext.txn_node_ip_index) continue;
             auto socket = std::make_unique<zmq::socket_t>(context, ZMQ_PUSH);
             socket->set(zmq::sockopt::sndhwm, queue_length);
@@ -179,14 +184,14 @@ namespace Taas {
             }
         }
 
-        // 设置ZeroMQ的相关变量，监听其他txn node是否有写集发来
+
         zmq::context_t listen_context(1);
         zmq::recv_flags recvFlags = zmq::recv_flags::none;
         zmq::recv_result_t  recvResult;
         int queue_length = 1000000000;
         zmq::socket_t socket_listen(listen_context, ZMQ_SUB);
 
-        for (uint64_t i = 0; i < ctx.taasContext.kServerIp.size(); i++) {
+        for (uint64_t i = 0; i < server_num; i++) {
             if (i == ctx.taasContext.txn_node_ip_index) continue;
             for(uint64_t j = 0; j < shard_num; j++) {
                 if(is_local_shard[i][j]) {
@@ -196,7 +201,7 @@ namespace Taas {
             }
         }
 
-        for (uint64_t i = 0; i < ctx.taasContext.kServerIp.size(); i++) {
+        for (uint64_t i = 0; i < server_num; i++) {
             if (i == ctx.taasContext.txn_node_ip_index) continue;
             socket_listen.connect("tcp://" + ctx.taasContext.kServerIp[i] + ":" + std::to_string(22000+i));//to server
             printf("Listen Server connect ZMQ_SUB %s", ("tcp://" + ctx.taasContext.kServerIp[i] + ":" + std::to_string(22000+i) + "\n").c_str());
