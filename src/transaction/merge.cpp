@@ -111,18 +111,18 @@ namespace Taas {
 //                auto row_ptr = write_set->add_row();
 //                (*row_ptr) = row;
 //            }
-            for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) {
-                auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum - j) % ctx.taasContext.kTxnNodeNum;
-                if (to_id == ctx.taasContext.txn_node_ip_index) continue;
-                remote_server_should_send_txn_num_local->IncCount(message_epoch, to_id, 1);
-            }
-            EpochMessageSendHandler::SendTxnToServer(message_epoch, sent_to, txn_ptr, proto::TxnType::RemoteServerTxn);
-//            EpochMessageSendHandler::SendTxnToServer(message_epoch, sent_to, write_set, proto::TxnType::RemoteServerTxn);
-            for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) {
-                auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum - j) % ctx.taasContext.kTxnNodeNum;
-                if (to_id == ctx.taasContext.txn_node_ip_index) continue;
-                remote_server_send_txn_num_local->IncCount(message_epoch, to_id, 1);
-            }
+//            for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) {
+//                auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum - j) % ctx.taasContext.kTxnNodeNum;
+//                if (to_id == ctx.taasContext.txn_node_ip_index) continue;
+//                remote_server_should_send_txn_num_local->IncCount(message_epoch, to_id, 1);
+//            }
+//            EpochMessageSendHandler::SendTxnToServer(message_epoch, sent_to, txn_ptr, proto::TxnType::RemoteServerTxn);
+////            EpochMessageSendHandler::SendTxnToServer(message_epoch, sent_to, write_set, proto::TxnType::RemoteServerTxn);
+//            for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) {
+//                auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum - j) % ctx.taasContext.kTxnNodeNum;
+//                if (to_id == ctx.taasContext.txn_node_ip_index) continue;
+//                remote_server_send_txn_num_local->IncCount(message_epoch, to_id, 1);
+//            }
         }
         else {
             total_read_version_check_failed_txn_num_local.fetch_add(1);

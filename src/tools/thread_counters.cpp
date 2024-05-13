@@ -38,8 +38,10 @@ namespace Taas{
             ThreadCounters::abort_set_send_ack_epoch_num;
 
     std::vector<std::unique_ptr<std::atomic<bool>>>
+            ThreadCounters::epoch_shard_handle_complete,
             ThreadCounters::epoch_shard_send_complete,
             ThreadCounters::epoch_shard_receive_complete,
+            ThreadCounters::epoch_remote_server_handle_complete,
             ThreadCounters::epoch_remote_server_send_complete,
             ThreadCounters::epoch_remote_server_receive_complete,
             ThreadCounters::epoch_back_up_complete,
@@ -232,16 +234,20 @@ namespace Taas{
             abort_set_send_ack_epoch_num[i] = 1;
         }
 
+        epoch_shard_handle_complete.resize(max_length);
         epoch_shard_send_complete.resize(max_length);
         epoch_shard_receive_complete.resize(max_length);
+        epoch_remote_server_handle_complete.resize(max_length);
         epoch_remote_server_send_complete.resize(max_length);
         epoch_remote_server_receive_complete.resize(max_length);
         epoch_back_up_complete.resize(max_length);
         epoch_abort_set_merge_complete.resize(max_length);
         epoch_insert_set_complete.resize(max_length);
         for(int i = 0; i < static_cast<int>(max_length); i ++) {
+            epoch_shard_handle_complete[i] = std::make_unique<std::atomic<bool>>(false);
             epoch_shard_send_complete[i] = std::make_unique<std::atomic<bool>>(false);
             epoch_shard_receive_complete[i] = std::make_unique<std::atomic<bool>>(false);
+            epoch_remote_server_handle_complete[i] = std::make_unique<std::atomic<bool>>(false);
             epoch_remote_server_send_complete[i] = std::make_unique<std::atomic<bool>>(false);
             epoch_remote_server_receive_complete[i] = std::make_unique<std::atomic<bool>>(false);
             epoch_back_up_complete[i] = std::make_unique<std::atomic<bool>>(false);
@@ -667,25 +673,35 @@ namespace Taas{
 
 
     bool ThreadCounters::IsEpochClientTxnHandleComplete(const uint64_t &epoch) {
-        return epoch < EpochManager::GetPhysicalEpoch() &&
-
-               GetAllThreadLocalCountNum(epoch, shard_handled_local_txn_num_local_vec) >=
-               GetAllThreadLocalCountNum(epoch, shard_should_handle_local_txn_num_local_vec);
+        auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
+        if(epoch_shard_handle_complete[epoch_mod]->load()) {
+            return true;
+        }
+        else {
+            if(epoch <= EpochManager::GetPhysicalEpoch() &&
+            GetAllThreadLocalCountNum(epoch, shard_handled_local_txn_num_local_vec) >=
+            GetAllThreadLocalCountNum(epoch, shard_should_handle_local_txn_num_local_vec)) {
+                epoch_shard_handle_complete[epoch_mod]->store(true);
+                return true;
+            }
+            return false;
+        }
     }
+
     bool ThreadCounters::IsEpochShardTxnHandleComplete(const uint64_t &epoch) {
-        return epoch < EpochManager::GetPhysicalEpoch() &&
-            CheckEpochShardReceiveComplete(epoch) &&
+        auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
+        if(epoch_remote_server_handle_complete[epoch_mod]->load()) {
+            return true;
+        }
+        else {
+            if(epoch < EpochManager::GetPhysicalEpoch() &&
                GetAllThreadLocalCountNum(epoch, remote_server_handled_txn_num_local_vec) >=
-               GetAllThreadLocalCountNum(epoch, remote_server_should_handle_txn_num_local_vec);
-    }
-    bool ThreadCounters::IsEpochTxnHandleComplete(const uint64_t &epoch) {
-        return epoch < EpochManager::GetPhysicalEpoch() &&
-
-               GetAllThreadLocalCountNum(epoch, shard_handled_local_txn_num_local_vec) >=
-               GetAllThreadLocalCountNum(epoch, shard_should_handle_local_txn_num_local_vec) &&
-
-               GetAllThreadLocalCountNum(epoch, shard_handled_remote_txn_num_local_vec) >=
-               GetAllThreadLocalCountNum(epoch, shard_should_handle_remote_txn_num_local_vec);
+               GetAllThreadLocalCountNum(epoch, remote_server_should_handle_txn_num_local_vec)) {
+                epoch_remote_server_handle_complete[epoch_mod]->store(true);
+                return true;
+            }
+            return false;
+        }
     }
 
 

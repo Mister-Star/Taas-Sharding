@@ -118,9 +118,11 @@ namespace Taas {
             LOG(INFO) << "**** Finished CheckEpochShardReceiveComplete Epoch : " << epoch << ",time cost : " << time2 - time1 << "****\n";
 
             while(!EpochMessageReceiveHandler::IsEpochShardTxnHandleComplete(epoch)) usleep(logical_sleep_timme);
-            workers.push_emergency_task([epoch, &ctx] () {
-                EpochMessageSendHandler::SendEpochRemoteServerEndMessage(ctx.taasContext.txn_node_ip_index, epoch, ctx.taasContext.kTxnNodeNum);
-            });
+            LOG(INFO) << "**** finished IsEpochShardTxnHandleComplete : " << epoch << "****\n";
+//            workers.push_emergency_task([epoch, &ctx] () {
+//                EpochMessageSendHandler::SendEpochRemoteServerEndMessage(ctx.taasContext.txn_node_ip_index, epoch, ctx.taasContext.kTxnNodeNum);
+//            });
+            LOG(INFO) << "**** finished SendEpochRemoteServerEndMessage : " << epoch << "****\n";
 //            while(!EpochMessageReceiveHandler::IsRemoteServerSendFinish(epoch)) usleep(logical_sleep_timme);
 ////                LOG(INFO) << "**** finished IsRemoteServerSendFinish : " << epoch << "****\n";
 //            while(!EpochMessageReceiveHandler::IsRemoteServerACKReceiveComplete(epoch)) usleep(logical_sleep_timme);
@@ -182,7 +184,7 @@ namespace Taas {
                         "************ 完成一个Epoch的合并 Physical Epoch %lu, Logical Epoch: %lu, Local EpochSuccessCommitTxnNum: %lu,TotalSuccessTxnNum: %lu, EpochCommitTxnNum: %lu ",
                         EpochManager::GetPhysicalEpoch(), epoch, epoch_commit_success_txn_num, total_commit_txn_num,
                         EpochMessageSendHandler::TotalTxnNum.load() - last_total_commit_txn_num)
-                          << ",Time Cost  Epoch: " << epoch
+                          << "\n Time Cost  Epoch: " << epoch
                           << ",Merge time cost : " << time5 - time1
                           << ",Abort Set Merge time cost : " << time6 - time5
                           << ",Commit time cost : " << time7 - time6

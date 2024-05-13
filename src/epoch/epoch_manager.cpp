@@ -138,7 +138,7 @@ namespace Taas {
         RemotePackReceiveOK?       %6lu, RemoteTxnReceiveOK?        %6lu    \
         RemoteSendOK?              %6lu, RemoteACKReceiveOK?        %6lu  \n\
         backupSendOK?                %6lu, backupACKReceiveOK?          %6lu,   \
-        EnqueueMergeQueue            %6lu, MergeOk                      %6lu  \n\
+        IsEpochClientTxnHandleComplete%6lu, MergeOk                      %6lu  \n\
         IsShardMergeComplete      %6lu, IsAbortSetMergeComplete      %6lu    \
         IsCommitComplete             %6lu, SetRecordCommitted           %6lu  \n\
 \
@@ -175,7 +175,7 @@ namespace Taas {
         (uint64_t)EpochMessageReceiveHandler::IsRemoteServerACKReceiveComplete(epoch_mod),
        (uint64_t)EpochMessageReceiveHandler::IsBackUpSendFinish(epoch_mod),
        (uint64_t)EpochMessageReceiveHandler::IsBackUpACKReceiveComplete(epoch_mod),
-       (uint64_t)EpochMessageReceiveHandler::IsEpochTxnHandleComplete(epoch_mod),
+       (uint64_t)EpochMessageReceiveHandler::IsEpochShardTxnHandleComplete(epoch_mod),
        (uint64_t)Merger::CheckEpochMergeComplete(epoch_mod),
        (uint64_t)EpochManager::IsEpochMergeComplete(epoch_mod),
        (uint64_t)EpochManager::IsAbortSetMergeComplete(epoch_mod),

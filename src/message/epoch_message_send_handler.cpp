@@ -350,10 +350,9 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
             txn_end->set_txn_server_id(txn_node_ip_index);
             txn_end->set_txn_type(proto::TxnType::EpochRemoteServerEndFlag);
             txn_end->set_commit_epoch(epoch);
-            txn_end->set_shard_id(server_id);
             txn_end->set_message_server_id(ctx.taasContext.txn_node_ip_index);
             txn_end->set_csn(EpochMessageReceiveHandler::GetAllThreadLocalCountNum(epoch, server_id,
-                  EpochMessageReceiveHandler::remote_server_should_send_txn_num_local_vec)); /// 不同server由不同的数量
+                  EpochMessageReceiveHandler::remote_server_should_send_txn_num_local_vec));
             auto serialized_txn_str_ptr = std::make_unique<std::string>();
             Gzip(msg.get(), serialized_txn_str_ptr.get());
             MessageQueue::send_to_server_queue->enqueue(
@@ -386,7 +385,7 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
                 auto serialized_txn_str_ptr = std::make_unique<std::string>();
                 Gzip(msg.get(), serialized_txn_str_ptr.get());
                 MessageQueue::send_to_server_pub_queue->enqueue(
-                        std::make_unique<send_params>(0, 0, "", epoch, proto::TxnType::AbortSet, std::move(serialized_txn_str_ptr), nullptr));
+                        std::make_unique<send_params>(0, 0, "", epoch, proto::TxnType::AbortSet, std::move(serialized_txn_str_ptr), nullptr, true));
                 MessageQueue::send_to_server_pub_queue->enqueue( std::make_unique<send_params>());
 
                 epoch ++;
@@ -414,7 +413,7 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
         auto serialized_txn_str_ptr = std::make_unique<std::string>();
         Gzip(msg.get(), serialized_txn_str_ptr.get());
         MessageQueue::send_to_server_pub_queue->enqueue(
-                std::make_unique<send_params>(0, 0, "", epoch, proto::TxnType::AbortSet, std::move(serialized_txn_str_ptr), nullptr));
+                std::make_unique<send_params>(0, 0, "", epoch, proto::TxnType::AbortSet, std::move(serialized_txn_str_ptr), nullptr, true));
         return MessageQueue::send_to_server_pub_queue->enqueue( std::make_unique<send_params>());
     }
 

@@ -44,11 +44,13 @@ namespace Taas {
                             sleep_flag = false;
                         }
 
-//                        if(EpochMessageReceiveHandler::IsEpochShardTxnHandleComplete(remote_server_epoch)) {
-//                            EpochMessageSendHandler::SendEpochRemoteServerEndMessage(local_server_id, remote_server_epoch, server_num);
-//                            remote_server_epoch ++;
-//                            sleep_flag = false;
-//                        }
+                        if(EpochMessageReceiveHandler::IsEpochClientTxnHandleComplete(remote_server_epoch) &&
+                                EpochMessageReceiveHandler::CheckEpochShardReceiveComplete(remote_server_epoch) &&
+                            EpochMessageReceiveHandler::IsEpochShardTxnHandleComplete(remote_server_epoch)) {
+                            EpochMessageSendHandler::SendEpochRemoteServerEndMessage(local_server_id, remote_server_epoch, server_num);
+                            remote_server_epoch ++;
+                            sleep_flag = false;
+                        }
 //
 //                        if(EpochManager::IsEpochMergeComplete(abort_send_epoch)) {
 //                            EpochMessageSendHandler::SendAbortSet(local_server_id, abort_send_epoch, ctx.taasContext.kCacheMaxLength);

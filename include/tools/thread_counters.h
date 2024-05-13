@@ -71,8 +71,10 @@ namespace Taas {
                 abort_set_send_ack_epoch_num; /// check and reply ack
 
         static std::vector<std::unique_ptr<std::atomic<bool>>>
+                epoch_shard_handle_complete,
                 epoch_shard_send_complete,
                 epoch_shard_receive_complete,
+                epoch_remote_server_handle_complete,
                 epoch_remote_server_send_complete,
                 epoch_remote_server_receive_complete,
                 epoch_back_up_complete,
@@ -162,8 +164,6 @@ namespace Taas {
 
         static bool IsEpochClientTxnHandleComplete(const uint64_t &epoch) ;
         static bool IsEpochShardTxnHandleComplete(const uint64_t &epoch) ;
-        static bool IsEpochTxnHandleComplete(const uint64_t &epoch) ;
-
 
 
 
