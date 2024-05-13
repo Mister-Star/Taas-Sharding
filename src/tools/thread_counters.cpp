@@ -675,7 +675,7 @@ namespace Taas{
 
 
 
-    bool ThreadCounters::IsEpochClientTxnHandleComplete(const uint64_t &epoch) {
+    bool ThreadCounters::CheckEpochClientTxnHandleComplete(const uint64_t &epoch) {
         auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
         if(epoch_shard_handle_complete[epoch_mod]->load()) {
             return true;
@@ -691,7 +691,7 @@ namespace Taas{
         }
     }
 
-    bool ThreadCounters::IsEpochShardTxnHandleComplete(const uint64_t &epoch) {
+    bool ThreadCounters::CheckEpochShardTxnHandleComplete(const uint64_t &epoch) {
         auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
         if(epoch_remote_server_handle_complete[epoch_mod]->load()) {
             return true;

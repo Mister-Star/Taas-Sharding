@@ -6,8 +6,6 @@
 #include "message/message.h"
 #include "transaction/merge.h"
 #include "transaction/two_phase_commit.h"
-#include "storage/tikv.h"
-#include "storage/mot.h"
 
 namespace Taas {
 
@@ -18,10 +16,10 @@ namespace Taas {
         class TwoPC twoPC;
         while(init_ok_num.load() < 5) usleep(sleep_time);
         receiveHandler.Init(id, ctx);
-        twoPC.Init(ctx, id);
+        Taas::TwoPC::Init(ctx, id);
         init_ok_num.fetch_add(1);
-        auto sleep_flag = true;
-        auto safe_length = ctx.taasContext.kCacheMaxLength / 10;
+//        bool sleep_flag;
+//        auto safe_length = ctx.taasContext.kCacheMaxLength / 10;
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         while(!EpochManager::IsTimerStop()){
             switch(ctx.taasContext.taasMode) {
@@ -29,7 +27,7 @@ namespace Taas {
                 case TaasMode::MultiMaster :
                 case TaasMode::Shard : {
                     while(!EpochManager::IsTimerStop()) {
-                        sleep_flag = true;
+//                        sleep_flag = true;
 //                        receiveHandler.TryHandleReceivedControlMessage();
 //                        if( EpochManager::GetLogicalEpoch() + safe_length > EpochManager::GetPhysicalEpoch() ) /// avoid task backlogs, stop handling txn comes from the client
 //                            receiveHandler.TryHandleReceivedMessage();
@@ -61,7 +59,7 @@ namespace Taas {
         class TwoPC twoPC;
         while(init_ok_num.load() < 5) usleep(sleep_time);
         receiveHandler.Init(id, ctx);
-        twoPC.Init(ctx, id);
+        Taas::TwoPC::Init(ctx, id);
         init_ok_num.fetch_add(1);
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         while(!EpochManager::IsTimerStop()){

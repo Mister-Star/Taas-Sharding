@@ -5,33 +5,32 @@
 #include "worker/worker_epoch_merge.h"
 #include "epoch/epoch_manager.h"
 #include "transaction/merge.h"
-#include "message/message.h"
 #include "transaction/transaction_cache.h"
 
 namespace Taas {
 
     void WorkerFroMergeThreadMain(const Context& ctx, uint64_t id) {
-//        std::string name = "EpochMerge-" + std::to_string(id);
-//        pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
-//        Merger merger;
-//        while(init_ok_num.load() < 5) usleep(sleep_time);
-//        merger.MergeInit(id, ctx);
-//        init_ok_num.fetch_add(1);
-//        while(!EpochManager::IsInitOK()) usleep(sleep_time);
-//        auto txn_ptr = std::make_shared<proto::Transaction>();
-//        switch(ctx.taasContext.taasMode) {
-//            case TaasMode::MultiModel :
-//            case TaasMode::MultiMaster :
-//            case TaasMode::Shard : {
-//                while(!EpochManager::IsTimerStop()) {
-//                    merger.EpochMerge();
-//                }
-//                break;
-//            }
-//            case TaasMode::TwoPC : {
-//                break;
-//            }
-//        }
+        std::string name = "EpochMerge-" + std::to_string(id);
+        pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
+        Merger merger;
+        while(init_ok_num.load() < 5) usleep(sleep_time);
+        merger.MergeInit(id, ctx);
+        init_ok_num.fetch_add(1);
+        while(!EpochManager::IsInitOK()) usleep(sleep_time);
+        auto txn_ptr = std::make_shared<proto::Transaction>();
+        switch(ctx.taasContext.taasMode) {
+            case TaasMode::MultiModel :
+            case TaasMode::MultiMaster :
+            case TaasMode::Shard : {
+                while(!EpochManager::IsTimerStop()) {
+                    merger.EpochMerge();
+                }
+                break;
+            }
+            case TaasMode::TwoPC : {
+                break;
+            }
+        }
     }
 
     void EpochWorkerThreadMain(const Context& ctx, uint64_t id) {
@@ -44,8 +43,8 @@ namespace Taas {
         merger.MergeInit(id, ctx);
         receiveHandler.Init(id, ctx);
         Taas::TwoPC::Init(ctx, id);
-        auto sleep_flag = true;
-        auto safe_length = ctx.taasContext.kCacheMaxLength / 5;
+        bool sleep_flag;
+        auto safe_length = ctx.taasContext.kCacheMaxLength / 10;
         init_ok_num.fetch_add(1);
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         switch(ctx.taasContext.taasMode) {
@@ -64,7 +63,6 @@ namespace Taas {
                             sleep_flag = false;
                         }
                     }
-
 
                     if(!EpochManager::IsEpochMergeComplete(merger.epoch)) {
                         while (TransactionCache::epoch_merge_queue[merger.epoch_mod]->try_dequeue(merger.txn_ptr)) {

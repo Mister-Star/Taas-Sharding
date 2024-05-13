@@ -194,7 +194,7 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
         uint64_t epoch = 1;
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         while(!EpochManager::IsTimerStop()) {
-            if (EpochMessageReceiveHandler::IsEpochClientTxnHandleComplete(epoch)) {
+            if (EpochMessageReceiveHandler::CheckEpochClientTxnHandleComplete(epoch)) {
 //                for(uint64_t server_id = 0; server_id < server_num; server_id ++) {
 //                    if (server_id == local_server_id) continue;
 //                    auto msg = std::make_unique<proto::Message>();
