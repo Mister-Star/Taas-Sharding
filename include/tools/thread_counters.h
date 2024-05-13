@@ -19,6 +19,7 @@ namespace Taas {
 
         static Context ctx;
         static std::atomic<uint64_t> inc_id;
+        static std::vector<std::vector<bool>> is_local_shard;
 
     ///message handling
     public:

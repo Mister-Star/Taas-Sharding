@@ -8,6 +8,7 @@ namespace Taas{
 
     std::atomic<uint64_t> ThreadCounters::inc_id(0);
     Context ThreadCounters::ctx;
+    std::vector<std::vector<bool>> ThreadCounters::is_local_shard;
 
     std::vector<std::shared_ptr<AtomicCounters_Cache>>
             ThreadCounters::shard_should_send_txn_num_local_vec,
@@ -184,6 +185,20 @@ namespace Taas{
         auto max_length = context.taasContext.kCacheMaxLength;
         auto shard_num = context.taasContext.kShardNum;
         auto replica_num = context.taasContext.kReplicaNum;
+
+        is_local_shard.resize(ctx.taasContext.kTxnNodeNum);
+        for(auto &i : is_local_shard) {
+            i.resize(ctx.taasContext.kShardNum);
+        }
+        for(uint64_t server_id = 0; server_id < ctx.taasContext.kTxnNodeNum; server_id ++) {
+            for(uint64_t i = 0; i < ctx.taasContext.kShardNum; i ++) {
+                for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) {
+                    if((i + ctx.taasContext.kTxnNodeNum - j) % ctx.taasContext.kTxnNodeNum == server_id) {
+                        is_local_shard[server_id][i] = true;
+                    }
+                }
+            }
+        }
 
         shard_should_send_txn_num_local_vec.resize(thread_total_num);
         shard_send_txn_num_local_vec.resize(thread_total_num);

@@ -60,7 +60,7 @@ class EpochMessageReceiveHandler : public ThreadCounters {
                 server_reply_ack_id = 0,
                 cache_clear_epoch_num = 0, cache_clear_epoch_num_mod = 0,
                 redo_log_push_down_reply = 1;
-        std::vector<bool> is_local_shard;
+        std::vector<std::vector<bool>> is_local_shard;
     public:
         bool res, sleep_flag;
         std::shared_ptr<proto::Transaction> empty_txn_ptr;
