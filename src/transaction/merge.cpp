@@ -93,30 +93,31 @@ namespace Taas {
         shard_id = txn_ptr->shard_id();
         shard_server_id = txn_ptr->shard_server_id();
         if (CRDTMerge::ValidateReadSet(txn_ptr)) {
-            write_set = std::make_shared<proto::Transaction>();
-            write_set->set_csn(txn_ptr->csn());
-            write_set->set_commit_epoch(txn_ptr->commit_epoch());
-            write_set->set_txn_server_id(txn_ptr->txn_server_id());
-            write_set->set_client_ip(txn_ptr->client_ip());
-            write_set->set_client_txn_id(txn_ptr->client_txn_id());
-            write_set->set_shard_id(txn_ptr->shard_id());
-            write_set->set_shard_server_id(txn_ptr->shard_server_id());
-
-//            write_set->set_shard_id(ctx.taasContext.txn_node_ip_index);
-            write_set->set_message_server_id(local_server_id);
-            write_set->set_txn_type(proto::RemoteServerTxn);
-            for(auto i = 0; i < txn_ptr->row_size(); i ++) { /// for SI isolation only seng the wriet set.
-                const auto& row = txn_ptr->row(i);
-                if(row.op_type() == proto::OpType::Read) continue;
-                auto row_ptr = write_set->add_row();
-                (*row_ptr) = row;
-            }
+//            write_set = std::make_shared<proto::Transaction>();
+//            write_set->set_csn(txn_ptr->csn());
+//            write_set->set_commit_epoch(txn_ptr->commit_epoch());
+//            write_set->set_txn_server_id(txn_ptr->txn_server_id());
+//            write_set->set_client_ip(txn_ptr->client_ip());
+//            write_set->set_client_txn_id(txn_ptr->client_txn_id());
+//            write_set->set_shard_id(txn_ptr->shard_id());
+//            write_set->set_shard_server_id(txn_ptr->shard_server_id());
+//
+////            write_set->set_shard_id(ctx.taasContext.txn_node_ip_index);
+//            write_set->set_message_server_id(local_server_id);
+//            write_set->set_txn_type(proto::RemoteServerTxn);
+//            for(auto i = 0; i < txn_ptr->row_size(); i ++) { /// for SI isolation only seng the wriet set.
+//                const auto& row = txn_ptr->row(i);
+//                if(row.op_type() == proto::OpType::Read) continue;
+//                auto row_ptr = write_set->add_row();
+//                (*row_ptr) = row;
+//            }
             for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) {
                 auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum - j) % ctx.taasContext.kTxnNodeNum;
                 if (to_id == ctx.taasContext.txn_node_ip_index) continue;
                 remote_server_should_send_txn_num_local->IncCount(message_epoch, to_id, 1);
             }
-            EpochMessageSendHandler::SendTxnToServer(message_epoch, sent_to, write_set, proto::TxnType::RemoteServerTxn);
+            EpochMessageSendHandler::SendTxnToServer(message_epoch, sent_to, txn_ptr, proto::TxnType::RemoteServerTxn);
+//            EpochMessageSendHandler::SendTxnToServer(message_epoch, sent_to, write_set, proto::TxnType::RemoteServerTxn);
             for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) {
                 auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum - j) % ctx.taasContext.kTxnNodeNum;
                 if (to_id == ctx.taasContext.txn_node_ip_index) continue;

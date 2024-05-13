@@ -41,9 +41,13 @@ namespace Taas {
         proto::TxnType type{};
         std::unique_ptr<std::string> str;
         std::shared_ptr<proto::Transaction> txn;
+        bool send_to_all;
+//        send_params(uint64_t id_, uint64_t time_, std::string ip_, uint64_t e = 0, proto::TxnType ty = proto::TxnType::NullMark,
+//                    std::unique_ptr<std::string> && s = nullptr, std::shared_ptr<proto::Transaction> &&t = nullptr):
+//                id(id_), time(time_), ip(std::move(ip_)), epoch(e), type(ty), str(std::move(s)), txn(std::move(t)), send_to_all(false){}
         send_params(uint64_t id_, uint64_t time_, std::string ip_, uint64_t e = 0, proto::TxnType ty = proto::TxnType::NullMark,
-                    std::unique_ptr<std::string> && s = nullptr, std::shared_ptr<proto::Transaction> &&t = nullptr):
-                id(id_), time(time_), ip(std::move(ip_)), epoch(e), type(ty), str(std::move(s)), txn(std::move(t)){}
+                    std::unique_ptr<std::string> && s = nullptr, std::shared_ptr<proto::Transaction> &&t = nullptr, bool send_to_all_t = false):
+                id(id_), time(time_), ip(std::move(ip_)), epoch(e), type(ty), str(std::move(s)), txn(std::move(t)), send_to_all(send_to_all_t){}
         send_params()= default;
     };
 
