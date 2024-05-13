@@ -49,6 +49,9 @@ namespace Taas {
             printf("Send Server connect ZMQ_PUSH %s", ("tcp://" + ctx.taasContext.kServerIp[i] + ":" + std::to_string(20000+i) + "\n").c_str());
         }
         printf("线程开始工作 SendServerThread\n");
+
+
+        init_ok_num.fetch_add(1);
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         while (!EpochManager::IsTimerStop()) {
             MessageQueue::send_to_server_queue->wait_dequeue(params);
@@ -106,6 +109,7 @@ namespace Taas {
 
         printf("线程开始工作 SendServerThread\n");
 
+        init_ok_num.fetch_add(1);
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         while (!EpochManager::IsTimerStop()) {
             MessageQueue::send_to_server_pub_queue->wait_dequeue(params);
@@ -138,6 +142,10 @@ namespace Taas {
         socket_listen.set(zmq::sockopt::sndhwm, queue_length);
         socket_listen.set(zmq::sockopt::rcvhwm, queue_length);
         printf("线程开始工作 ListenServerThread ZMQ_PULL tcp://*:%s\n", std::to_string(20000+ctx.taasContext.txn_node_ip_index).c_str());
+
+
+
+        init_ok_num.fetch_add(1);
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         while (!EpochManager::IsTimerStop()) {
             std::unique_ptr<zmq::message_t> message_ptr = std::make_unique<zmq::message_t>();
@@ -151,7 +159,6 @@ namespace Taas {
                 break;
             }
         }
-
         while (!EpochManager::IsTimerStop()) {
             std::unique_ptr<zmq::message_t> message_ptr = std::make_unique<zmq::message_t>();
             recvResult = socket_listen.recv((*message_ptr), recvFlags);
@@ -211,6 +218,8 @@ namespace Taas {
         socket_listen.set(zmq::sockopt::sndhwm, queue_length);
         socket_listen.set(zmq::sockopt::rcvhwm, queue_length);
         printf("线程开始工作 ListenServerThread ZMQ_SUB\n");
+
+        init_ok_num.fetch_add(1);
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         while (!EpochManager::IsTimerStop()) {
             std::unique_ptr<zmq::message_t> message_ptr = std::make_unique<zmq::message_t>();
