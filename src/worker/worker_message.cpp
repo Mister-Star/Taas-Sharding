@@ -16,7 +16,7 @@ namespace Taas {
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         EpochMessageReceiveHandler receiveHandler;
         class TwoPC twoPC;
-        while(init_ok_num.load() < 1) usleep(sleep_time);
+        while(init_ok_num.load() < 5) usleep(sleep_time);
         receiveHandler.Init(id, ctx);
         twoPC.Init(ctx, id);
         init_ok_num.fetch_add(1);
@@ -59,7 +59,7 @@ namespace Taas {
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         EpochMessageReceiveHandler receiveHandler;
         class TwoPC twoPC;
-        while(init_ok_num.load() < 1) usleep(sleep_time);
+        while(init_ok_num.load() < 5) usleep(sleep_time);
         receiveHandler.Init(id, ctx);
         twoPC.Init(ctx, id);
         init_ok_num.fetch_add(1);

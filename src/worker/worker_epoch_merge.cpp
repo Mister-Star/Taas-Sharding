@@ -14,7 +14,7 @@ namespace Taas {
 //        std::string name = "EpochMerge-" + std::to_string(id);
 //        pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
 //        Merger merger;
-//        while(init_ok_num.load() < 1) usleep(sleep_time);
+//        while(init_ok_num.load() < 5) usleep(sleep_time);
 //        merger.MergeInit(id, ctx);
 //        init_ok_num.fetch_add(1);
 //        while(!EpochManager::IsInitOK()) usleep(sleep_time);
@@ -40,7 +40,7 @@ namespace Taas {
         Merger merger;
 //        EpochMessageReceiveHandler receiveHandler;
         class TwoPC two_pc;
-        while(init_ok_num.load() < 1) usleep(sleep_time);
+        while(init_ok_num.load() < 5) usleep(sleep_time);
         merger.MergeInit(id, ctx);
 //        receiveHandler.Init(id, ctx);
         Taas::TwoPC::Init(ctx, id);
