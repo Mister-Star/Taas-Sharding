@@ -40,6 +40,7 @@ namespace Taas {
                         sleep_flag = true;
                         if (EpochMessageReceiveHandler::IsEpochClientTxnHandleComplete(shard_epoch)) {
                             EpochMessageSendHandler::SendEpochShardEndMessage(local_server_id, shard_epoch, server_num);
+                            LOG(INFO) << "Receive Handle EpochShardEndFlag epoch " << shard_epoch;
                             shard_epoch ++;
                             sleep_flag = false;
                         }
@@ -48,6 +49,7 @@ namespace Taas {
                                 EpochMessageReceiveHandler::CheckEpochShardReceiveComplete(remote_server_epoch) &&
                             EpochMessageReceiveHandler::IsEpochShardTxnHandleComplete(remote_server_epoch)) {
                             EpochMessageSendHandler::SendEpochRemoteServerEndMessage(local_server_id, remote_server_epoch, server_num);
+                            LOG(INFO) << "Receive Handle SendEpochRemoteServerEndMessage epoch " << remote_server_epoch;
                             remote_server_epoch ++;
                             sleep_flag = false;
                         }

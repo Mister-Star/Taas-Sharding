@@ -338,8 +338,10 @@ namespace Taas{
         redo_log_push_down_ack_num.Clear(cache_clear_epoch_num_mod, 0);
         redo_log_push_down_local_epoch.Clear(cache_clear_epoch_num_mod, 0);
 
+        epoch_shard_handle_complete[cache_clear_epoch_num_mod]->store(false);
         epoch_shard_send_complete[cache_clear_epoch_num_mod]->store(false);
         epoch_shard_receive_complete[cache_clear_epoch_num_mod]->store(false);
+        epoch_remote_server_handle_complete[cache_clear_epoch_num_mod]->store(false);
         epoch_remote_server_send_complete[cache_clear_epoch_num_mod]->store(false);
         epoch_remote_server_receive_complete[cache_clear_epoch_num_mod]->store(false);
         epoch_back_up_complete[cache_clear_epoch_num_mod]->store(false);
@@ -694,7 +696,7 @@ namespace Taas{
             return true;
         }
         else {
-            if(epoch < EpochManager::GetPhysicalEpoch() &&
+            if(epoch <= EpochManager::GetPhysicalEpoch() &&
                GetAllThreadLocalCountNum(epoch, remote_server_handled_txn_num_local_vec) >=
                GetAllThreadLocalCountNum(epoch, remote_server_should_handle_txn_num_local_vec)) {
                 epoch_remote_server_handle_complete[epoch_mod]->store(true);
