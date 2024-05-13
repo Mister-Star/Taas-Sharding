@@ -38,11 +38,11 @@ namespace Taas {
         std::string name = "EpochMerger-" + std::to_string(id);
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         Merger merger;
-        EpochMessageReceiveHandler receiveHandler;
+//        EpochMessageReceiveHandler receiveHandler;
         class TwoPC two_pc;
         while(init_ok_num.load() < 1) usleep(sleep_time);
         merger.MergeInit(id, ctx);
-        receiveHandler.Init(id, ctx);
+//        receiveHandler.Init(id, ctx);
         Taas::TwoPC::Init(ctx, id);
         auto sleep_flag = true;
         auto safe_length = ctx.taasContext.kCacheMaxLength / 5;
