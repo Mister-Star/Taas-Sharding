@@ -133,14 +133,6 @@ namespace Taas {
         commit_epoch                 %6lu, redo_log_epoch               %6lu  \n\
         clear_epoch                  %6lu,                                        \
         epoch_mod                    %6lu, disstance                    %6lu  \n\
-        ShardPackReceiveOK?       %6lu, ShardTxnReceiveOK?        %6lu    \
-        ShardSendOK?              %6lu, ShardACKReceiveOK?        %6lu  \n\
-        RemotePackReceiveOK?       %6lu, RemoteTxnReceiveOK?        %6lu    \
-        RemoteSendOK?              %6lu, RemoteACKReceiveOK?        %6lu  \n\
-        backupSendOK?                %6lu, backupACKReceiveOK?          %6lu,   \
-        IsEpochClientTxnHandleComplete%6lu, MergeOk                      %6lu  \n\
-        IsShardMergeComplete      %6lu, IsAbortSetMergeComplete      %6lu    \
-        IsCommitComplete             %6lu, SetRecordCommitted           %6lu  \n\
 \
         handlelocaltxnNum            %6lu, shouldhandlelocaltxnNum      %6lu,   \
         handleremotetxnNum           %6lu, shouldhandleremotetxnNum     %6lu, \n\
@@ -165,22 +157,6 @@ namespace Taas {
        MOT::pushed_down_epoch.load(),                                                EpochManager::GetPushDownEpoch(),
        merge_epoch.load(), abort_set_epoch.load(), commit_epoch.load(), redo_log_epoch.load(),clear_epoch.load(),
        epoch_mod,                                                                         EpochManager::GetPhysicalEpoch() - EpochManager::GetLogicalEpoch(),
-       (uint64_t)EpochMessageReceiveHandler::IsShardPackReceiveComplete(epoch_mod),
-       (uint64_t)EpochMessageReceiveHandler::IsShardTxnReceiveComplete(epoch_mod),
-       (uint64_t)EpochMessageReceiveHandler::IsShardSendFinish(epoch_mod),
-       (uint64_t)EpochMessageReceiveHandler::IsShardACKReceiveComplete(epoch_mod),
-        (uint64_t)EpochMessageReceiveHandler::IsRemoteServerPackReceiveComplete(epoch_mod),
-        (uint64_t)EpochMessageReceiveHandler::IsRemoteServerTxnReceiveComplete(epoch_mod),
-        (uint64_t)EpochMessageReceiveHandler::IsRemoteServerSendFinish(epoch_mod),
-        (uint64_t)EpochMessageReceiveHandler::IsRemoteServerACKReceiveComplete(epoch_mod),
-       (uint64_t)EpochMessageReceiveHandler::IsBackUpSendFinish(epoch_mod),
-       (uint64_t)EpochMessageReceiveHandler::IsBackUpACKReceiveComplete(epoch_mod),
-       (uint64_t)EpochMessageReceiveHandler::IsEpochShardTxnHandleComplete(epoch_mod),
-       (uint64_t)Merger::CheckEpochMergeComplete(epoch_mod),
-       (uint64_t)EpochManager::IsEpochMergeComplete(epoch_mod),
-       (uint64_t)EpochManager::IsAbortSetMergeComplete(epoch_mod),
-       (uint64_t)EpochManager::IsCommitComplete(epoch_mod),
-       (uint64_t)EpochManager::IsRecordCommitted(epoch_mod),
 
        EpochMessageReceiveHandler::GetAllThreadLocalCountNum(epoch_mod, EpochMessageReceiveHandler::shard_handled_local_txn_num_local_vec),
        EpochMessageReceiveHandler::GetAllThreadLocalCountNum(epoch_mod, EpochMessageReceiveHandler::shard_should_handle_local_txn_num_local_vec),

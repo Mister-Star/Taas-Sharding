@@ -130,7 +130,7 @@ namespace Taas {
             while(!EpochMessageReceiveHandler::CheckEpochRemoteServerSendComplete(epoch)) usleep(logical_sleep_timme);
 //            LOG(INFO) << "**** finished RemoteServerTxn : " << epoch << "****\n";
                 auto time3 = now_to_us();
-                LOG(INFO) << "**** Finished CheckEpochRemoteServerSendComplete Epoch : " << epoch << ",time cost : " << time3 - time2 << "****\n";
+//                LOG(INFO) << "**** Finished CheckEpochRemoteServerSendComplete Epoch : " << epoch << ",time cost : " << time3 - time2 << "****\n";
 
 //            while(!EpochMessageReceiveHandler::IsBackUpACKReceiveComplete(epoch)) usleep(logical_sleep_timme);
 //                LOG(INFO) << "**** finished IsBackUpACKReceiveComplete : " << epoch << "****\n";
@@ -163,7 +163,7 @@ namespace Taas {
             EpochManager::SetAbortSetMergeComplete(epoch, true);
             abort_set_epoch.fetch_add(1);
             auto time6 = now_to_us();
-            LOG(INFO) << "******* Finished Abort Set Merge Epoch : " << epoch << "Time cost :" << time6 - time5 << "********\n";
+//            LOG(INFO) << "******* Finished Abort Set Merge Epoch : " << epoch << "Time cost :" << time6 - time5 << "********\n";
 
 
             while(!Merger::CheckEpochCommitComplete(epoch)) usleep(logical_sleep_timme);
