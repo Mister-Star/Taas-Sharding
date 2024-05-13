@@ -21,8 +21,8 @@
     <replica_num>3</replica_num>
 
     <merge_thread_num>8</merge_thread_num> <!--handle txn merge-->
-    <epoch_txn_thread_num>4</epoch_txn_thread_num> <!--handle client txn, sharding, send txn to remote server, send backup, be same as the core num-->
-    <epoch_message_thread_num>8</epoch_message_thread_num> <!--handle remote server message, be same as the core num-->
+    <epoch_txn_thread_num>0</epoch_txn_thread_num> <!--handle client txn, sharding, send txn to remote server, send backup, be same as the core num-->
+    <epoch_message_thread_num>0</epoch_message_thread_num> <!--handle remote server message, be same as the core num-->
 
 
     <glog_path>/tmp</glog_path>

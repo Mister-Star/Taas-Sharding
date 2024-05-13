@@ -38,11 +38,11 @@ namespace Taas {
         std::string name = "EpochMerger-" + std::to_string(id);
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         Merger merger;
-//        EpochMessageReceiveHandler receiveHandler;
+        EpochMessageReceiveHandler receiveHandler;
         class TwoPC two_pc;
         while(init_ok_num.load() < 5) usleep(sleep_time);
         merger.MergeInit(id, ctx);
-//        receiveHandler.Init(id, ctx);
+        receiveHandler.Init(id, ctx);
         Taas::TwoPC::Init(ctx, id);
         auto sleep_flag = true;
         auto safe_length = ctx.taasContext.kCacheMaxLength / 5;
@@ -96,13 +96,13 @@ namespace Taas {
                         }
                     }
 
-//                    receiveHandler.TryHandleReceivedControlMessage();
-//                    if( EpochManager::GetLogicalEpoch() + safe_length > EpochManager::GetPhysicalEpoch() ) /// avoid task backlogs, stop handling txn comes from the client
-//                        receiveHandler.TryHandleReceivedMessage();
-//
-//                    sleep_flag = sleep_flag & receiveHandler.sleep_flag;
+                    receiveHandler.TryHandleReceivedControlMessage();
+                    if( EpochManager::GetLogicalEpoch() + safe_length > EpochManager::GetPhysicalEpoch() ) /// avoid task backlogs, stop handling txn comes from the client
+                        receiveHandler.TryHandleReceivedMessage();
 
-                    if(sleep_flag) usleep(merge_sleep_time);
+                    sleep_flag = sleep_flag & receiveHandler.sleep_flag;
+
+                    if(sleep_flag) usleep(50);
                 }
                 break;
             }
