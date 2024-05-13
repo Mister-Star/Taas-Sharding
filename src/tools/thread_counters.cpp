@@ -183,7 +183,7 @@ namespace Taas{
 
     bool ThreadCounters::StaticInit(const Context& context) {
         ctx = context;
-        auto thread_total_num = ctx.taasContext.kMergeThreadNum * 2;
+        auto thread_total_num = (ctx.taasContext.kMergeThreadNum + ctx.taasContext.kEpochMessageThreadNum + ctx.taasContext.kEpochTxnThreadNum) * 2;
         auto max_length = context.taasContext.kCacheMaxLength;
         auto shard_num = context.taasContext.kShardNum;
         auto replica_num = context.taasContext.kReplicaNum;

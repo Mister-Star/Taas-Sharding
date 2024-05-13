@@ -82,7 +82,11 @@ namespace Taas {
     }
 
     void EpochMessageReceiveHandler::HandleReceivedMessage() {
+        auto safe_length = ctx.taasContext.kCacheMaxLength / 10;
         while(!EpochManager::IsTimerStop()) {
+            while( EpochManager::GetLogicalEpoch() + safe_length > EpochManager::GetPhysicalEpoch() ) {
+                usleep(ctx.taasContext.kEpochSize_us);
+            }
             MessageQueue::listen_message_txn_queue->wait_dequeue(message_ptr);
             if (message_ptr == nullptr || message_ptr->empty()) continue;
             message_string_ptr = std::make_unique<std::string>(static_cast<const char *>(message_ptr->data()), message_ptr->size());
@@ -262,7 +266,7 @@ namespace Taas {
                 break;
             }
             case proto::TxnType::EpochShardEndFlag : {
-                LOG(INFO) << "Receive Handle EpochShardEndFlag epoch " << message_epoch;
+//                LOG(INFO) << "Receive Handle EpochShardEndFlag epoch " << message_epoch;
                 shard_should_receive_txn_num.IncCount(message_epoch, message_server_id,txn_ptr->csn());
                 shard_received_pack_num.IncCount(message_epoch, message_server_id, 1);
                 CheckEpochShardReceiveComplete(message_epoch);
@@ -270,7 +274,7 @@ namespace Taas {
                 break;
             }
             case proto::EpochRemoteServerEndFlag : {
-                LOG(INFO) << "Receive Handle EpochRemoteServerEndFlag epoch " << message_epoch;
+//                LOG(INFO) << "Receive Handle EpochRemoteServerEndFlag epoch " << message_epoch;
                 remote_server_should_receive_txn_num.IncCount(message_epoch, message_server_id,txn_ptr->csn());
                 remote_server_received_pack_num.IncCount(message_epoch, message_server_id, 1);
                 CheckEpochRemoteServerReceiveComplete(message_epoch);
@@ -278,7 +282,7 @@ namespace Taas {
                 break;
             }
             case proto::TxnType::EpochBackUpEndFlag : {
-                LOG(INFO) << "Receive Handle EpochBackUpEndFlag epoch " << message_epoch;
+//                LOG(INFO) << "Receive Handle EpochBackUpEndFlag epoch " << message_epoch;
                 backup_should_receive_txn_num.IncCount(message_epoch, message_server_id, txn_ptr->csn());
                 backup_received_pack_num.IncCount(message_epoch, message_server_id, 1);
                 EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, empty_txn_ptr, proto::TxnType::BackUpACK);
@@ -290,7 +294,7 @@ namespace Taas {
                 break;
             }
             case proto::TxnType::AbortSet : {
-                LOG(INFO) << "Receive Handle AbortSet epoch " << message_epoch;
+//                LOG(INFO) << "Receive Handle AbortSet epoch " << message_epoch;
                 UpdateEpochAbortSet();
                 abort_set_received_num.IncCount(message_epoch,message_server_id, 1);
                 EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, empty_txn_ptr, proto::TxnType::AbortSetACK);

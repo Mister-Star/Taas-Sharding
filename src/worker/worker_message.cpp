@@ -21,7 +21,7 @@ namespace Taas {
         twoPC.Init(ctx, id);
         init_ok_num.fetch_add(1);
         auto sleep_flag = true;
-        auto safe_length = ctx.taasContext.kCacheMaxLength / 2;
+        auto safe_length = ctx.taasContext.kCacheMaxLength / 10;
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         while(!EpochManager::IsTimerStop()){
             switch(ctx.taasContext.taasMode) {
@@ -30,15 +30,15 @@ namespace Taas {
                 case TaasMode::Shard : {
                     while(!EpochManager::IsTimerStop()) {
                         sleep_flag = true;
-                        receiveHandler.TryHandleReceivedControlMessage();
-                        if( EpochManager::GetLogicalEpoch() + safe_length > EpochManager::GetPhysicalEpoch() ) /// avoid task backlogs, stop handling txn comes from the client
-                            receiveHandler.TryHandleReceivedMessage();
+//                        receiveHandler.TryHandleReceivedControlMessage();
+//                        if( EpochManager::GetLogicalEpoch() + safe_length > EpochManager::GetPhysicalEpoch() ) /// avoid task backlogs, stop handling txn comes from the client
+//                            receiveHandler.TryHandleReceivedMessage();
+//
+//                        sleep_flag = sleep_flag & receiveHandler.sleep_flag;
+//
+//                        if(sleep_flag) usleep(merge_sleep_time);
 
-                        sleep_flag = sleep_flag & receiveHandler.sleep_flag;
-
-                        if(sleep_flag) usleep(merge_sleep_time);
-
-//                        receiveHandler.HandleReceivedMessage();
+                        receiveHandler.HandleReceivedMessage();
                     }
                     break;
                 }

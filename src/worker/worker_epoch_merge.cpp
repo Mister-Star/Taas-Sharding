@@ -96,11 +96,11 @@ namespace Taas {
                         }
                     }
 
-                    receiveHandler.TryHandleReceivedControlMessage();
-                    if( EpochManager::GetLogicalEpoch() + safe_length > EpochManager::GetPhysicalEpoch() ) /// avoid task backlogs, stop handling txn comes from the client
-                        receiveHandler.TryHandleReceivedMessage();
-
-                    sleep_flag = sleep_flag & receiveHandler.sleep_flag;
+//                    receiveHandler.TryHandleReceivedControlMessage();
+//                    if( EpochManager::GetLogicalEpoch() + safe_length > EpochManager::GetPhysicalEpoch() ) /// avoid task backlogs, stop handling txn comes from the client
+//                        receiveHandler.TryHandleReceivedMessage();
+//
+//                    sleep_flag = sleep_flag & receiveHandler.sleep_flag;
 
                     if(sleep_flag) usleep(merge_sleep_time);
                 }

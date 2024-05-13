@@ -46,12 +46,12 @@ namespace Taas {
             threads.push_back(std::make_unique<std::thread>(WorkerForLogicalRedoLogPushDownCheckThreadMain, ctx)); cnt++;
             threads.push_back(std::make_unique<std::thread>(WorkerForEpochControlMessageThreadMain, ctx)); cnt++;
 
-//            for(int i = 0; i < (int)ctx.taasContext.kEpochTxnThreadNum; i ++) {///handle client txn
-//                threads.push_back(std::make_unique<std::thread>(WorkerFroMessageThreadMain, ctx, i));  cnt++;///client txn message
-//            }
-//            for(int i = 0; i < (int)ctx.taasContext.kEpochMessageThreadNum; i ++) {/// handle remote server message
-//                threads.push_back(std::make_unique<std::thread>(WorkerFroMessageEpochThreadMain, ctx, i));  cnt++;///epoch message
-//            }
+            for(int i = 0; i < (int)ctx.taasContext.kEpochTxnThreadNum; i ++) {///handle client txn
+                threads.push_back(std::make_unique<std::thread>(WorkerFroMessageThreadMain, ctx, i));  cnt++;///client txn message
+            }
+            for(int i = 0; i < (int)ctx.taasContext.kEpochMessageThreadNum; i ++) {/// handle remote server message
+                threads.push_back(std::make_unique<std::thread>(WorkerFroMessageEpochThreadMain, ctx, i));  cnt++;///epoch message
+            }
             for(int i = 0; i < (int)ctx.taasContext.kMergeThreadNum; i ++) {
 //                threads.push_back(std::make_unique<std::thread>(WorkerFroMergeThreadMain, ctx, i));  cnt++;///merge & commit
                 threads.push_back(std::make_unique<std::thread>(EpochWorkerThreadMain, ctx, i));  cnt++;

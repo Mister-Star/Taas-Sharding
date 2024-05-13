@@ -40,19 +40,27 @@ namespace Taas {
                         sleep_flag = true;
                         if (EpochMessageReceiveHandler::IsEpochClientTxnHandleComplete(shard_epoch)) {
                             EpochMessageSendHandler::SendEpochShardEndMessage(local_server_id, shard_epoch, server_num);
-                            LOG(INFO) << "Send EpochShardEndFlag epoch " << shard_epoch;
+//                            LOG(INFO) << "Send EpochShardEndFlag epoch " << shard_epoch;
                             shard_epoch ++;
                             sleep_flag = false;
                         }
 
-                        if(EpochMessageReceiveHandler::IsEpochClientTxnHandleComplete(remote_server_epoch) &&
-                                EpochMessageReceiveHandler::CheckEpochShardReceiveComplete(remote_server_epoch) &&
+                        if(remote_server_epoch < shard_epoch &&
+                            EpochMessageReceiveHandler::IsEpochClientTxnHandleComplete(remote_server_epoch) &&
+                            EpochMessageReceiveHandler::CheckEpochShardReceiveComplete(remote_server_epoch) &&
                             EpochMessageReceiveHandler::IsEpochShardTxnHandleComplete(remote_server_epoch)) {
                             EpochMessageSendHandler::SendEpochRemoteServerEndMessage(local_server_id, remote_server_epoch, server_num);
-                            LOG(INFO) << "Send SendEpochRemoteServerEndMessage epoch " << remote_server_epoch;
+//                            LOG(INFO) << "Send SendEpochRemoteServerEndMessage epoch " << remote_server_epoch;
                             remote_server_epoch ++;
                             sleep_flag = false;
                         }
+
+                        if(abort_send_epoch < remote_server_epoch && EpochManager::IsEpochMergeComplete(abort_send_epoch)) {
+                            EpochMessageSendHandler::SendAbortSet(local_server_id, abort_send_epoch, server_num);
+                            abort_send_epoch ++;
+                            sleep_flag = false;
+                        }
+
 //
 //                        if(EpochManager::IsEpochMergeComplete(abort_send_epoch)) {
 //                            EpochMessageSendHandler::SendAbortSet(local_server_id, abort_send_epoch, ctx.taasContext.kCacheMaxLength);
