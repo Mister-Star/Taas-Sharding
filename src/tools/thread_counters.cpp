@@ -681,7 +681,7 @@ namespace Taas{
             return true;
         }
         else {
-            if(epoch <= EpochManager::GetPhysicalEpoch() &&
+            if(epoch < EpochManager::GetPhysicalEpoch() &&
             GetAllThreadLocalCountNum(epoch, shard_handled_local_txn_num_local_vec) >=
             GetAllThreadLocalCountNum(epoch, shard_should_handle_local_txn_num_local_vec)) {
                 epoch_shard_handle_complete[epoch_mod]->store(true);
@@ -697,7 +697,7 @@ namespace Taas{
             return true;
         }
         else {
-            if(epoch <= EpochManager::GetPhysicalEpoch() &&
+            if(epoch < EpochManager::GetPhysicalEpoch() &&
                GetAllThreadLocalCountNum(epoch, remote_server_handled_txn_num_local_vec) >=
                GetAllThreadLocalCountNum(epoch, remote_server_should_handle_txn_num_local_vec)) {
                 epoch_remote_server_handle_complete[epoch_mod]->store(true);

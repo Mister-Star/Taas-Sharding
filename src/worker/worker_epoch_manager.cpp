@@ -38,7 +38,7 @@ namespace Taas {
                     while(!EpochManager::IsInitOK()) usleep(sleep_time);
                     while(!EpochManager::IsTimerStop()) {
                         sleep_flag = true;
-                        if (shard_epoch <= EpochManager::GetPhysicalEpoch() && EpochMessageReceiveHandler::CheckEpochClientTxnHandleComplete(shard_epoch)) {
+                        if (shard_epoch < EpochManager::GetPhysicalEpoch() && EpochMessageReceiveHandler::CheckEpochClientTxnHandleComplete(shard_epoch)) {
                             EpochMessageSendHandler::SendEpochShardEndMessage(local_server_id, shard_epoch, server_num);
 //                            LOG(INFO) << "Send EpochShardEndFlag epoch " << shard_epoch;
                             shard_epoch ++;

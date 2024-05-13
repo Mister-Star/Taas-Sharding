@@ -91,7 +91,7 @@ namespace Taas {
         util::thread_pool_light workers(5);
         while(!EpochManager::IsTimerStop()){
 
-            while(epoch > EpochManager::GetPhysicalEpoch()) usleep(logical_sleep_timme);
+            while(epoch >= EpochManager::GetPhysicalEpoch()) usleep(logical_sleep_timme);
             auto time1 = now_to_us();
 //                LOG(INFO) << "**** Start Epoch Merge Epoch : " << epoch << "****\n";
             while(!EpochMessageReceiveHandler::CheckEpochClientTxnHandleComplete(epoch)) usleep(logical_sleep_timme);
