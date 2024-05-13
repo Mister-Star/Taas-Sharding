@@ -52,16 +52,12 @@ namespace Taas {
             case TaasMode::MultiModel :
             case TaasMode::MultiMaster :
             case TaasMode::Shard : {
-                while(!EpochManager::IsTimerStop()) {
-                    sleep_flag = true;
-
+                if(id < (ctx.taasContext.kMergeThreadNum * 2) / 3) {
                     merger.epoch = EpochManager::GetLogicalEpoch();
                     merger.epoch_mod = merger.epoch % ctx.taasContext.kCacheMaxLength;
-                    while(TransactionCache::epoch_read_validate_queue[merger.epoch_mod]->try_dequeue(merger.txn_ptr)) { /// only local txn do this procedure
+                    while(TransactionCache::epoch_read_validate_queue[merger.epoch_mod]->try_dequeue(merger.txn_ptr)) {
                         if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() != proto::TxnType::NullMark) {
                             merger.ReadValidate();
-                            merger.txn_ptr.reset();
-                            sleep_flag = false;
                         }
                     }
 
@@ -69,8 +65,6 @@ namespace Taas {
                         while (TransactionCache::epoch_merge_queue[merger.epoch_mod]->try_dequeue(merger.txn_ptr)) {
                             if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() != proto::TxnType::NullMark) {
                                 merger.Merge();
-                                merger.txn_ptr.reset();
-                                sleep_flag = false;
                             }
                         }
                     }
@@ -79,29 +73,73 @@ namespace Taas {
                         while (!EpochManager::IsCommitComplete(merger.epoch) && TransactionCache::epoch_commit_queue[merger.epoch_mod]->try_dequeue(merger.txn_ptr)) {
                             if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() != proto::TxnType::NullMark) {
                                 merger.Commit();
-                                merger.txn_ptr.reset();
-                                sleep_flag = false;
                             }
                         }
                     }
 
                     if(EpochManager::IsAbortSetMergeComplete(merger.epoch) && !EpochManager::IsRecordCommitted(merger.epoch)) {
                         while (!EpochManager::IsRecordCommitted(merger.epoch) && TransactionCache::epoch_redo_log_queue[merger.epoch_mod]->try_dequeue(merger.txn_ptr)) {
-                            if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() != proto::TxnType::NullMark) { /// only local txn do redo log
+                            if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() != proto::TxnType::NullMark) {
                                 merger.RedoLog();
-                                merger.txn_ptr.reset();
-                                sleep_flag = false;
                             }
                         }
                     }
 
                     receiveHandler.TryHandleReceivedControlMessage();
-                    if( EpochManager::GetLogicalEpoch() + safe_length > EpochManager::GetPhysicalEpoch() ) /// avoid task backlogs, stop handling txn comes from the client
+                    if( EpochManager::GetLogicalEpoch() + safe_length > EpochManager::GetPhysicalEpoch() )
                         receiveHandler.TryHandleReceivedMessage();
+                }
+                else {
+                    while(!EpochManager::IsTimerStop()) {
+                        sleep_flag = true;
 
-                    sleep_flag = sleep_flag & receiveHandler.sleep_flag;
+                        merger.epoch = EpochManager::GetLogicalEpoch();
+                        merger.epoch_mod = merger.epoch % ctx.taasContext.kCacheMaxLength;
+                        while(TransactionCache::epoch_read_validate_queue[merger.epoch_mod]->try_dequeue(merger.txn_ptr)) {
+                            if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() != proto::TxnType::NullMark) {
+                                merger.ReadValidate();
+                                merger.txn_ptr.reset();
+                                sleep_flag = false;
+                            }
+                        }
 
-                    if(sleep_flag) usleep(50);
+                        if(!EpochManager::IsEpochMergeComplete(merger.epoch)) {
+                            while (TransactionCache::epoch_merge_queue[merger.epoch_mod]->try_dequeue(merger.txn_ptr)) {
+                                if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() != proto::TxnType::NullMark) {
+                                    merger.Merge();
+                                    merger.txn_ptr.reset();
+                                    sleep_flag = false;
+                                }
+                            }
+                        }
+
+                        if(EpochManager::IsAbortSetMergeComplete(merger.epoch) && !EpochManager::IsCommitComplete(merger.epoch)) {
+                            while (!EpochManager::IsCommitComplete(merger.epoch) && TransactionCache::epoch_commit_queue[merger.epoch_mod]->try_dequeue(merger.txn_ptr)) {
+                                if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() != proto::TxnType::NullMark) {
+                                    merger.Commit();
+                                    merger.txn_ptr.reset();
+                                    sleep_flag = false;
+                                }
+                            }
+                        }
+
+                        if(EpochManager::IsAbortSetMergeComplete(merger.epoch) && !EpochManager::IsRecordCommitted(merger.epoch)) {
+                            while (!EpochManager::IsRecordCommitted(merger.epoch) && TransactionCache::epoch_redo_log_queue[merger.epoch_mod]->try_dequeue(merger.txn_ptr)) {
+                                if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() != proto::TxnType::NullMark) { /// only local txn do redo log
+                                    merger.RedoLog();
+                                    merger.txn_ptr.reset();
+                                    sleep_flag = false;
+                                }
+                            }
+                        }
+
+                        receiveHandler.TryHandleReceivedControlMessage();
+                        if( EpochManager::GetLogicalEpoch() + safe_length > EpochManager::GetPhysicalEpoch() ) /// avoid task backlogs, stop handling txn comes from the client
+                            receiveHandler.TryHandleReceivedMessage();
+
+                        sleep_flag = sleep_flag & receiveHandler.sleep_flag;
+
+                        if(sleep_flag) usleep(50);
                 }
                 break;
             }

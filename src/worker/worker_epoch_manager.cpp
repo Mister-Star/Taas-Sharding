@@ -57,12 +57,12 @@ namespace Taas {
                             sleep_flag = false;
                         }
 
-                        if(abort_send_epoch < remote_server_epoch && EpochManager::IsEpochMergeComplete(abort_send_epoch)) {
-                            EpochMessageSendHandler::SendAbortSet(local_server_id, abort_send_epoch, server_num);
-//                            LOG(INFO) << "Send SendAbortSet epoch " << abort_send_epoch;
-                            abort_send_epoch ++;
-                            sleep_flag = false;
-                        }
+//                        if(abort_send_epoch < remote_server_epoch && EpochManager::IsEpochMergeComplete(abort_send_epoch)) {
+//                            EpochMessageSendHandler::SendAbortSet(local_server_id, abort_send_epoch, server_num);
+////                            LOG(INFO) << "Send SendAbortSet epoch " << abort_send_epoch;
+//                            abort_send_epoch ++;
+//                            sleep_flag = false;
+//                        }
 
 //
 //                        if(EpochManager::IsEpochMergeComplete(abort_send_epoch)) {
