@@ -26,7 +26,7 @@ namespace Taas {
 
     void WorkerForEpochControlMessageThreadMain(const Context& ctx) {
         SetCPU();
-        while(!EpochManager::IsInitOK() || EpochManager::GetPhysicalEpoch() < 100) usleep(sleep_time);
+        while(!EpochManager::IsInitOK() || EpochManager::GetPhysicalEpoch() < 10) usleep(sleep_time);
         while(!EpochManager::IsTimerStop()){
             switch(ctx.taasContext.taasMode) {
                 case TaasMode::MultiModel :
@@ -38,7 +38,10 @@ namespace Taas {
                     while(!EpochManager::IsInitOK()) usleep(sleep_time);
                     while(!EpochManager::IsTimerStop()) {
                         sleep_flag = true;
-                        if (shard_epoch < EpochManager::GetPhysicalEpoch() && EpochMessageReceiveHandler::CheckEpochClientTxnHandleComplete(shard_epoch)) {
+                        while(shard_epoch < EpochManager::GetPhysicalEpoch()) {
+                            usleep(100);
+                        }
+                        if (EpochMessageReceiveHandler::CheckEpochClientTxnHandleComplete(shard_epoch)) {
                             EpochMessageSendHandler::SendEpochShardEndMessage(local_server_id, shard_epoch, server_num);
 //                            LOG(INFO) << "Send EpochShardEndFlag epoch " << shard_epoch;
                             shard_epoch ++;
