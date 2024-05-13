@@ -229,7 +229,6 @@ namespace Taas {
                 MergeQueueEnqueue(message_epoch, txn_ptr);
                 CommitQueueEnqueue(message_epoch, txn_ptr);
                 shard_received_txn_num_local->IncCount(message_epoch, message_server_id, 1);
-
                 for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) { /// use the network for reducing the merge time
                     auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum - j) % ctx.taasContext.kTxnNodeNum;
                     if (to_id == ctx.taasContext.txn_node_ip_index) continue;
@@ -263,7 +262,7 @@ namespace Taas {
                 break;
             }
             case proto::TxnType::EpochShardEndFlag : {
-                LOG(INFO) << "Receive Handle EpochShardEndFlag";
+                LOG(INFO) << "Receive Handle EpochShardEndFlag epoch " << message_epoch;
                 shard_should_receive_txn_num.IncCount(message_epoch, message_server_id,txn_ptr->csn());
                 shard_received_pack_num.IncCount(message_epoch, message_server_id, 1);
                 CheckEpochShardReceiveComplete(message_epoch);
@@ -271,7 +270,7 @@ namespace Taas {
                 break;
             }
             case proto::EpochRemoteServerEndFlag : {
-                LOG(INFO) << "Receive Handle EpochRemoteServerEndFlag";
+                LOG(INFO) << "Receive Handle EpochRemoteServerEndFlag epoch " << message_epoch;
                 remote_server_should_receive_txn_num.IncCount(message_epoch, message_server_id,txn_ptr->csn());
                 remote_server_received_pack_num.IncCount(message_epoch, message_server_id, 1);
                 CheckEpochRemoteServerReceiveComplete(message_epoch);
@@ -279,57 +278,57 @@ namespace Taas {
                 break;
             }
             case proto::TxnType::EpochBackUpEndFlag : {
-                LOG(INFO) << "Receive Handle EpochBackUpEndFlag";
+                LOG(INFO) << "Receive Handle EpochBackUpEndFlag epoch " << message_epoch;
                 backup_should_receive_txn_num.IncCount(message_epoch, message_server_id, txn_ptr->csn());
                 backup_received_pack_num.IncCount(message_epoch, message_server_id, 1);
                 EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, empty_txn_ptr, proto::TxnType::BackUpACK);
                 break;
             }
             case proto::EpochCommittedTxnEndFlag : {
-//                LOG(INFO) << "Receive Handle EpochCommittedTxnEndFlag";
+//                LOG(INFO) << "Receive Handle EpochCommittedTxnEndFlag epoch " << message_epoch;
                 /// do nothing
                 break;
             }
             case proto::TxnType::AbortSet : {
-                LOG(INFO) << "Receive Handle AbortSet";
+                LOG(INFO) << "Receive Handle AbortSet epoch " << message_epoch;
                 UpdateEpochAbortSet();
                 abort_set_received_num.IncCount(message_epoch,message_server_id, 1);
                 EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, empty_txn_ptr, proto::TxnType::AbortSetACK);
                 break;
             }
             case proto::TxnType::InsertSet : {
-//                LOG(INFO) << "Receive Handle InsertSet";
+//                LOG(INFO) << "Receive Handle InsertSet epoch " << message_epoch;
                 insert_set_received_num.IncCount(message_epoch, message_server_id, 1);
                 EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, empty_txn_ptr, proto::TxnType::InsertSetACK);
                 break;
             }
             case proto::TxnType::EpochShardACK : {
-//                LOG(INFO) << "Receive Handle EpochShardACK";
+//                LOG(INFO) << "Receive Handle EpochShardACK epoch " << message_epoch;
                 shard_received_ack_num.IncCount(message_epoch, message_server_id, 1);
                 break;
             }
             case proto::EpochRemoteServerACK : {
-//                LOG(INFO) << "Receive Handle EpochRemoteServerACK";
+//                LOG(INFO) << "Receive Handle EpochRemoteServerACK epoch " << message_epoch;
                 remote_server_received_ack_num.IncCount(message_epoch, message_server_id, 1);
                 break;
             }
             case proto::TxnType::BackUpACK : {
-//                LOG(INFO) << "Receive Handle BackUpACK";
+//                LOG(INFO) << "Receive Handle BackUpACK epoch " << message_epoch;
                 backup_received_ack_num.IncCount(message_epoch, message_server_id, 1);
                 break;
             }
             case proto::TxnType::AbortSetACK : {
-//                LOG(INFO) << "Receive Handle AbortSetACK";
+//                LOG(INFO) << "Receive Handle AbortSetACK epoch " << message_epoch;
                 abort_set_received_ack_num.IncCount(message_epoch, message_server_id, 1);
                 break;
             }
             case proto::TxnType::InsertSetACK : {
-//                LOG(INFO) << "Receive Handle InsertSetACK";
+//                LOG(INFO) << "Receive Handle InsertSetACK epoch " << message_epoch;
                 insert_set_received_ack_num.IncCount(message_epoch, message_server_id, 1);
                 break;
             }
             case proto::TxnType::EpochLogPushDownComplete : {
-//                LOG(INFO) << "Receive Handle EpochLogPushDownComplete";
+//                LOG(INFO) << "Receive Handle EpochLogPushDownComplete epoch " << message_epoch;
                 redo_log_push_down_ack_num.IncCount(message_epoch, message_server_id, 1);
             break;
         }
