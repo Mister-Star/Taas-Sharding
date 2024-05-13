@@ -38,7 +38,7 @@ namespace Taas {
                     while(!EpochManager::IsInitOK()) usleep(sleep_time);
                     while(!EpochManager::IsTimerStop()) {
                         sleep_flag = true;
-                        if (EpochMessageReceiveHandler::CheckEpochClientTxnHandleComplete(shard_epoch)) {
+                        if (shard_epoch <= EpochManager::GetPhysicalEpoch() && EpochMessageReceiveHandler::CheckEpochClientTxnHandleComplete(shard_epoch)) {
                             EpochMessageSendHandler::SendEpochShardEndMessage(local_server_id, shard_epoch, server_num);
 //                            LOG(INFO) << "Send EpochShardEndFlag epoch " << shard_epoch;
                             shard_epoch ++;
@@ -54,12 +54,12 @@ namespace Taas {
                             sleep_flag = false;
                         }
 
-                        if(abort_send_epoch < remote_server_epoch && EpochManager::IsEpochMergeComplete(abort_send_epoch)) {
-                            EpochMessageSendHandler::SendAbortSet(local_server_id, abort_send_epoch, server_num);
-//                            LOG(INFO) << "Send SendAbortSet epoch " << abort_send_epoch;
-                            abort_send_epoch ++;
-                            sleep_flag = false;
-                        }
+//                        if(abort_send_epoch < remote_server_epoch && EpochManager::IsEpochMergeComplete(abort_send_epoch)) {
+//                            EpochMessageSendHandler::SendAbortSet(local_server_id, abort_send_epoch, server_num);
+////                            LOG(INFO) << "Send SendAbortSet epoch " << abort_send_epoch;
+//                            abort_send_epoch ++;
+//                            sleep_flag = false;
+//                        }
 
 //
 //                        if(EpochManager::IsEpochMergeComplete(abort_send_epoch)) {
