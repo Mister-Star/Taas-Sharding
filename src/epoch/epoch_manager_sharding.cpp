@@ -91,13 +91,13 @@ namespace Taas {
         util::thread_pool_light workers(5);
         while(!EpochManager::IsTimerStop()){
 
-            while(epoch >= EpochManager::GetPhysicalEpoch()) usleep(logical_sleep_timme);
+            while(epoch > EpochManager::GetPhysicalEpoch()) usleep(logical_sleep_timme);
             auto time1 = now_to_us();
 //                LOG(INFO) << "**** Start Epoch Merge Epoch : " << epoch << "****\n";
             while(!EpochMessageReceiveHandler::CheckEpochClientTxnHandleComplete(epoch)) usleep(logical_sleep_timme);
-//            workers.push_emergency_task([epoch, &ctx] () {
-//                EpochMessageSendHandler::SendEpochShardEndMessage(ctx.taasContext.txn_node_ip_index, epoch, ctx.taasContext.kTxnNodeNum);
-//            });
+            workers.push_emergency_task([epoch, &ctx] () {
+                EpochMessageSendHandler::SendEpochShardEndMessage(ctx.taasContext.txn_node_ip_index, epoch, ctx.taasContext.kTxnNodeNum);
+            });
 //            while(!EpochMessageReceiveHandler::IsShardSendFinish(epoch)) usleep(logical_sleep_timme);
 //            LOG(INFO) << "**** finished IsShardSendFinish : " << epoch << "****\n";
 
@@ -118,9 +118,9 @@ namespace Taas {
 
             while(!EpochMessageReceiveHandler::CheckEpochShardTxnHandleComplete(epoch)) usleep(logical_sleep_timme);
 //            LOG(INFO) << "**** finished IsEpochShardTxnHandleComplete : " << epoch << "****\n";
-//            workers.push_emergency_task([epoch, &ctx] () {
-//                EpochMessageSendHandler::SendEpochRemoteServerEndMessage(ctx.taasContext.txn_node_ip_index, epoch, ctx.taasContext.kTxnNodeNum);
-//            });
+            workers.push_emergency_task([epoch, &ctx] () {
+                EpochMessageSendHandler::SendEpochRemoteServerEndMessage(ctx.taasContext.txn_node_ip_index, epoch, ctx.taasContext.kTxnNodeNum);
+            });
 //            LOG(INFO) << "**** finished SendEpochRemoteServerEndMessage : " << epoch << "****\n";
 //            while(!EpochMessageReceiveHandler::IsRemoteServerSendFinish(epoch)) usleep(logical_sleep_timme);
 //                LOG(INFO) << "**** finished IsRemoteServerSendFinish : " << epoch << "****\n";
