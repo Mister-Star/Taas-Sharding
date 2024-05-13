@@ -294,8 +294,9 @@ namespace Taas {
                 break;
             }
             case proto::TxnType::AbortSet : {
-//                LOG(INFO) << "Receive Handle AbortSet epoch " << message_epoch;
+                LOG(INFO) << "Receive AbortSet epoch " << message_epoch;
                 UpdateEpochAbortSet();
+                LOG(INFO) << "Receive ==Handled== AbortSet epoch " << message_epoch;
                 abort_set_received_num.IncCount(message_epoch,message_server_id, 1);
                 EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, empty_txn_ptr, proto::TxnType::AbortSetACK);
                 break;
