@@ -34,7 +34,7 @@ namespace Taas {
     }
 
     void EpochWorkerThreadMain(const Context& ctx, uint64_t id) {
-        std::string name = "EpochMerger-" + std::to_string(id);
+        std::string name = "TaaSMerger-" + std::to_string(id);
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         Merger merger;
         EpochMessageReceiveHandler receiveHandler;
