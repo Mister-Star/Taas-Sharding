@@ -89,6 +89,7 @@ namespace Taas {
         uint64_t epoch = 1;
         OUTPUTLOG("===== Start Epoch的合并 ===== ", epoch);
         util::thread_pool_light workers(5);
+        while(!EpochManager::IsInitOK() || EpochManager::GetPhysicalEpoch() < 50) usleep(sleep_time);
         while(!EpochManager::IsTimerStop()){
 
             while(epoch >= EpochManager::GetPhysicalEpoch()) usleep(logical_sleep_timme);
