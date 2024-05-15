@@ -49,9 +49,9 @@ namespace Taas {
 //            for(int i = 0; i < (int)ctx.taasContext.kEpochTxnThreadNum; i ++) {///handle client txn
 //                threads.push_back(std::make_unique<std::thread>(WorkerFroMessageThreadMain, ctx, i));  cnt++;///client txn message
 //            }
-            for(int i = 0; i < (int)ctx.taasContext.kEpochMessageThreadNum; i ++) {/// handle remote server message
-                threads.push_back(std::make_unique<std::thread>(WorkerFroMessageEpochThreadMain, ctx, i));  cnt++;///epoch message
-            }
+//            for(int i = 0; i < (int)ctx.taasContext.kEpochMessageThreadNum; i ++) {/// handle remote server message
+//                threads.push_back(std::make_unique<std::thread>(WorkerFroMessageEpochThreadMain, ctx, i));  cnt++;///epoch message
+//            }
             for(int i = 0; i < (int)ctx.taasContext.kMergeThreadNum; i ++) {
 //                threads.push_back(std::make_unique<std::thread>(WorkerFroMergeThreadMain, ctx, i));  cnt++;///merge & commit
                 threads.push_back(std::make_unique<std::thread>(EpochWorkerThreadMain, ctx, i));  cnt++;
@@ -60,12 +60,10 @@ namespace Taas {
             threads.push_back(std::make_unique<std::thread>(WorkerForClientListenThreadMain, ctx));  cnt++;///client
             threads.push_back(std::make_unique<std::thread>(WorkerForClientSendThreadMain, ctx)); cnt++;
 
-            if(ctx.taasContext.kTxnNodeNum > 1) {
-                threads.push_back(std::make_unique<std::thread>(WorkerForServerListenThreadMain, ctx)); cnt++;
-                threads.push_back(std::make_unique<std::thread>(WorkerForServerListenThreadMain_Epoch, ctx)); cnt++;
-                threads.push_back(std::make_unique<std::thread>(WorkerForServerSendThreadMain, ctx)); cnt++;
-                threads.push_back(std::make_unique<std::thread>(WorkerForServerSendPUBThreadMain, ctx)); cnt++;
-            }
+            threads.push_back(std::make_unique<std::thread>(WorkerForServerListenThreadMain, ctx)); cnt++;///Server
+            threads.push_back(std::make_unique<std::thread>(WorkerForServerListenThreadMain_Epoch, ctx)); cnt++;
+            threads.push_back(std::make_unique<std::thread>(WorkerForServerSendThreadMain, ctx)); cnt++;
+            threads.push_back(std::make_unique<std::thread>(WorkerForServerSendPUBThreadMain, ctx)); cnt++;
 
             ///Storage
 //            threads.push_back(std::make_unique<std::thread>(WorkerForStorageSendMOTThreadMain, ctx)); cnt++;

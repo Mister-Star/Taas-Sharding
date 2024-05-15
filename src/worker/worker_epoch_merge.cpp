@@ -40,6 +40,7 @@ namespace Taas {
         EpochMessageReceiveHandler receiveHandler;
         class TwoPC two_pc;
         while(init_ok_num.load() < 5) usleep(sleep_time);
+//        LOG(INFO) << "start worker init" << id;
         merger.MergeInit(id, ctx);
         receiveHandler.Init(id, ctx);
         Taas::TwoPC::Init(ctx, id);
@@ -47,12 +48,13 @@ namespace Taas {
         auto safe_length = 500 * 1000/ ctx.taasContext.kEpochSize_us;
         if(safe_length < 10) safe_length = 10;
         init_ok_num.fetch_add(1);
+//        LOG(INFO) << "finish worker init" << id;
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         switch(ctx.taasContext.taasMode) {
             case TaasMode::MultiModel :
             case TaasMode::MultiMaster :
             case TaasMode::Shard : {
-                if(id < (ctx.taasContext.kMergeThreadNum * 2) / 3) {
+                if(id < (ctx.taasContext.kMergeThreadNum * 3) / 4) {
                     merger.epoch = EpochManager::GetLogicalEpoch();
                     merger.epoch_mod = merger.epoch % ctx.taasContext.kCacheMaxLength;
                     while(TransactionCache::epoch_read_validate_queue[merger.epoch_mod]->try_dequeue(merger.txn_ptr)) {
