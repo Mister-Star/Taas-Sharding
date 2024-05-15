@@ -224,12 +224,12 @@ namespace Taas{
         backup_send_txn_num_local_vec.resize(thread_total_num);
         backup_received_txn_num_local_vec.resize(thread_total_num);
 
-        shard_send_ack_epoch_num.resize(shard_num + 1);
-        remote_server_send_ack_epoch_num.resize(shard_num + 1);
-        backup_send_ack_epoch_num.resize(shard_num + 1);
-        backup_insert_set_send_ack_epoch_num.resize(shard_num + 1);
-        abort_set_send_ack_epoch_num.resize(shard_num + 1);
-        for(int i = 0; i <= (int) shard_num; i ++ ) { /// start at 1, not 0
+        shard_send_ack_epoch_num.resize(server_num + 1);
+        remote_server_send_ack_epoch_num.resize(server_num + 1);
+        backup_send_ack_epoch_num.resize(server_num + 1);
+        backup_insert_set_send_ack_epoch_num.resize(server_num + 1);
+        abort_set_send_ack_epoch_num.resize(server_num + 1);
+        for(int i = 0; i <= (int) server_num; i ++ ) { /// start at 1, not 0
             shard_send_ack_epoch_num[i] = 1;
             remote_server_send_ack_epoch_num[i] = 1;
             backup_send_ack_epoch_num[i] = 1;
