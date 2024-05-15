@@ -151,7 +151,7 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
         Gzip(msg.get(), serialized_txn_str_ptr.get());
         assert(!serialized_txn_str_ptr->empty());
         MessageQueue::send_to_server_pub_queue->enqueue(
-                std::make_unique<send_params>(ctx.taasContext.txn_node_ip_index, 0, "", epoch, txn_type, std::move(serialized_txn_str_ptr), nullptr));
+                std::make_unique<send_params>(ctx.taasContext.txn_node_ip_index % ctx.taasContext.kShardNum, 0, "", epoch, txn_type, std::move(serialized_txn_str_ptr), nullptr));
         return true;
     }
 

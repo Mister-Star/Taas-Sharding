@@ -71,12 +71,17 @@ namespace Taas {
                 replica_num = ctx.taasContext.kReplicaNum,
                 local_server_id = ctx.taasContext.txn_node_ip_index,
                 max_length = ctx.taasContext.kCacheMaxLength;
-        std::vector<bool> is_local_shard;
-        is_local_shard.resize(shard_num);
-        for(uint64_t i = 0; i < shard_num; i ++) {
-            for(uint64_t j = 0; j < replica_num; j ++ ) {
-                if((i + server_num - j) % server_num == local_server_id) {
-                    is_local_shard[i] = true;
+        std::vector<std::vector<bool>> is_local_shard;
+        is_local_shard.resize(server_num);
+        for(auto &i : is_local_shard) {
+            i.resize(shard_num);
+        }
+        for(uint64_t server_id = 0; server_id < server_num; server_id ++) {
+            for(uint64_t i = 0; i < shard_num; i ++) {
+                for(uint64_t j = 0; j < replica_num; j ++ ) {
+                    if((i + server_num - j) % server_num == server_id) {
+                        is_local_shard[server_id][i] = true;
+                    }
                 }
             }
         }
@@ -90,8 +95,8 @@ namespace Taas {
         std::unique_ptr<send_params> params;
         std::unique_ptr<zmq::message_t> msg;
         assert(ctx.taasContext.kServerIp.size() >= ctx.taasContext.kTxnNodeNum);
-        for (uint64_t i = 0; i < shard_num; i++) {
-            if (!is_local_shard[i]) continue;
+        for (uint64_t i = 0; i < server_num; i++) {
+            if (!is_local_shard[local_server_id][i]) continue;
             auto socket = std::make_unique<zmq::socket_t>(context, ZMQ_PUB);
             socket->set(zmq::sockopt::sndhwm, queue_length);
             socket->set(zmq::sockopt::rcvhwm, queue_length);
