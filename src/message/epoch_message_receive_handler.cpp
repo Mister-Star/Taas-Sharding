@@ -267,7 +267,7 @@ namespace Taas {
                 break;
             }
             case proto::TxnType::EpochShardEndFlag : {
-//                LOG(INFO) << "Receive Handle EpochShardEndFlag epoch " << message_epoch;
+                LOG(INFO) << "Receive Handle EpochShardEndFlag epoch " << message_epoch << " server_id" << message_server_id;
                 shard_should_receive_txn_num.IncCount(message_epoch, message_server_id,txn_ptr->csn());
                 shard_received_pack_num.IncCount(message_epoch, message_server_id, 1);
                 CheckEpochShardReceiveComplete(message_epoch);
@@ -275,7 +275,7 @@ namespace Taas {
                 break;
             }
             case proto::EpochRemoteServerEndFlag : {
-//                LOG(INFO) << "Receive Handle EpochRemoteServerEndFlag epoch " << message_epoch;
+                LOG(INFO) << "Receive Handle EpochRemoteServerEndFlag epoch " << message_epoch << " server_id" << message_server_id;
                 remote_server_should_receive_txn_num.IncCount(message_epoch, message_server_id,txn_ptr->csn());
                 remote_server_received_pack_num.IncCount(message_epoch, message_server_id, 1);
                 CheckEpochRemoteServerReceiveComplete(message_epoch);
@@ -283,7 +283,7 @@ namespace Taas {
                 break;
             }
             case proto::TxnType::EpochBackUpEndFlag : {
-//                LOG(INFO) << "Receive Handle EpochBackUpEndFlag epoch " << message_epoch;
+                LOG(INFO) << "Receive Handle EpochBackUpEndFlag epoch " << message_epoch << " server_id" << message_server_id;
                 backup_should_receive_txn_num.IncCount(message_epoch, message_server_id, txn_ptr->csn());
                 backup_received_pack_num.IncCount(message_epoch, message_server_id, 1);
                 EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, empty_txn_ptr, proto::TxnType::BackUpACK);
