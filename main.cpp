@@ -29,6 +29,8 @@ namespace Taas {
     int main() {
         Context ctx;
 
+
+
         FLAGS_log_dir = "/tmp";
         FLAGS_alsologtostderr = true;
         google::InitGoogleLogging("Taas-shard");
@@ -38,6 +40,42 @@ namespace Taas {
         printf("%s\n", res.c_str());
         std::vector<std::unique_ptr<std::thread>> threads;
         int cnt = 0;
+
+        auto server_num = ctx.taasContext.kTxnNodeNum,
+                shard_num = ctx.taasContext.kShardNum,
+                replica_num = ctx.taasContext.kReplicaNum,
+                local_server_id = ctx.taasContext.txn_node_ip_index,
+                max_length = ctx.taasContext.kCacheMaxLength;
+        std::vector<std::vector<bool>> is_local_shard;
+        is_local_shard.resize(server_num);
+        for(auto &i : is_local_shard) {
+            i.resize(shard_num);
+        }
+        for(uint64_t server_id = 0; server_id < server_num; server_id ++) {
+            for(uint64_t i = 0; i < shard_num; i ++) {
+                for(uint64_t j = 0; j < replica_num; j ++ ) {
+                    if((i + server_num - j) % server_num == server_id) {
+                        is_local_shard[server_id][i] = true;
+                    }
+                }
+            }
+        }
+        std::string s = "";
+        for(uint64_t server_id = 0; server_id < server_num; server_id ++) {
+            for(uint64_t i = 0; i < shard_num; i ++) {
+                if(is_local_shard[server_id][i]) {
+                    s += "1";
+                }
+                else {
+                    s += "0";
+                }
+            }
+            s += "\n";
+        }
+
+        LOG(INFO) << "============================";
+        LOG(INFO) << "shard replication statues:\n%s" << s;
+        LOG(INFO) << "============================\n";
         if(ctx.taasContext.server_type == ServerMode::Taas) { ///TaaS servers
             EpochManager epochManager;
             Taas::EpochManager::ctx = ctx;
