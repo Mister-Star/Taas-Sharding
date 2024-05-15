@@ -116,27 +116,28 @@ namespace Taas{
         thread_id = inc_id.fetch_add(1);
         shard_num = context.taasContext.kShardNum;
         replica_num = context.taasContext.kReplicaNum;
+        server_num = context.taasContext.kTxnNodeNum;
         max_length = context.taasContext.kCacheMaxLength;
         local_server_id = context.taasContext.txn_node_ip_index;
 
-        shard_should_send_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, shard_num),
-        shard_send_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, shard_num);
-        shard_should_handle_local_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, shard_num),
-        shard_handled_local_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, shard_num),
-        shard_should_handle_remote_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, shard_num),
-        shard_handled_remote_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, shard_num),
-        shard_received_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, shard_num),
+        shard_should_send_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num),
+        shard_send_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num);
+        shard_should_handle_local_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num),
+        shard_handled_local_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num),
+        shard_should_handle_remote_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num),
+        shard_handled_remote_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num),
+        shard_received_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num),
 
 
-        remote_server_should_send_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, shard_num),
-        remote_server_send_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, shard_num),
-        remote_server_should_handle_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, shard_num),
-        remote_server_handled_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, shard_num),
-        remote_server_received_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, shard_num),
+        remote_server_should_send_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num),
+        remote_server_send_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num),
+        remote_server_should_handle_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num),
+        remote_server_handled_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num),
+        remote_server_received_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num),
 
-        backup_should_send_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, shard_num),
-        backup_send_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, shard_num),
-        backup_received_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, shard_num);
+        backup_should_send_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num),
+        backup_send_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num),
+        backup_received_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num);
 
         shard_should_send_txn_num_local_vec[thread_id] = shard_should_send_txn_num_local;
         shard_send_txn_num_local_vec[thread_id] = shard_send_txn_num_local;
@@ -161,14 +162,14 @@ namespace Taas{
 
 
 
-        epoch_should_read_validate_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, shard_num),
-        epoch_read_validated_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, shard_num);
-        epoch_should_merge_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, shard_num),
-        epoch_merged_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, shard_num),
-        epoch_should_commit_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, shard_num),
-        epoch_committed_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, shard_num),
-        epoch_record_commit_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, shard_num),
-        epoch_record_committed_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, shard_num);
+        epoch_should_read_validate_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num),
+        epoch_read_validated_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num);
+        epoch_should_merge_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num),
+        epoch_merged_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num),
+        epoch_should_commit_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num),
+        epoch_committed_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num),
+        epoch_record_commit_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num),
+        epoch_record_committed_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num);
 
         epoch_should_read_validate_txn_num_local_vec[thread_id] = epoch_should_read_validate_txn_num_local;
         epoch_read_validated_txn_num_local_vec[thread_id] = epoch_read_validated_txn_num_local;
@@ -188,6 +189,7 @@ namespace Taas{
         auto max_length = context.taasContext.kCacheMaxLength;
         auto shard_num = context.taasContext.kShardNum;
         auto replica_num = context.taasContext.kReplicaNum;
+        auto server_num = context.taasContext.kTxnNodeNum;
 
         is_local_shard.resize(ctx.taasContext.kTxnNodeNum);
         for(auto &i : is_local_shard) {
@@ -256,31 +258,31 @@ namespace Taas{
             epoch_insert_set_complete[i] = std::make_unique<std::atomic<bool>>(false);
         }
 
-        shard_should_receive_pack_num.Init(max_length, replica_num, 1),
-        shard_received_pack_num.Init(max_length, replica_num),
-        shard_should_receive_txn_num.Init(max_length, replica_num, 0),
-        shard_received_ack_num.Init(max_length, replica_num),
+        shard_should_receive_pack_num.Init(max_length, server_num, 1),
+        shard_received_pack_num.Init(max_length, server_num),
+        shard_should_receive_txn_num.Init(max_length, server_num, 0),
+        shard_received_ack_num.Init(max_length, server_num),
 
-        remote_server_should_receive_pack_num.Init(max_length, replica_num, 1),
-        remote_server_received_pack_num.Init(max_length, replica_num),
-        remote_server_should_receive_txn_num.Init(max_length, replica_num, 0),
-        remote_server_received_ack_num.Init(max_length, replica_num, 0),
+        remote_server_should_receive_pack_num.Init(max_length, server_num, 1),
+        remote_server_received_pack_num.Init(max_length, server_num),
+        remote_server_should_receive_txn_num.Init(max_length, server_num, 0),
+        remote_server_received_ack_num.Init(max_length, server_num, 0),
 
-        backup_should_receive_pack_num.Init(max_length, replica_num, 1),
-        backup_received_pack_num.Init(max_length, replica_num),
-        backup_should_receive_txn_num.Init(max_length, replica_num, 0),
-        backup_received_ack_num.Init(max_length, replica_num),
+        backup_should_receive_pack_num.Init(max_length, server_num, 1),
+        backup_received_pack_num.Init(max_length, server_num),
+        backup_should_receive_txn_num.Init(max_length, server_num, 0),
+        backup_received_ack_num.Init(max_length, server_num),
 
-        insert_set_should_receive_num.Init(max_length, replica_num, 1),
-        insert_set_received_num.Init(max_length, replica_num),
-        insert_set_received_ack_num.Init(max_length, replica_num),
+        insert_set_should_receive_num.Init(max_length, server_num, 1),
+        insert_set_received_num.Init(max_length, server_num),
+        insert_set_received_ack_num.Init(max_length, server_num),
 
-        abort_set_should_receive_num.Init(max_length, replica_num, 1),
-        abort_set_received_num.Init(max_length, replica_num);
-        abort_set_received_ack_num.Init(max_length, replica_num);
+        abort_set_should_receive_num.Init(max_length, server_num, 1),
+        abort_set_received_num.Init(max_length, server_num);
+        abort_set_received_ack_num.Init(max_length, server_num);
 
-        redo_log_push_down_ack_num.Init(max_length, replica_num);
-        redo_log_push_down_local_epoch.Init(max_length, replica_num);
+        redo_log_push_down_ack_num.Init(max_length, server_num);
+        redo_log_push_down_local_epoch.Init(max_length, server_num);
 
 
 

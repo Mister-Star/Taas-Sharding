@@ -15,7 +15,7 @@ namespace Taas {
 
     class ThreadCounters{
     public:
-        uint64_t thread_id = 0, max_length = 0, shard_num = 0, local_server_id, replica_num = 1;
+        uint64_t thread_id = 0, max_length = 0, shard_num = 0, local_server_id, replica_num = 1, server_num = 1;
 
         static Context ctx;
         static std::atomic<uint64_t> inc_id;
