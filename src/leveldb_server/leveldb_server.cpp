@@ -35,6 +35,7 @@ namespace Taas {
         if (leveldb_server.Start(2379, &options) != 0) {
             LOG(ERROR) << "Fail to start leveldb_server";
         }
+
         LOG(INFO) << "======*** LEVELDB SERVER START ***=====\n";
         leveldb_server.RunUntilAskedToQuit();
     }
