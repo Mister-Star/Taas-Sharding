@@ -11,8 +11,8 @@ namespace Taas {
 
 /**
  * port status:                                                                     PULL bind *:port   PUSH connect ip+port
- * 5557 :
- * 20000+id : txn nodes sends txns to other txn nodes; txn nodes send raft states   txn PULL           other txn PUSH
+ * 20000+id : txn nodes sends Shard txns to other txn nodes; txn nodes send raft states   txn PULL           other txn PUSH
+ * 21000+id : txn nodes sends Replica txns to other txn nodes; txn nodes send raft states   txn PUB           other txn SUB
  *
  * PUB bind port      SUB connect ip+port
 

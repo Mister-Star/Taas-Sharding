@@ -12,13 +12,19 @@ namespace Taas {
 
 /**
  * port status:                                                                     PULL bind *:port   PUSH connect ip+port
+ *
+ * Server && Client
+ * 5551 : client sends txns to txn node                                             client  PUSH       txn PULL
+ * 5552 : txn node sends txn_state to client                                        client  PULL       txn PUSH
 
- * 5553 : storage sends pull log request to txn node                                storage PUSH       txn PULL
- * 5554 : txn node sends pull_response to storage node                              storage PULL       txn PUSH
+
+ * Server && Storage
+ * 5553 (not use for now): storage sends pull log request to txn node                                storage PUSH       txn PULL
+ * 5554 (not use for now):: txn node sends pull_response to storage node                              storage PULL       txn PUSH
  *
  * 5555 :
- * 5556 : txn nodes sends log to storage nodes                                      txn PUSH            storage PULL
-
+ * 5556 : txn nodes sends log to storage nodes MOT                                   txn PUB            storage SUB
+ * 5557 : txn nodes sends log to storage nodes NEBULA                                txn PUB            storage SUB
  */
 /// set cache size
 //        recv_socket.set(zmq::sockopt::sndhwm, queue_length);
@@ -35,7 +41,6 @@ namespace Taas {
         zmq::send_flags sendFlags = zmq::send_flags::none;
         zmq::recv_flags recvFlags = zmq::recv_flags::none;
         zmq::recv_result_t recvResult;
-
         recv_socket.set(zmq::sockopt::sndhwm, queue_length);
         recv_socket.set(zmq::sockopt::rcvhwm, queue_length);
 
@@ -121,6 +126,7 @@ namespace Taas {
             if (params == nullptr || params->type == proto::TxnType::NullMark) continue;
             msg = std::make_unique<zmq::message_t>(*(params->str));
             socket_send.send(*msg, sendFlags);
+            LOG(INFO) << "MOT PUB a txn";
         }
         socket_send.send((zmq::message_t &) "end", sendFlags);
     }
