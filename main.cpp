@@ -104,10 +104,9 @@ namespace Taas {
             threads.push_back(std::make_unique<std::thread>(WorkerForServerSendPUBThreadMain, ctx)); cnt++;
 
             ///Storage
-//            threads.push_back(std::make_unique<std::thread>(WorkerForStorageSendMOTThreadMain, ctx)); cnt++;
-//            threads.push_back(std::make_unique<std::thread>(WorkerForStorageSendNebulaThreadMain, ctx)); cnt++;
-
             if(ctx.storageContext.is_mot_enable) {
+                threads.push_back(std::make_unique<std::thread>(WorkerForStorageSendMOTThreadMain, ctx)); cnt++;
+                threads.push_back(std::make_unique<std::thread>(WorkerForStorageSendNebulaThreadMain, ctx)); cnt++;
                 for(int i = 0; i < (int)ctx.storageContext.kMOTThreadNum; i ++) {
                     threads.push_back(std::make_unique<std::thread>(WorkerFroMOTStorageThreadMain, ctx, i));  cnt++;///mot push down
                 }
