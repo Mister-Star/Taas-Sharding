@@ -126,7 +126,7 @@ namespace Taas {
             if (params == nullptr || params->type == proto::TxnType::NullMark) continue;
             msg = std::make_unique<zmq::message_t>(*(params->str));
             socket_send.send(*msg, sendFlags);
-            LOG(INFO) << "MOT PUB a txn";
+//            LOG(INFO) << "MOT PUB a txn";
         }
         socket_send.send((zmq::message_t &) "end", sendFlags);
     }
