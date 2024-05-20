@@ -144,7 +144,17 @@ namespace Taas {
 ////                LOG(INFO) << "**** finished IsRemoteServerReceiveComplete : " << epoch << "****\n";
 //            while(!EpochMessageReceiveHandler::IsRemoteServerTxnReceiveComplete(epoch)) usleep(logical_sleep_timme);
 //                LOG(INFO) << "**** finished IsRemoteServerTxnReceiveComplete : " << epoch << "****\n";
-            while(!EpochMessageReceiveHandler::CheckEpochRemoteServerReceiveComplete(epoch)) usleep(logical_sleep_timme);
+            auto cnt = 0;
+            while(!EpochMessageReceiveHandler::CheckEpochRemoteServerReceiveComplete(epoch)) {
+              usleep(logical_sleep_timme);
+              cnt ++;
+              if(cnt % ctx.taasContext.print_mode_size == 0) {
+                  for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i ++) {
+                    LOG(INFO) <<"epoch "<< epoch << "; Server " << i << "; receive txn " <<
+                        Merger::GetAllThreadLocalCountNum(epoch, i,  Merger::remote_server_received_txn_num_local_vec);
+                  }
+              }
+            }
 //                LOG(INFO) << "**** Finished CheckEpochRemoteServerReceiveComplete Epoch : " << epoch << "****\n";
 //            auto time4 = now_to_us();
             while(!Merger::CheckEpochMergeComplete(epoch)) usleep(logical_sleep_timme);

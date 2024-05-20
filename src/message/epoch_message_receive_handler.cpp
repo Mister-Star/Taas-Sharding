@@ -179,7 +179,7 @@ namespace Taas {
                 MergeQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
                 CommitQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
 
-                shard_id = txn_ptr->shard_id();
+                shard_id = i;
                 for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) { /// use the network for reducing the merge time
                   auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum + j) % ctx.taasContext.kTxnNodeNum;
                   if (to_id == ctx.taasContext.txn_node_ip_index) continue;
@@ -193,10 +193,10 @@ namespace Taas {
                 }
             } else {
                 if((*shard_row_vector)[i]->row_size() > 0) {
-                    round_robin = round_robin + 1 % replica_num;
+                    round_robin = (round_robin + 1) % replica_num;
                     sent_to = (i + round_robin) % server_num;
                     if(sent_to == local_server_id) { /// should not happen
-                      LOG(INFO) << "lcoal server id " << local_server_id << "; i " << i << "; round_roubin " << round_robin << "; server_num " << server_num;
+                      LOG(INFO) << "lcoal server id " << local_server_id << "; i " << i << "; round_roubin " << round_robin << "; server_num " << server_num << "; replica_num" << replica_num;
                       assert(false);
                         ReadValidateQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
                         MergeQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
@@ -271,17 +271,18 @@ namespace Taas {
                 shard_received_txn_num_local->IncCount(message_epoch, message_server_id, 1);
 
                 shard_id = txn_ptr->shard_id();
+                assert(is_local_shard[local_server_id][shard_id]);
                 for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) { /// use the network for reducing the merge time
-                    auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum + j) % ctx.taasContext.kTxnNodeNum;
-                    if (to_id == ctx.taasContext.txn_node_ip_index) continue;
-                    remote_server_should_send_txn_num_local->IncCount(message_epoch, to_id, 1);
-                }
-                EpochMessageSendHandler::SendTxnToServer(message_epoch, shard_id, txn_ptr, proto::TxnType::RemoteServerTxn);
-                for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) {
-                    auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum + j) % ctx.taasContext.kTxnNodeNum;
-                    if (to_id == ctx.taasContext.txn_node_ip_index) continue;
-                    remote_server_send_txn_num_local->IncCount(message_epoch, to_id, 1);
-                }
+                      auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum + j) % ctx.taasContext.kTxnNodeNum;
+                      if (to_id == ctx.taasContext.txn_node_ip_index) continue;
+                      remote_server_should_send_txn_num_local->IncCount(message_epoch, to_id, 1);
+                  }
+                  EpochMessageSendHandler::SendTxnToServer(message_epoch, shard_id, txn_ptr, proto::TxnType::RemoteServerTxn);
+                  for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) {
+                      auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum + j) % ctx.taasContext.kTxnNodeNum;
+                      if (to_id == ctx.taasContext.txn_node_ip_index) continue;
+                      remote_server_send_txn_num_local->IncCount(message_epoch, to_id, 1);
+                  }
 
 //                TransactionCache::epoch_txn_map[message_epoch_mod]->insert(csn_temp, txn_ptr);
 
@@ -312,7 +313,7 @@ namespace Taas {
                 break;
             }
             case proto::EpochRemoteServerEndFlag : {
-//                LOG(INFO) << "Receive Handle EpochRemoteServerEndFlag epoch " << message_epoch << " server_id" << message_server_id;
+                LOG(INFO) << "Receive Handle EpochRemoteServerEndFlag epoch " << message_epoch << " server_id" << message_server_id << "should receive txn num" << txn_ptr->csn();
                 remote_server_should_receive_txn_num.IncCount(message_epoch, message_server_id,txn_ptr->csn());
                 remote_server_received_pack_num.IncCount(message_epoch, message_server_id, 1);
                 CheckEpochRemoteServerReceiveComplete(message_epoch);
