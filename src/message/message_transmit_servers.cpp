@@ -111,7 +111,7 @@ namespace Taas {
             MessageQueue::send_to_server_pub_queue->wait_dequeue(params);
             if (params == nullptr || params->type == proto::TxnType::NullMark || params->str == nullptr) continue;
             msg = std::make_unique<zmq::message_t>(*(params->str));
-            if(params->type == proto::TxnType::BackUpACK) {
+            if(params->type == proto::TxnType::BackUpTxn) {
                 socket_back_up->send(*msg, sendFlags);
                 continue;
             }
