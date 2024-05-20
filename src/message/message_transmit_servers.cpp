@@ -185,16 +185,18 @@ namespace Taas {
         int queue_length = 1000000000;
         zmq::socket_t socket_listen(listen_context, ZMQ_SUB);
 
-        for(uint64_t server_id = 0; server_id < server_num; server_id ++) {
-            for(uint64_t i = 0; i < shard_num; i ++) {
-                for(uint64_t j = 0; j < replica_num; j ++ ) {
-                    if((i + j) % server_num == server_id) {
-                        is_local_shard[server_id][i] = true;
-                        socket_listen.connect("tcp://" + ctx.taasContext.kServerIp[i] + ":" + std::to_string(21000+i));///shard replica
-                    }
+          for(uint64_t i = 0; i < shard_num; i ++) {
+            if(i % server_num == local_server_id) continue;
+            for(uint64_t j = 0; j < replica_num; j ++ ) {
+                if((i + j) % server_num == local_server_id) {
+//                    for(uint64_t server_id = 0; server_id < server_num; server_id ++) {
+//                      if(server_id == local_server_id) continue;
+                      socket_listen.connect("tcp://" + ctx.taasContext.kServerIp[i % server_num] + ":"
+                                            + std::to_string(21000 + i));  /// shard replica
+//                    }
                 }
             }
-        }
+          }
 
 //        for (uint64_t i = 0; i < server_num; i++) {
 //            if (i == ctx.taasContext.txn_node_ip_index) continue;

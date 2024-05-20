@@ -241,14 +241,16 @@ namespace Taas {
                 MergeQueueEnqueue(message_epoch, txn_ptr);
                 CommitQueueEnqueue(message_epoch, txn_ptr);
                 shard_received_txn_num_local->IncCount(message_epoch, message_server_id, 1);
+
+                shard_id = txn_ptr->shard_id();
                 for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) { /// use the network for reducing the merge time
-                    auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum - j) % ctx.taasContext.kTxnNodeNum;
+                    auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum + j) % ctx.taasContext.kTxnNodeNum;
                     if (to_id == ctx.taasContext.txn_node_ip_index) continue;
                     remote_server_should_send_txn_num_local->IncCount(message_epoch, to_id, 1);
                 }
-                EpochMessageSendHandler::SendTxnToServer(message_epoch, sent_to, txn_ptr, proto::TxnType::RemoteServerTxn);
+                EpochMessageSendHandler::SendTxnToServer(message_epoch, shard_id, txn_ptr, proto::TxnType::RemoteServerTxn);
                 for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) {
-                    auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum - j) % ctx.taasContext.kTxnNodeNum;
+                    auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum + j) % ctx.taasContext.kTxnNodeNum;
                     if (to_id == ctx.taasContext.txn_node_ip_index) continue;
                     remote_server_send_txn_num_local->IncCount(message_epoch, to_id, 1);
                 }
