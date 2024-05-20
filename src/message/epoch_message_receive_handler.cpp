@@ -38,7 +38,7 @@ namespace Taas {
         for(uint64_t server_id = 0; server_id < server_num; server_id ++) {
             for(uint64_t i = 0; i < shard_num; i ++) {
                 for(uint64_t j = 0; j < replica_num; j ++ ) {
-                    if((i + server_num - j) % server_num == server_id) {
+                    if((i + server_num + j) % server_num == server_id) {
                         is_local_shard[server_id][i] = true;
                     }
                 }
@@ -181,7 +181,7 @@ namespace Taas {
             } else {
                 if((*shard_row_vector)[i]->row_size() > 0) {
                     round_robin = round_robin + 1 % replica_num;
-                    sent_to = (i + server_num - round_robin) % server_num;
+                    sent_to = (i + round_robin) % server_num;
                     if(sent_to == local_server_id) {
                         ReadValidateQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
                         MergeQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
