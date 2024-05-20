@@ -149,9 +149,9 @@ namespace Taas {
 //            auto time4 = now_to_us();
             while(!Merger::CheckEpochMergeComplete(epoch)) usleep(logical_sleep_timme);
             EpochManager::SetEpochMergeComplete(epoch, true);
-            workers.push_emergency_task([epoch, &ctx] () {
-                EpochMessageSendHandler::SendAbortSet(ctx.taasContext.txn_node_ip_index, epoch, ctx.taasContext.kTxnNodeNum);
-            });
+//            workers.push_emergency_task([epoch, &ctx] () {
+//                EpochMessageSendHandler::SendAbortSet(ctx.taasContext.txn_node_ip_index, epoch);
+//            });
             merge_epoch.fetch_add(1);
             auto time5 = now_to_us();
 //                LOG(INFO) << "**** Finished Epoch Merge Epoch : " << epoch << ",time cost : " << time5 - time1 << "****\n";
