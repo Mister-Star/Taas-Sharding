@@ -178,14 +178,41 @@ namespace Taas {
                 ReadValidateQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
                 MergeQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
                 CommitQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
+
+                shard_id = txn_ptr->shard_id();
+                for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) { /// use the network for reducing the merge time
+                  auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum + j) % ctx.taasContext.kTxnNodeNum;
+                  if (to_id == ctx.taasContext.txn_node_ip_index) continue;
+                  remote_server_should_send_txn_num_local->IncCount(message_epoch, to_id, 1);
+                }
+                EpochMessageSendHandler::SendTxnToServer(message_epoch, shard_id, txn_ptr, proto::TxnType::RemoteServerTxn);
+                for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) {
+                  auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum + j) % ctx.taasContext.kTxnNodeNum;
+                  if (to_id == ctx.taasContext.txn_node_ip_index) continue;
+                  remote_server_send_txn_num_local->IncCount(message_epoch, to_id, 1);
+                }
             } else {
                 if((*shard_row_vector)[i]->row_size() > 0) {
                     round_robin = round_robin + 1 % replica_num;
                     sent_to = (i + round_robin) % server_num;
-                    if(sent_to == local_server_id) {
+                    if(sent_to == local_server_id) { /// should not happen
+                        assert(false);
                         ReadValidateQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
                         MergeQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
                         CommitQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
+
+                        shard_id = txn_ptr->shard_id();
+                        for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) { /// use the network for reducing the merge time
+                          auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum + j) % ctx.taasContext.kTxnNodeNum;
+                          if (to_id == ctx.taasContext.txn_node_ip_index) continue;
+                          remote_server_should_send_txn_num_local->IncCount(message_epoch, to_id, 1);
+                        }
+                        EpochMessageSendHandler::SendTxnToServer(message_epoch, shard_id, txn_ptr, proto::TxnType::RemoteServerTxn);
+                        for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) {
+                          auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum + j) % ctx.taasContext.kTxnNodeNum;
+                          if (to_id == ctx.taasContext.txn_node_ip_index) continue;
+                          remote_server_send_txn_num_local->IncCount(message_epoch, to_id, 1);
+                        }
                     }
                     else {
                         shard_should_send_txn_num_local->IncCount(message_epoch, sent_to, 1); //use server_id to send EpochShardEndMessage

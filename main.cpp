@@ -54,7 +54,7 @@ namespace Taas {
         for(uint64_t server_id = 0; server_id < server_num; server_id ++) {
             for(uint64_t i = 0; i < shard_num; i ++) {
                 for(uint64_t j = 0; j < replica_num; j ++ ) {
-                    if((i + server_num - j) % server_num == server_id) {
+                    if((i + server_num + j) % server_num == server_id) {
                         is_local_shard[server_id][i] = true;
                     }
                 }
@@ -195,7 +195,7 @@ int main() {
     for(uint64_t server_id = 0; server_id < server_num; server_id ++) {
         for(uint64_t i = 0; i < shard_num; i ++) {
             for(uint64_t j = 0; j < replica_num; j ++ ) {
-                if((i + server_num - j) % server_num == server_id) {
+                if((i + server_num + j) % server_num == server_id) {
                     is_local_shard[server_id][i] = true;
                 }
             }
