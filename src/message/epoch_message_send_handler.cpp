@@ -129,6 +129,7 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
         Gzip(msg.get(), serialized_txn_str_ptr.get());
         assert(!serialized_txn_str_ptr->empty());
         if (txn_type == proto::TxnType::ShardedClientTxn) {
+            assert(to_whom != ctx.taasContext.txn_node_ip_index);
             MessageQueue::send_to_server_queue->enqueue(
                     std::make_unique<send_params>(to_whom, 0, "", epoch, txn_type, std::move(serialized_txn_str_ptr), nullptr));
             return MessageQueue::send_to_server_queue->enqueue(
@@ -166,6 +167,7 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
         std::vector<std::string> keys, values;
         auto serialized_txn_str_ptr = std::make_unique<std::string>();
         Gzip(msg.get(), serialized_txn_str_ptr.get());
+        assert(to_whom != ctx.taasContext.txn_node_ip_index);
         MessageQueue::send_to_server_queue->enqueue(std::make_unique<send_params>(to_whom, 0, "", epoch, txn_type,
                                                                                   std::move(serialized_txn_str_ptr),nullptr));
         return MessageQueue::send_to_server_queue->enqueue(
@@ -205,6 +207,7 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
                     EpochMessageReceiveHandler::shard_should_send_txn_num_local_vec)); /// 不同server由不同的数量
             auto serialized_txn_str_ptr = std::make_unique<std::string>();
             Gzip(msg.get(), serialized_txn_str_ptr.get());
+            assert(server_id != ctx.taasContext.txn_node_ip_index);
             MessageQueue::send_to_server_queue->enqueue(
                     std::make_unique<send_params>(server_id, 0, "", epoch, proto::TxnType::EpochShardEndFlag, std::move(serialized_txn_str_ptr),nullptr));
             MessageQueue::send_to_server_queue->enqueue(
@@ -238,10 +241,12 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
                 if(to_id == (uint64_t)ctx.taasContext.txn_node_ip_index || EpochManager::server_state.GetCount(epoch, to_id) == 0) continue;
                 if(i < ctx.taasContext.kBackUpNum) {
                     auto s = std::make_unique<std::string>(*serialized_txn_str_ptr);
+                    assert(to_id != ctx.taasContext.txn_node_ip_index);
                     MessageQueue::send_to_server_queue->enqueue(std::make_unique<send_params>(to_id, 0, "", epoch,proto::TxnType::EpochBackUpEndFlag, std::move(s),nullptr));
                 }
                 else {
                     auto s = std::make_unique<std::string>(*serialized_txn_str_ptr_0);
+                    assert(to_id != ctx.taasContext.txn_node_ip_index);
                     MessageQueue::send_to_server_queue->enqueue(std::make_unique<send_params>(to_id, 0, "", epoch,proto::TxnType::EpochBackUpEndFlag, std::move(s),nullptr));
                 }
                 MessageQueue::send_to_server_queue->enqueue(
@@ -267,6 +272,7 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
                   EpochMessageReceiveHandler::remote_server_should_send_txn_num_local_vec));
             auto serialized_txn_str_ptr = std::make_unique<std::string>();
             Gzip(msg.get(), serialized_txn_str_ptr.get());
+            assert(server_id != ctx.taasContext.txn_node_ip_index);
             MessageQueue::send_to_server_queue->enqueue(
                     std::make_unique<send_params>(server_id, 0, "", epoch,proto::TxnType::EpochRemoteServerEndFlag, std::move(serialized_txn_str_ptr),nullptr));
             MessageQueue::send_to_server_queue->enqueue(
