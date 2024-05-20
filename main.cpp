@@ -74,7 +74,7 @@ namespace Taas {
         }
 
         LOG(INFO) << "============================";
-        LOG(INFO) << "shard replication statues:\n%s" << s;
+        LOG(INFO) << "shard replication statues:\n" << s;
         LOG(INFO) << "============================\n";
         if(ctx.taasContext.server_type == ServerMode::Taas) { ///TaaS servers
             EpochManager epochManager;

@@ -196,7 +196,8 @@ namespace Taas {
                     round_robin = round_robin + 1 % replica_num;
                     sent_to = (i + round_robin) % server_num;
                     if(sent_to == local_server_id) { /// should not happen
-                        assert(false);
+                      LOG(INFO) << "lcoal server id " << local_server_id << "; i " << i << "; round_roubin " << round_robin << "; server_num " << server_num;
+                      assert(false);
                         ReadValidateQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
                         MergeQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
                         CommitQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
