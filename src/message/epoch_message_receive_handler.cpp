@@ -182,10 +182,17 @@ namespace Taas {
                 if((*shard_row_vector)[i]->row_size() > 0) {
                     round_robin = round_robin + 1 % replica_num;
                     sent_to = (i + server_num - round_robin) % server_num;
-                    shard_should_send_txn_num_local->IncCount(message_epoch, sent_to, 1); //use server_id to send EpochShardEndMessage
-                    (*shard_row_vector)[i]->set_shard_server_id(sent_to);
-                    EpochMessageSendHandler::SendTxnToServer(message_epoch, sent_to, (*shard_row_vector)[i], proto::TxnType::ShardedClientTxn);
-                    shard_send_txn_num_local->IncCount(message_epoch, sent_to, 1);
+                    if(sent_to == local_server_id) {
+                        ReadValidateQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
+                        MergeQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
+                        CommitQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
+                    }
+                    else {
+                        shard_should_send_txn_num_local->IncCount(message_epoch, sent_to, 1); //use server_id to send EpochShardEndMessage
+                        (*shard_row_vector)[i]->set_shard_server_id(sent_to);
+                        EpochMessageSendHandler::SendTxnToServer(message_epoch, sent_to, (*shard_row_vector)[i], proto::TxnType::ShardedClientTxn);
+                        shard_send_txn_num_local->IncCount(message_epoch, sent_to, 1);
+                    }
                 }
             }
         }
