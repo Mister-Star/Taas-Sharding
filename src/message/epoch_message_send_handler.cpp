@@ -123,7 +123,6 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
         auto msg = std::make_unique<proto::Message>();
         auto* txn_temp = msg->mutable_txn();
         *(txn_temp) = *txn_ptr;
-        auto shard_id = txn_ptr->shard_id();
         txn_temp->set_txn_type(txn_type);
         auto serialized_txn_str_ptr = std::make_unique<std::string>();
         Gzip(msg.get(), serialized_txn_str_ptr.get());
@@ -138,7 +137,7 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
                                               nullptr, nullptr, false));
         } else {///RemoteServerTxn
             MessageQueue::send_to_server_pub_queue->enqueue(
-                    std::make_unique<send_params>(shard_id, 0, "", epoch, txn_type,
+                    std::make_unique<send_params>(to_whom, 0, "", epoch, txn_type,
                                             std::move(serialized_txn_str_ptr), nullptr));
             return MessageQueue::send_to_server_pub_queue->enqueue(
                 std::make_unique<send_params>(0, 0, "", 0, proto::TxnType::NullMark,
