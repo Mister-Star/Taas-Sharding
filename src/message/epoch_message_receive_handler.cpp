@@ -195,32 +195,32 @@ namespace Taas {
                 if((*shard_row_vector)[i]->row_size() > 0) {
                     round_robin = (round_robin + 1) % replica_num;
                     sent_to = (i + round_robin) % server_num;
-                    if(sent_to == local_server_id) { /// should not happen
-                      LOG(INFO) << "lcoal server id " << local_server_id << "; i " << i << "; round_roubin " << round_robin << "; server_num " << server_num << "; replica_num" << replica_num;
-                      assert(false);
-                        ReadValidateQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
-                        MergeQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
-                        CommitQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
-
-                        shard_id = txn_ptr->shard_id();
-                        for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) { /// use the network for reducing the merge time
-                          auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum + j) % ctx.taasContext.kTxnNodeNum;
-                          if (to_id == ctx.taasContext.txn_node_ip_index) continue;
-                          remote_server_should_send_txn_num_local->IncCount(message_epoch, to_id, 1);
-                        }
-                        EpochMessageSendHandler::SendTxnToServer(message_epoch, shard_id, txn_ptr, proto::TxnType::RemoteServerTxn);
-                        for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) {
-                          auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum + j) % ctx.taasContext.kTxnNodeNum;
-                          if (to_id == ctx.taasContext.txn_node_ip_index) continue;
-                          remote_server_send_txn_num_local->IncCount(message_epoch, to_id, 1);
-                        }
-                    }
-                    else {
-                        shard_should_send_txn_num_local->IncCount(message_epoch, sent_to, 1); //use server_id to send EpochShardEndMessage
-                        (*shard_row_vector)[i]->set_shard_server_id(sent_to);
-                        EpochMessageSendHandler::SendTxnToServer(message_epoch, sent_to, (*shard_row_vector)[i], proto::TxnType::ShardedClientTxn);
-                        shard_send_txn_num_local->IncCount(message_epoch, sent_to, 1);
-                    }
+//                    if(sent_to == local_server_id) { /// should not happen
+////                      LOG(INFO) << "lcoal server id " << local_server_id << "; i " << i << "; round_roubin " << round_robin << "; server_num " << server_num << "; replica_num" << replica_num;
+//                      assert(false);
+//                        ReadValidateQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
+//                        MergeQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
+//                        CommitQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
+//
+//                        shard_id = txn_ptr->shard_id();
+//                        for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) { /// use the network for reducing the merge time
+//                          auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum + j) % ctx.taasContext.kTxnNodeNum;
+//                          if (to_id == ctx.taasContext.txn_node_ip_index) continue;
+//                          remote_server_should_send_txn_num_local->IncCount(message_epoch, to_id, 1);
+//                        }
+//                        EpochMessageSendHandler::SendTxnToServer(message_epoch, shard_id, txn_ptr, proto::TxnType::RemoteServerTxn);
+//                        for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) {
+//                          auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum + j) % ctx.taasContext.kTxnNodeNum;
+//                          if (to_id == ctx.taasContext.txn_node_ip_index) continue;
+//                          remote_server_send_txn_num_local->IncCount(message_epoch, to_id, 1);
+//                        }
+//                    }
+//                    else {
+                    shard_should_send_txn_num_local->IncCount(message_epoch, sent_to, 1); //use server_id to send EpochShardEndMessage
+                    (*shard_row_vector)[i]->set_shard_server_id(sent_to);
+                    EpochMessageSendHandler::SendTxnToServer(message_epoch, sent_to, (*shard_row_vector)[i], proto::TxnType::ShardedClientTxn);
+                    shard_send_txn_num_local->IncCount(message_epoch, sent_to, 1);
+//                    }
                 }
             }
         }
@@ -313,7 +313,7 @@ namespace Taas {
                 break;
             }
             case proto::EpochRemoteServerEndFlag : {
-                LOG(INFO) << "Receive Handle EpochRemoteServerEndFlag epoch " << message_epoch << " server_id" << message_server_id << "should receive txn num" << txn_ptr->csn();
+//                LOG(INFO) << "Receive Handle EpochRemoteServerEndFlag epoch " << message_epoch << " server_id" << message_server_id << "should receive txn num" << txn_ptr->csn();
                 remote_server_should_receive_txn_num.IncCount(message_epoch, message_server_id,txn_ptr->csn());
                 remote_server_received_pack_num.IncCount(message_epoch, message_server_id, 1);
                 CheckEpochRemoteServerReceiveComplete(message_epoch);

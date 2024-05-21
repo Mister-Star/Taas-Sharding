@@ -204,10 +204,10 @@ namespace Taas {
             }
 
             if(EpochManager::IsAbortSetMergeComplete(epoch) && !EpochManager::IsRecordCommitted(epoch)) {
-                LOG(INFO) << "******* Merge RedoLog 1 : " << epoch << "********\n";
+//                LOG(INFO) << "******* Merge RedoLog 1 : " << epoch << "********\n";
                 while (!EpochManager::IsRecordCommitted(epoch) && TransactionCache::epoch_redo_log_queue[epoch_mod]->try_dequeue(txn_ptr)) {
                     if (txn_ptr != nullptr && txn_ptr->txn_type() != proto::TxnType::NullMark) { /// only local txn do redo log
-                        LOG(INFO) << "******* Merge RedoLog 2 : " << epoch << "txn_server_id" << txn_ptr->txn_server_id() << "********\n";
+//                        LOG(INFO) << "******* Merge RedoLog 2 : " << epoch << "txn_server_id" << txn_ptr->txn_server_id() << "********\n";
                         RedoLog();
                         txn_ptr.reset();
                         sleep_flag = false;
