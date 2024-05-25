@@ -152,8 +152,10 @@ namespace Taas {
                 sleep_flag = false;
             }
         }
+//        if(sleep_flag)
+//            usleep(storage_sleep_time);
         if(sleep_flag)
-            usleep(storage_sleep_time);
+            std::this_thread::yield();
     }
 
     void MOT::SendTransactionToDB_Block() {
@@ -190,8 +192,10 @@ namespace Taas {
                 txn_ptr.reset();
                 sleep_flag = false;
             }
+//            if(sleep_flag)
+//                usleep(storage_sleep_time);
             if(sleep_flag)
-                usleep(storage_sleep_time);
+                std::this_thread::yield();
         }
     }
 

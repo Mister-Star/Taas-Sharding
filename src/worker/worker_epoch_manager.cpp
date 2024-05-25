@@ -70,7 +70,8 @@ namespace Taas {
 //                            abort_send_epoch ++;
 //                            sleep_flag = false;
 //                        }
-                        if(sleep_flag) usleep(100);
+//                        if(sleep_flag) usleep(100);
+                        if(sleep_flag) std::this_thread::yield();
                     }
                     break;
                 }

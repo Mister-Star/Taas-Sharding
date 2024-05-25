@@ -216,11 +216,17 @@ namespace Taas {
         auto i = redo_log_epoch.load();
         shared_ptr<proto::Transaction> empty_txn_ptr;
         while(!EpochManager::IsTimerStop()) {
-            while(i >= commit_epoch.load()) usleep(logical_sleep_timme);
-            while(!EpochManager::IsCommitComplete(i)) usleep(logical_sleep_timme);
-            while(!RedoLoger::CheckPushDownComplete(i)) usleep(logical_sleep_timme);
+//            while(i >= commit_epoch.load()) usleep(logical_sleep_timme);
+//            while(!EpochManager::IsCommitComplete(i)) usleep(logical_sleep_timme);
+//            while(!RedoLoger::CheckPushDownComplete(i)) usleep(logical_sleep_timme);
+//            EpochMessageSendHandler::SendTxnToServer(i,i, empty_txn_ptr, proto::TxnType::EpochLogPushDownComplete);
+//            while(!EpochMessageReceiveHandler::IsRedoLogPushDownACKReceiveComplete(i)) usleep(logical_sleep_timme);
+
+            while(i >= commit_epoch.load()) std::this_thread::yield();;
+            while(!EpochManager::IsCommitComplete(i)) std::this_thread::yield();;
+            while(!RedoLoger::CheckPushDownComplete(i)) std::this_thread::yield();;
             EpochMessageSendHandler::SendTxnToServer(i,i, empty_txn_ptr, proto::TxnType::EpochLogPushDownComplete);
-            while(!EpochMessageReceiveHandler::IsRedoLogPushDownACKReceiveComplete(i)) usleep(logical_sleep_timme);
+            while(!EpochMessageReceiveHandler::IsRedoLogPushDownACKReceiveComplete(i)) std::this_thread::yield();;
 
             {
                 if(i % ctx.taasContext.print_mode_size == 0)
@@ -241,35 +247,6 @@ namespace Taas {
     }
 
     void EpochLogicalTimerManagerThreadMain(const Context& ctx) {
-        while(!EpochManager::IsInitOK()) usleep(sleep_time);
-        if(ctx.taasContext.is_cache_server_available) {
-            cache_server_available = 0;
-        }
-        uint64_t epoch = 1;
-        OUTPUTLOG("===== Start Epoch的合并 ===== ", epoch);
-        while(!EpochManager::IsTimerStop()){
-
-//            while(EpochManager::GetPhysicalEpoch() <= EpochManager::GetLogicalEpoch() + ctx.kDelayEpochNum) {
-//                usleep(logical_sleep_timme);
-//                ShardEpochManager::CheckEpochMergeState(ctx);
-//            }
-//
-//            while(!ShardEpochManager::CheckEpochAbortMergeState(ctx)) {
-////                OUTPUTLOG("=====CheckEpochAbortMergeState===== ", epoch);
-//                usleep(logical_sleep_timme);
-//                ShardEpochManager::CheckEpochMergeState(ctx);
-//            }
-//
-//            while(!ShardEpochManager::CheckEpochCommitState(ctx)) {
-////                OUTPUTLOG("=====CheckEpochCommitState===== ", epoch);
-//                usleep(logical_sleep_timme);
-//                ShardEpochManager::CheckEpochMergeState(ctx);
-//                ShardEpochManager::CheckEpochAbortMergeState(ctx);
-//            }
-//            EpochManager::CheckRedoLogPushDownState();
-//            //clear cache  move to mot.cpp  MOT::SendToMOThreadMain_usleep();
-        }
-        printf("total commit txn num: %lu\n", total_commit_txn_num);
     }
 
     void EpochPhysicalTimerManagerThreadMain(Context ctx) {

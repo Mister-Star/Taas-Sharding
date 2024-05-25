@@ -211,7 +211,7 @@ namespace Taas {
             printf("Listen Server connect ZMQ_SUB %s", ("tcp://" + ctx.taasContext.kServerIp[i] + ":" + std::to_string(22000+i) + "\n").c_str());
         }
 
-        uint64_t to_id = 0;
+        uint64_t to_id;
         for(uint64_t i = 0; i < ctx.taasContext.kBackUpNum; i++) {
             to_id = (ctx.taasContext.txn_node_ip_index + ctx.taasContext.kTxnNodeNum - i - 1) % ctx.taasContext.kTxnNodeNum;
             if(to_id == ctx.taasContext.txn_node_ip_index) continue;

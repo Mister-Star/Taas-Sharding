@@ -22,9 +22,9 @@ namespace Taas {
             case TaasMode::MultiModel :
             case TaasMode::MultiMaster :
             case TaasMode::Shard : {
-                while(!EpochManager::IsTimerStop()) {
-                    merger.EpochMerge();
-                }
+//                while(!EpochManager::IsTimerStop()) {
+//                    merger.EpochMerge();
+//                }
                 break;
             }
             case TaasMode::TwoPC : {
@@ -54,44 +54,56 @@ namespace Taas {
             case TaasMode::MultiModel :
             case TaasMode::MultiMaster :
             case TaasMode::Shard : {
-                if(id < (ctx.taasContext.kMergeThreadNum * 3) / 4) {
-                    merger.epoch = EpochManager::GetLogicalEpoch();
-                    merger.epoch_mod = merger.epoch % ctx.taasContext.kCacheMaxLength;
-                    while(TransactionCache::epoch_read_validate_queue[merger.epoch_mod]->try_dequeue(merger.txn_ptr)) {
-                        if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() != proto::TxnType::NullMark) {
-                            merger.ReadValidate();
-                        }
-                    }
-
-                    if(!EpochManager::IsEpochMergeComplete(merger.epoch)) {
-                        while (TransactionCache::epoch_merge_queue[merger.epoch_mod]->try_dequeue(merger.txn_ptr)) {
-                            if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() != proto::TxnType::NullMark) {
-                                merger.Merge();
-                            }
-                        }
-                    }
-
-                    if(EpochManager::IsAbortSetMergeComplete(merger.epoch) && !EpochManager::IsCommitComplete(merger.epoch)) {
-                        while (!EpochManager::IsCommitComplete(merger.epoch) && TransactionCache::epoch_commit_queue[merger.epoch_mod]->try_dequeue(merger.txn_ptr)) {
-                            if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() != proto::TxnType::NullMark) {
-                                merger.Commit();
-                            }
-                        }
-                    }
-
-                    if(EpochManager::IsAbortSetMergeComplete(merger.epoch) && !EpochManager::IsRecordCommitted(merger.epoch)) {
-                        while (!EpochManager::IsRecordCommitted(merger.epoch) && TransactionCache::epoch_redo_log_queue[merger.epoch_mod]->try_dequeue(merger.txn_ptr)) {
-                            if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() != proto::TxnType::NullMark) {
-                                merger.RedoLog();
-                            }
-                        }
-                    }
-
-                    receiveHandler.TryHandleReceivedControlMessage();
-                    if( EpochManager::GetLogicalEpoch() + safe_length > EpochManager::GetPhysicalEpoch() )
-                        receiveHandler.TryHandleReceivedMessage();
-                }
-                else {
+//                if(id < (ctx.taasContext.kMergeThreadNum * 3) / 4) {
+//                    while(!EpochManager::IsTimerStop()) {
+//                        merger.epoch = EpochManager::GetLogicalEpoch();
+//                        merger.epoch_mod = merger.epoch % ctx.taasContext.kCacheMaxLength;
+//                        while(TransactionCache::epoch_read_validate_queue[merger.epoch_mod]->try_dequeue(merger.txn_ptr)) {
+//                            if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() != proto::TxnType::NullMark) {
+//                                merger.ReadValidate();
+//                            }
+//                        }
+//                        std::this_thread::yield();
+//
+//                        if(!EpochManager::IsEpochMergeComplete(merger.epoch)) {
+//                            while (TransactionCache::epoch_merge_queue[merger.epoch_mod]->try_dequeue(merger.txn_ptr)) {
+//                                if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() != proto::TxnType::NullMark) {
+//                                    merger.Merge();
+//                                }
+//                            }
+//                        }
+//                        else {
+//                            std::this_thread::yield();
+//                        }
+//
+//                        if(EpochManager::IsAbortSetMergeComplete(merger.epoch) && !EpochManager::IsCommitComplete(merger.epoch)) {
+//                            while (!EpochManager::IsCommitComplete(merger.epoch) && TransactionCache::epoch_commit_queue[merger.epoch_mod]->try_dequeue(merger.txn_ptr)) {
+//                                if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() != proto::TxnType::NullMark) {
+//                                    merger.Commit();
+//                                }
+//                            }
+//                        }
+//                        else {
+//                            std::this_thread::yield();
+//                        }
+//
+//                        if(EpochManager::IsAbortSetMergeComplete(merger.epoch) && !EpochManager::IsRecordCommitted(merger.epoch)) {
+//                            while (!EpochManager::IsRecordCommitted(merger.epoch) && TransactionCache::epoch_redo_log_queue[merger.epoch_mod]->try_dequeue(merger.txn_ptr)) {
+//                                if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() != proto::TxnType::NullMark) {
+//                                    merger.RedoLog();
+//                                }
+//                            }
+//                        }
+//                        else {
+//                            std::this_thread::yield();
+//                        }
+//
+//                        receiveHandler.TryHandleReceivedControlMessage();
+//                        if( EpochManager::GetLogicalEpoch() + safe_length > EpochManager::GetPhysicalEpoch() )
+//                            receiveHandler.TryHandleReceivedMessage();
+//                    }
+//                }
+//                else {
                     while(!EpochManager::IsTimerStop()) {
                         sleep_flag = true;
 
@@ -152,9 +164,9 @@ namespace Taas {
 
                         sleep_flag = sleep_flag & receiveHandler.sleep_flag;
 
-                        if (sleep_flag) usleep(50);
+                        if (sleep_flag) std::this_thread::yield();
                     }
-                }
+//                }
                 break;
             }
             case TaasMode::TwoPC : {

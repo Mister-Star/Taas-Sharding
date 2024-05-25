@@ -50,7 +50,7 @@ namespace Taas {
 
         if(kReplicaNum > kTxnNodeNum) kReplicaNum = kTxnNodeNum;
         if(kShardNum > kTxnNodeNum) kShardNum = kTxnNodeNum;
-        kBackUpNum = kReplicaNum;
+        kBackUpNum = 2; /// send to another 2 server
 
         tinyxml2::XMLElement* merge_thread_num = root->FirstChildElement("merge_thread_num");
         kMergeThreadNum = std::stoull(merge_thread_num->GetText());
