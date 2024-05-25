@@ -54,36 +54,36 @@ namespace Taas {
 
 
     void Merger::Send() {
-        if(ctx.taasContext.taasMode == TaasMode::Shard) {
-            /// already send
-        }
-        else if(ctx.taasContext.taasMode == TaasMode::MultiMaster && txn_ptr->txn_server_id() == ctx.taasContext.txn_node_ip_index) {
-            write_set = std::make_shared<proto::Transaction>();
-            write_set->set_csn(txn_ptr->csn());
-            write_set->set_commit_epoch(txn_ptr->commit_epoch());
-            write_set->set_txn_server_id(txn_ptr->txn_server_id());
-            write_set->set_client_ip(txn_ptr->client_ip());
-            write_set->set_client_txn_id(txn_ptr->client_txn_id());
-            write_set->set_shard_id(ctx.taasContext.txn_node_ip_index);
-            write_set->set_txn_type(proto::RemoteServerTxn);
-            for(auto i = 0; i < txn_ptr->row_size(); i ++) { /// for SI isolation only seng the wriet set.
-                const auto& row = txn_ptr->row(i);
-                if(row.op_type() == proto::OpType::Read) continue;
-                auto row_ptr = write_set->add_row();
-                (*row_ptr) = row;
-            }
-            /// only local txn send its write set or complete txn
-            /// SI only send write set
-            /// if you want to achieve SER, you need to send the complete txn
-            shard_should_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
-            backup_should_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
-            EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, write_set, proto::TxnType::RemoteServerTxn);
-            EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, txn_ptr, proto::TxnType::BackUpTxn);
-            shard_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
-            backup_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
-            MergeQueueEnqueue(message_epoch, txn_ptr);
-            CommitQueueEnqueue(message_epoch, txn_ptr);
-        }
+//        if(ctx.taasContext.taasMode == TaasMode::Shard) {
+//            /// already send
+//        }
+//        else if(ctx.taasContext.taasMode == TaasMode::MultiMaster && txn_ptr->txn_server_id() == ctx.taasContext.txn_node_ip_index) {
+//            write_set = std::make_shared<proto::Transaction>();
+//            write_set->set_csn(txn_ptr->csn());
+//            write_set->set_commit_epoch(txn_ptr->commit_epoch());
+//            write_set->set_txn_server_id(txn_ptr->txn_server_id());
+//            write_set->set_client_ip(txn_ptr->client_ip());
+//            write_set->set_client_txn_id(txn_ptr->client_txn_id());
+//            write_set->set_shard_id(ctx.taasContext.txn_node_ip_index);
+//            write_set->set_txn_type(proto::RemoteServerTxn);
+//            for(auto i = 0; i < txn_ptr->row_size(); i ++) { /// for SI isolation only seng the wriet set.
+//                const auto& row = txn_ptr->row(i);
+//                if(row.op_type() == proto::OpType::Read) continue;
+//                auto row_ptr = write_set->add_row();
+//                (*row_ptr) = row;
+//            }
+//            /// only local txn send its write set or complete txn
+//            /// SI only send write set
+//            /// if you want to achieve SER, you need to send the complete txn
+//            shard_should_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
+//            backup_should_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
+//            EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, write_set, proto::TxnType::RemoteServerTxn);
+//            EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, txn_ptr, proto::TxnType::BackUpTxn);
+//            shard_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
+//            backup_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
+//            MergeQueueEnqueue(message_epoch, txn_ptr);
+//            CommitQueueEnqueue(message_epoch, txn_ptr);
+//        }
     }
 
     void Merger::ReadValidate() {
@@ -204,10 +204,10 @@ namespace Taas {
             }
 
             if(EpochManager::IsAbortSetMergeComplete(epoch) && !EpochManager::IsRecordCommitted(epoch)) {
-                LOG(INFO) << "******* Merge RedoLog 1 : " << epoch << "********\n";
+//                LOG(INFO) << "******* Merge RedoLog 1 : " << epoch << "********\n";
                 while (!EpochManager::IsRecordCommitted(epoch) && TransactionCache::epoch_redo_log_queue[epoch_mod]->try_dequeue(txn_ptr)) {
                     if (txn_ptr != nullptr && txn_ptr->txn_type() != proto::TxnType::NullMark) { /// only local txn do redo log
-                        LOG(INFO) << "******* Merge RedoLog 2 : " << epoch << "txn_server_id" << txn_ptr->txn_server_id() << "********\n";
+//                        LOG(INFO) << "******* Merge RedoLog 2 : " << epoch << "txn_server_id" << txn_ptr->txn_server_id() << "********\n";
                         RedoLog();
                         txn_ptr.reset();
                         sleep_flag = false;

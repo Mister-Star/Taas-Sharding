@@ -111,7 +111,7 @@ namespace Taas {
             MessageQueue::send_to_server_pub_queue->wait_dequeue(params);
             if (params == nullptr || params->type == proto::TxnType::NullMark || params->str == nullptr) continue;
             msg = std::make_unique<zmq::message_t>(*(params->str));
-            if(params->type == proto::TxnType::BackUpACK) {
+            if(params->type == proto::TxnType::BackUpTxn) {
                 socket_back_up->send(*msg, sendFlags);
                 continue;
             }
@@ -178,16 +178,6 @@ namespace Taas {
         for(auto &i : is_local_shard) {
             i.resize(shard_num);
         }
-        for(uint64_t server_id = 0; server_id < server_num; server_id ++) {
-            for(uint64_t i = 0; i < shard_num; i ++) {
-                for(uint64_t j = 0; j < replica_num; j ++ ) {
-                    if((i + server_num - j) % server_num == server_id) {
-                        is_local_shard[server_id][i] = true;
-                    }
-                }
-            }
-        }
-
 
         zmq::context_t listen_context(1);
         zmq::recv_flags recvFlags = zmq::recv_flags::none;
@@ -195,15 +185,37 @@ namespace Taas {
         int queue_length = 1000000000;
         zmq::socket_t socket_listen(listen_context, ZMQ_SUB);
 
-        for (uint64_t i = 0; i < server_num; i++) {
-            if (i == ctx.taasContext.txn_node_ip_index) continue;
-            for(uint64_t j = 0; j < shard_num; j++) {
-                if(is_local_shard[i][j]) {///shard j send from i is a local shard of current server, then receive the replica
-                    socket_listen.connect("tcp://" + ctx.taasContext.kServerIp[i] + ":" + std::to_string(21000+j));///shard replica
-                    printf("Listen Server connect ZMQ_SUB %s", ("tcp://" + ctx.taasContext.kServerIp[i] + ":" + std::to_string(21000+j) + "\n").c_str());
-                }
-            }
-        }
+          for(uint64_t i = 0; i < shard_num; i ++) {
+              if(i % server_num == local_server_id) {
+                  for(uint64_t j = 1; j < replica_num; j ++ ) {
+                      socket_listen.connect("tcp://" + ctx.taasContext.kServerIp[(i + j) % server_num] + ":"
+                                            + std::to_string(21000 + i));  /// shard replica
+                      LOG(INFO) << "Server:" << (i + j) % server_num << "Shard: " << i;
+                  }
+              }
+              else {
+                  for(uint64_t j = 0; j < replica_num; j ++ ) {
+                      if((i + j) % server_num == local_server_id) {
+                          for(uint64_t k = 0; k < replica_num; k ++) {
+                              if((i + k) % server_num == local_server_id) continue;
+                              socket_listen.connect("tcp://" + ctx.taasContext.kServerIp[(i + k) % server_num] + ":"
+                                                    + std::to_string(21000 + i));  /// shard replica
+                              LOG(INFO) << "Server:" << (i + k) % server_num << "Shard: " << i;
+                          }
+                      }
+                  }
+              }
+          }
+
+//        for (uint64_t i = 0; i < server_num; i++) {
+//            if (i == ctx.taasContext.txn_node_ip_index) continue;
+//            for(uint64_t j = 0; j < shard_num; j++) {
+//                if(is_local_shard[i][j]) {///shard j send from i is a local shard of current server, then receive the replica
+//                    socket_listen.connect("tcp://" + ctx.taasContext.kServerIp[i] + ":" + std::to_string(21000+j));///shard replica
+//                    printf("Listen Server connect ZMQ_SUB %s", ("tcp://" + ctx.taasContext.kServerIp[i] + ":" + std::to_string(21000+j) + "\n").c_str());
+//                }
+//            }
+//        }
 
         for (uint64_t i = 0; i < server_num; i++) {
             if (i == ctx.taasContext.txn_node_ip_index) continue;

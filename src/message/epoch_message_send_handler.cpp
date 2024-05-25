@@ -123,7 +123,6 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
         auto msg = std::make_unique<proto::Message>();
         auto* txn_temp = msg->mutable_txn();
         *(txn_temp) = *txn_ptr;
-        auto shard_id = txn_ptr->shard_id();
         txn_temp->set_txn_type(txn_type);
         auto serialized_txn_str_ptr = std::make_unique<std::string>();
         Gzip(msg.get(), serialized_txn_str_ptr.get());
@@ -131,14 +130,18 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
         if (txn_type == proto::TxnType::ShardedClientTxn) {
             assert(to_whom != ctx.taasContext.txn_node_ip_index);
             MessageQueue::send_to_server_queue->enqueue(
-                    std::make_unique<send_params>(to_whom, 0, "", epoch, txn_type, std::move(serialized_txn_str_ptr), nullptr));
+                    std::make_unique<send_params>(to_whom, 0, "", epoch,
+                                              txn_type, std::move(serialized_txn_str_ptr), nullptr));
             return MessageQueue::send_to_server_queue->enqueue(
-                    std::make_unique<send_params>(0, 0, "", 0, proto::TxnType::NullMark, nullptr, nullptr, false));
+                    std::make_unique<send_params>(0, 0, "", 0, proto::TxnType::NullMark,
+                                              nullptr, nullptr, false));
         } else {///RemoteServerTxn
             MessageQueue::send_to_server_pub_queue->enqueue(
-                    std::make_unique<send_params>(shard_id, 0, "", epoch, txn_type,std::move(serialized_txn_str_ptr), nullptr));
+                    std::make_unique<send_params>(to_whom, 0, "", epoch, txn_type,
+                                            std::move(serialized_txn_str_ptr), nullptr));
             return MessageQueue::send_to_server_pub_queue->enqueue(
-                std::make_unique<send_params>(0, 0, "", 0, proto::TxnType::NullMark, nullptr, nullptr, false));
+                std::make_unique<send_params>(0, 0, "", 0, proto::TxnType::NullMark,
+                                              nullptr, nullptr, false));
         }
     }
 
@@ -152,8 +155,11 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
         Gzip(msg.get(), serialized_txn_str_ptr.get());
         assert(!serialized_txn_str_ptr->empty());
         MessageQueue::send_to_server_pub_queue->enqueue(
-                std::make_unique<send_params>(ctx.taasContext.txn_node_ip_index % ctx.taasContext.kShardNum, 0, "", epoch, txn_type, std::move(serialized_txn_str_ptr), nullptr));
-        return true;
+                std::make_unique<send_params>(0, 0, "", epoch, txn_type,
+                                          std::move(serialized_txn_str_ptr), nullptr, false));
+        return MessageQueue::send_to_server_pub_queue->enqueue(
+            std::make_unique<send_params>(0, 0, "", 0, proto::TxnType::NullMark,
+                                          nullptr, nullptr, false));
     }
 
     bool EpochMessageSendHandler::SendACK(uint64_t &epoch, uint64_t &to_whom, proto::TxnType txn_type) {
@@ -168,10 +174,12 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
         auto serialized_txn_str_ptr = std::make_unique<std::string>();
         Gzip(msg.get(), serialized_txn_str_ptr.get());
         assert(to_whom != ctx.taasContext.txn_node_ip_index);
-        MessageQueue::send_to_server_queue->enqueue(std::make_unique<send_params>(to_whom, 0, "", epoch, txn_type,
-                                                                                  std::move(serialized_txn_str_ptr),nullptr));
+        MessageQueue::send_to_server_queue->enqueue(
+            std::make_unique<send_params>(to_whom, 0, "", epoch, txn_type,
+                                          std::move(serialized_txn_str_ptr),nullptr, false));
         return MessageQueue::send_to_server_queue->enqueue(
-                std::make_unique<send_params>(0, 0, "", 0, proto::TxnType::NullMark, nullptr, nullptr, false));
+                std::make_unique<send_params>(0, 0, "", 0, proto::TxnType::NullMark,
+                                          nullptr, nullptr, false));
     }
 
     bool EpochMessageSendHandler::SendMessageToAll(uint64_t& epoch, proto::TxnType txn_type) {
@@ -185,10 +193,11 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
         auto serialized_txn_str_ptr = std::make_unique<std::string>();
         Gzip(msg.get(), serialized_txn_str_ptr.get());
         MessageQueue::send_to_server_pub_queue->enqueue(
-                std::make_unique<send_params>(0, 0, "", epoch, txn_type, std::move(serialized_txn_str_ptr),
-                                              nullptr, true));
+                std::make_unique<send_params>(0, 0, "", epoch, txn_type,
+                                          std::move(serialized_txn_str_ptr),nullptr, true));
         return MessageQueue::send_to_server_pub_queue->enqueue(
-                std::make_unique<send_params>(0, 0, "", 0, proto::TxnType::NullMark, nullptr, nullptr, false));
+                std::make_unique<send_params>(0, 0, "", 0, proto::TxnType::NullMark,
+                                          nullptr, nullptr, false));
     }
 
     void EpochMessageSendHandler::CheckAndSendEpochShardEndMessage() {
@@ -209,9 +218,11 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
             Gzip(msg.get(), serialized_txn_str_ptr.get());
             assert(server_id != ctx.taasContext.txn_node_ip_index);
             MessageQueue::send_to_server_queue->enqueue(
-                    std::make_unique<send_params>(server_id, 0, "", epoch, proto::TxnType::EpochShardEndFlag, std::move(serialized_txn_str_ptr),nullptr));
+                    std::make_unique<send_params>(server_id, 0, "", epoch,proto::TxnType::EpochShardEndFlag,
+                                              std::move(serialized_txn_str_ptr),nullptr, false));
             MessageQueue::send_to_server_queue->enqueue(
-                std::make_unique<send_params>(0, 0, "", 0, proto::TxnType::NullMark, nullptr, nullptr, false));
+                std::make_unique<send_params>(0, 0, "", 0, proto::TxnType::NullMark,
+                                              nullptr, nullptr, false));
         }
         {
             auto msg = std::make_unique<proto::Message>();
@@ -301,9 +312,11 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
         auto serialized_txn_str_ptr = std::make_unique<std::string>();
         Gzip(msg.get(), serialized_txn_str_ptr.get());
         MessageQueue::send_to_server_pub_queue->enqueue(
-                std::make_unique<send_params>(0, 0, "", epoch, proto::TxnType::AbortSet, std::move(serialized_txn_str_ptr), nullptr, true));
+                std::make_unique<send_params>(0, 0, "", epoch, proto::TxnType::AbortSet,
+                                          std::move(serialized_txn_str_ptr), nullptr, true));
         return MessageQueue::send_to_server_pub_queue->enqueue( 
-                std::make_unique<send_params>(0, 0, "", 0, proto::TxnType::NullMark, nullptr, nullptr, false));
+                std::make_unique<send_params>(0, 0, "", 0, proto::TxnType::NullMark,
+                                          nullptr, nullptr, false));
     }
 
 }

@@ -140,13 +140,15 @@ namespace Taas {
         MergedTxnNum                 %6lu, ShouldMergeTxnNum            %6lu, \n\
         CommittedTxnNum              %6lu, ShouldCommitTxnNum           %6lu,   \
         RecordCommit                 %6lu, RecordCommitted              %6lu, \n\
-        ShouldReceiveShardPackNum %6lu, ReceivedShardPackNum      %6lu    \
-        ShouldReceiveShardTxnNum  %6lu, ReceivedShardTxnNum       %6lu  \n\
+        ShouldReceiveShardPackNum    %6lu, ReceivedShardPackNum         %6lu    \
+        ShouldReceiveShardTxnNum     %6lu, ReceivedShardTxnNum          %6lu  \n\
+        ShouldReceiveRemotePackNum   %6lu, ReceivedRemotePackNum        %6lu    \
+        ShouldReceiveRemoteTxnNum    %6lu, ReceivedRemoteTxnNum         %6lu  \n\
         ShouldReceiveBackUpPackNum   %6lu, ReceivedBackUpPackNum        %6lu    \
         ShouldReceiveBackUpTxnNum    %6lu, ReceivedBackUpTxnNum         %6lu  \n\
         ShouldReceiveInsertsetNum    %6lu, ReceivedInsertSetNum         %6lu    \
         ShouldReceiveAbortSetNum     %6lu, ReceivedAbortSetNum          %6lu  \n\
-        ReceivedShardACKNum       %6lu, ReceivedBackupACKNum         %6lu    \
+        ReceivedShardACKNum          %6lu, ReceivedBackupACKNum         %6lu    \
         ReceivedInsertSetACKNum      %6lu, ReceivedAbortSetACKNum       %6lu  \n\
         merge_num                    %6lu, time          %lu \n\
 ====\
@@ -174,6 +176,10 @@ namespace Taas {
        EpochMessageReceiveHandler::shard_received_pack_num.GetCount(epoch_mod),
        EpochMessageReceiveHandler::shard_should_receive_txn_num.GetCount(epoch_mod),
        EpochMessageReceiveHandler::GetAllThreadLocalCountNum(epoch_mod, EpochMessageReceiveHandler::shard_received_txn_num_local_vec),
+       EpochMessageReceiveHandler::remote_server_should_receive_pack_num.GetCount(epoch_mod),
+       EpochMessageReceiveHandler::remote_server_received_pack_num.GetCount(epoch_mod),
+       EpochMessageReceiveHandler::remote_server_should_receive_txn_num.GetCount(epoch_mod),
+       EpochMessageReceiveHandler::GetAllThreadLocalCountNum(epoch_mod, EpochMessageReceiveHandler::remote_server_received_txn_num_local_vec),
        EpochMessageReceiveHandler::backup_should_receive_pack_num.GetCount(epoch_mod),
        EpochMessageReceiveHandler::backup_received_pack_num.GetCount(epoch_mod),
        EpochMessageReceiveHandler::backup_should_receive_txn_num.GetCount(epoch_mod),
