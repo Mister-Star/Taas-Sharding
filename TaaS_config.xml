@@ -15,13 +15,17 @@
     </txn_node_ip>
     <sync_start>0</sync_start>
     <epoch_size_us>10000</epoch_size_us><!-- us -->
-    <cache_max_length>1000</cache_max_length> <!-- 10 min  600s 600000ms 60000 epochs-->
+    <cache_max_length>10000</cache_max_length> <!-- 10 min  600s 600000ms 60000 epochs-->
 
-    <shard_num>2</shard_num>
+    <shard_num>11</shard_num>
     <replica_num>3</replica_num>
 
-    <merge_thread_num>20</merge_thread_num> <!--handle txn merge-->
+    <merge_thread_num>14</merge_thread_num> <!--handle txn merge-->
 <!--    <epoch_message_thread_num>0</epoch_message_thread_num> &lt;!&ndash;handle remote server message, be same as the core num&ndash;&gt;-->
+
+    <handle_epoch_message_num_each_traversal>5</handle_epoch_message_num_each_traversal>
+    <handle_txn_message_num_each_traversal>5</handle_txn_message_num_each_traversal>
+    <safe_epoch_distance>10</safe_epoch_distance>
 
 
     <glog_path>/tmp</glog_path>
@@ -29,7 +33,7 @@
 <!-- end TaaS config-->
 <!-- test config   -->
     <duration_time_us>0</duration_time_us>
-    <test_client_num>2</test_client_num>
+    <test_client_num>0</test_client_num>
     <test_key_range>10000</test_key_range>
     <test_txn_op_num>10</test_txn_op_num>
 <!-- end test config   -->

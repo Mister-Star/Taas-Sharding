@@ -113,7 +113,7 @@ namespace Taas {
 //            HandleReceivedTxn();
 //            txn_ptr.reset();
 //        }
-        for(int i = 0; i < 5; i ++) {
+        for(int i = 0; i < (int)ctx.taasContext.kHandleTxnMessageNumOfEachTraversal; i ++) {
             if(MessageQueue::listen_message_txn_queue->try_dequeue(message_ptr)) {
                 sleep_flag = false;
                 if (message_ptr == nullptr) return;
@@ -161,7 +161,7 @@ namespace Taas {
 ////            if(txn_ptr->commit_epoch() > EpochManager::GetLogicalEpoch()) return ;
 //            txn_ptr.reset();
 //        }
-        for(int i = 0; i < 5; i ++) {
+        for(int i = 0; i < (int)ctx.taasContext.kHandleEpochMessageNumOfEachTraversal; i ++) {
             if(MessageQueue::listen_message_epoch_queue->try_dequeue(message_ptr)) {
                 sleep_flag = false;
                 if (message_ptr == nullptr) return;

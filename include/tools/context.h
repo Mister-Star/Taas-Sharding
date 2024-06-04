@@ -54,6 +54,7 @@ namespace Taas {
                 kCacheMaxLength = 200000, kDelayEpochNum = 0, print_mode_size = 1000;
         uint64_t kMergeThreadNum = 0, kEpochTxnThreadNum = 0, kEpochMessageThreadNum = 0;
         uint64_t kTestClientNum = 0, kTestKeyRange = 1000000, kTestTxnOpNum = 10;
+        uint64_t kHandleEpochMessageNumOfEachTraversal = 1, kHandleTxnMessageNumOfEachTraversal = 1, kSafeEpochDistance = 10;
 
         bool is_read_repeatable = false, is_snap_isolation = false,
                 is_breakdown = false, is_sync_start = false,
