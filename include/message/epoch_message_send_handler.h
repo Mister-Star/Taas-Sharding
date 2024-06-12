@@ -31,10 +31,16 @@ namespace Taas {
         static void StaticInit(const Context& _ctx);
         static void StaticClear();
         static Context ctx;
-        static std::vector<std::unique_ptr<std::atomic<uint64_t>>> sharding_send_epoch, backup_send_epoch, abort_set_send_epoch, insert_set_send_epoch;
-        static uint64_t sharding_sent_epoch, backup_sent_epoch, abort_sent_epoch, insert_set_sent_epoch, abort_set_sent_epoch;
-        static bool SendEpochEndMessage(const uint64_t &txn_node_ip_index, uint64_t epoch, const uint64_t &kTxnNodeNum);
-        static bool SendAbortSet(const uint64_t &txn_node_ip_index, uint64_t epoch, const uint64_t &kCacheMaxLength);
+        static std::vector<std::unique_ptr<std::atomic<uint64_t>>> shard_send_epoch, backup_send_epoch, abort_set_send_epoch, insert_set_send_epoch;
+//        static uint64_t shard_sent_epoch, backup_sent_epoch, abort_sent_epoch, insert_set_sent_epoch, abort_set_sent_epoch;
+
+        static void CheckAndSendEpochMessage();
+        static void CheckAndSendEpochShardEndMessage();
+        static bool SendEpochShardEndMessage(const uint64_t &txn_node_ip_index, const uint64_t &epoch, const uint64_t &kTxnNodeNum);
+        static void CheckAndSendEpochRemoteServerEndMessage();
+        static bool SendEpochRemoteServerEndMessage(const uint64_t &txn_node_ip_index, const uint64_t &epoch, const uint64_t &kTxnNodeNum);
+        static void CheckAndSendAbortSet();
+        static bool SendAbortSet(const uint64_t &txn_node_ip_index, const uint64_t &epoch);
 
     private:
         bool sleep_flag = false;

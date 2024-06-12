@@ -6,8 +6,6 @@
 #include "message/message.h"
 #include "transaction/merge.h"
 #include "transaction/two_phase_commit.h"
-#include "storage/tikv.h"
-#include "storage/mot.h"
 
 namespace Taas {
 
@@ -16,17 +14,28 @@ namespace Taas {
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         EpochMessageReceiveHandler receiveHandler;
         class TwoPC twoPC;
-        while(init_ok_num.load() < 1) usleep(sleep_time);
+        while(init_ok_num.load() < 5) usleep(sleep_time);
         receiveHandler.Init(id, ctx);
-        twoPC.Init(ctx, id);
+        Taas::TwoPC::Init(ctx, id);
         init_ok_num.fetch_add(1);
+//        bool sleep_flag;
+//        auto safe_length = ctx.taasContext.kCacheMaxLength / 10;
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         while(!EpochManager::IsTimerStop()){
             switch(ctx.taasContext.taasMode) {
                 case TaasMode::MultiModel :
                 case TaasMode::MultiMaster :
-                case TaasMode::Sharding : {
+                case TaasMode::Shard : {
                     while(!EpochManager::IsTimerStop()) {
+//                        sleep_flag = true;
+//                        receiveHandler.TryHandleReceivedControlMessage();
+//                        if( EpochManager::GetLogicalEpoch() + safe_length > EpochManager::GetPhysicalEpoch() ) /// avoid task backlogs, stop handling txn comes from the client
+//                            receiveHandler.TryHandleReceivedMessage();
+//
+//                        sleep_flag = sleep_flag & receiveHandler.sleep_flag;
+//
+//                        if(sleep_flag) usleep(merge_sleep_time);
+
                         receiveHandler.HandleReceivedMessage();
                     }
                     break;
@@ -48,16 +57,16 @@ namespace Taas {
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         EpochMessageReceiveHandler receiveHandler;
         class TwoPC twoPC;
-        while(init_ok_num.load() < 1) usleep(sleep_time);
+        while(init_ok_num.load() < 5) usleep(sleep_time);
         receiveHandler.Init(id, ctx);
-        twoPC.Init(ctx, id);
+        Taas::TwoPC::Init(ctx, id);
         init_ok_num.fetch_add(1);
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         while(!EpochManager::IsTimerStop()){
             switch(ctx.taasContext.taasMode) {
                 case TaasMode::MultiModel :
                 case TaasMode::MultiMaster :
-                case TaasMode::Sharding : {
+                case TaasMode::Shard : {
                     while(!EpochManager::IsTimerStop()) {
                         receiveHandler.HandleReceivedControlMessage();
                     }

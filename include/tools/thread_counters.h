@@ -15,59 +15,82 @@ namespace Taas {
 
     class ThreadCounters{
     public:
-        uint64_t thread_id = 0, max_length = 0, sharding_num = 0, local_server_id;
+        uint64_t thread_id = 0, max_length = 0, shard_num = 0, local_server_id, replica_num = 1, server_num = 1;
 
         static Context ctx;
         static std::atomic<uint64_t> inc_id;
+        static std::vector<std::vector<bool>> is_local_shard;
 
     ///message handling
     public:
         std::shared_ptr<AtomicCounters_Cache>
-                sharding_should_send_txn_num_local,
-                sharding_send_txn_num_local,
-                sharding_should_handle_local_txn_num_local,
-                sharding_handled_local_txn_num_local,
+                shard_should_send_txn_num_local,
+                shard_send_txn_num_local,
+                shard_should_handle_local_txn_num_local,
+                shard_handled_local_txn_num_local,
+                shard_should_handle_remote_txn_num_local,
+                shard_handled_remote_txn_num_local,
+                shard_received_txn_num_local,
 
-                sharding_should_handle_remote_txn_num_local,
-                sharding_handled_remote_txn_num_local,
-                sharding_received_txn_num_local,
+                remote_server_should_send_txn_num_local,
+                remote_server_send_txn_num_local,
+                remote_server_should_handle_txn_num_local,
+                remote_server_handled_txn_num_local,
+                remote_server_received_txn_num_local,
 
                 backup_should_send_txn_num_local,
                 backup_send_txn_num_local,
                 backup_received_txn_num_local;
-    public:
-        static std::vector<std::shared_ptr<AtomicCounters_Cache>>
-                sharding_should_send_txn_num_local_vec,
-                sharding_send_txn_num_local_vec,
-                sharding_should_handle_local_txn_num_local_vec,
-                sharding_handled_local_txn_num_local_vec,
 
-                sharding_should_handle_remote_txn_num_local_vec,
-                sharding_handled_remote_txn_num_local_vec,
-                sharding_received_txn_num_local_vec,
+        static std::vector<std::shared_ptr<AtomicCounters_Cache>>
+                shard_should_send_txn_num_local_vec,
+                shard_send_txn_num_local_vec,
+                shard_should_handle_local_txn_num_local_vec,
+                shard_handled_local_txn_num_local_vec,
+                shard_should_handle_remote_txn_num_local_vec,
+                shard_handled_remote_txn_num_local_vec,
+                shard_received_txn_num_local_vec,
+
+
+                remote_server_should_send_txn_num_local_vec,
+                remote_server_send_txn_num_local_vec,
+                remote_server_should_handle_txn_num_local_vec,
+                remote_server_handled_txn_num_local_vec,
+                remote_server_received_txn_num_local_vec,
+
 
                 backup_should_send_txn_num_local_vec,
                 backup_send_txn_num_local_vec,
                 backup_received_txn_num_local_vec;
 
         static std::vector<uint64_t>
-                sharding_send_ack_epoch_num,
+                shard_send_ack_epoch_num,
+                remote_server_send_ack_epoch_num,
                 backup_send_ack_epoch_num,
                 backup_insert_set_send_ack_epoch_num,
                 abort_set_send_ack_epoch_num; /// check and reply ack
 
         static std::vector<std::unique_ptr<std::atomic<bool>>>
-                epoch_sharding_send_complete,
-                epoch_sharding_receive_complete,
+                epoch_shard_handle_complete,
+                epoch_shard_send_complete,
+                epoch_shard_receive_complete,
+                epoch_remote_server_handle_complete,
+                epoch_remote_server_send_complete,
+                epoch_remote_server_receive_complete,
                 epoch_back_up_complete,
                 epoch_abort_set_merge_complete,
                 epoch_insert_set_complete;
 
         static AtomicCounters_Cache
-            sharding_should_receive_pack_num,
-            sharding_received_pack_num,
-            sharding_should_receive_txn_num,
-            sharding_received_ack_num,
+            shard_should_receive_pack_num,
+            shard_received_pack_num,
+            shard_should_receive_txn_num,
+            shard_received_ack_num,
+
+            remote_server_should_receive_pack_num,
+            remote_server_received_pack_num,
+            remote_server_should_receive_txn_num,
+            remote_server_received_ack_num,
 
             backup_should_receive_pack_num,
             backup_received_pack_num,
@@ -85,27 +108,44 @@ namespace Taas {
             redo_log_push_down_ack_num,
             redo_log_push_down_local_epoch;
 
-        static bool CheckEpochShardingSendComplete(const uint64_t& epoch) ;
-        static bool CheckEpochShardingReceiveComplete(uint64_t& epoch) ;
-        static bool CheckEpochBackUpComplete(uint64_t& epoch) ;
-        static bool CheckEpochAbortSetMergeComplete(uint64_t& epoch) ;
-        static bool CheckEpochInsertSetMergeComplete(uint64_t& epoch) ;
+        static bool CheckEpochShardSendComplete(const uint64_t& epoch) ;
+        static bool CheckEpochShardReceiveComplete(const uint64_t& epoch) ;
 
-        static bool IsShardingSendFinish(const uint64_t &epoch, const uint64_t &sharding_id) ;
-        static bool IsShardingSendFinish(const uint64_t &epoch) ;
+        static bool IsShardSendFinish(const uint64_t &epoch, const uint64_t &shard_id) ;
+        static bool IsShardSendFinish(const uint64_t &epoch) ;
+        static bool IsShardTxnReceiveComplete(const uint64_t &epoch) ;
+        static bool IsShardTxnReceiveComplete(const uint64_t &epoch, const uint64_t &id) ;
+        static bool IsShardPackReceiveComplete(const uint64_t &epoch) ;
+        static bool IsShardPackReceiveComplete(const uint64_t &epoch, const uint64_t &id) ;
+
+
+
+
+        static bool CheckEpochRemoteServerSendComplete(const uint64_t& epoch) ;
+        static bool CheckEpochRemoteServerReceiveComplete(const uint64_t& epoch) ;
+
+        static bool IsRemoteServerSendFinish(const uint64_t &epoch, const uint64_t &shard_id) ;
+        static bool IsRemoteServerSendFinish(const uint64_t &epoch) ;
+        static bool IsRemoteServerTxnReceiveComplete(const uint64_t &epoch) ;
+        static bool IsRemoteServerTxnReceiveComplete(const uint64_t &epoch, const uint64_t &id) ;
+        static bool IsRemoteServerPackReceiveComplete(const uint64_t &epoch) ;
+        static bool IsRemoteServerPackReceiveComplete(const uint64_t &epoch, const uint64_t &id) ;
+
+
+
+
+        static bool CheckEpochBackUpComplete(const uint64_t& epoch) ;
+
         static bool IsBackUpSendFinish(const uint64_t &epoch) ;
-
-
-        static bool IsEpochLocalTxnHandleComplete(const uint64_t &epoch) ;
-        static bool IsEpochTxnHandleComplete(const uint64_t &epoch) ;
-        static bool IsShardingTxnReceiveComplete(const uint64_t &epoch) ;
-        static bool IsShardingTxnReceiveComplete(const uint64_t &epoch, const uint64_t &id) ;
-        static bool IsShardingPackReceiveComplete(const uint64_t &epoch) ;
-        static bool IsShardingPackReceiveComplete(const uint64_t &epoch, const uint64_t &id) ;
         static bool IsBackUpTxnReceiveComplete(const uint64_t &epoch) ;
         static bool IsBackUpTxnReceiveComplete(const uint64_t &epoch, const uint64_t &id) ;
         static bool IsBackUpPackReceiveComplete(const uint64_t &epoch) ;
         static bool IsBackUpPackReceiveComplete(const uint64_t &epoch, const uint64_t &id) ;
+
+
+
+        static bool CheckEpochAbortSetMergeComplete(const uint64_t& epoch) ;
+        static bool CheckEpochInsertSetMergeComplete(const uint64_t& epoch) ;
 
         static bool IsAbortSetReceiveComplete(const uint64_t &epoch, const uint64_t &id) ;
         static bool IsAbortSetReceiveComplete(const uint64_t &epoch);
@@ -113,11 +153,18 @@ namespace Taas {
         static bool IsInsertSetReceiveComplete(const uint64_t &epoch) ;
 
 
-        static bool IsShardingACKReceiveComplete(const uint64_t &epoch) ;
+        static bool IsShardACKReceiveComplete(const uint64_t &epoch) ;
+        static bool IsRemoteServerACKReceiveComplete(const uint64_t &epoch) ;
         static bool IsBackUpACKReceiveComplete(const uint64_t &epoch) ;
         static bool IsAbortSetACKReceiveComplete(const uint64_t &epoch) ;
         static bool IsInsertSetACKReceiveComplete(const uint64_t &epoch) ;
         static bool IsRedoLogPushDownACKReceiveComplete(const uint64_t &epoch) ;
+
+
+
+        static bool CheckEpochClientTxnHandleComplete(const uint64_t &epoch) ;
+        static bool CheckEpochShardTxnHandleComplete(const uint64_t &epoch) ;
+
 
 
 
@@ -156,7 +203,8 @@ namespace Taas {
         static std::vector<std::unique_ptr<std::atomic<bool>>>
                 epoch_read_validate_complete,
                 epoch_merge_complete,
-                epoch_commit_complete;
+                epoch_commit_complete,
+                epoch_record_committed;
 
         static std::atomic<uint64_t>
                 total_merge_txn_num,
@@ -171,13 +219,14 @@ namespace Taas {
 
         static bool CheckEpochReadValidateComplete(const uint64_t& epoch);
         static bool CheckEpochMergeComplete(const uint64_t& epoch) ;
-        static bool IsEpochMergeComplete(const uint64_t& epoch) ;
         static bool CheckEpochCommitComplete(const uint64_t& epoch) ;
-        static bool IsEpochCommitComplete(const uint64_t& epoch) ;
+        static bool CheckEpochRecordCommitted(const uint64_t& epoch) ;
+
         static bool IsReadValidateComplete(const uint64_t& epoch) ;
         static bool IsMergeComplete(const uint64_t& epoch) ;
         static bool IsCommitComplete(const uint64_t & epoch) ;
-        static bool IsRedoLogComplete(const uint64_t & epoch) ;
+        static bool IsRecordCommitted(const uint64_t & epoch) ;
+
 
 
 
@@ -189,7 +238,7 @@ namespace Taas {
 
         static void ClearAllThreadLocalCountNum(const uint64_t &epoch, const std::vector<std::shared_ptr<AtomicCounters_Cache>> &vec) ;
         static uint64_t GetAllThreadLocalCountNum(const uint64_t &epoch, const std::vector<std::shared_ptr<AtomicCounters_Cache>> &vec) ;
-        static uint64_t GetAllThreadLocalCountNum(const uint64_t &epoch, const uint64_t &sharding_id, const std::vector<std::shared_ptr<AtomicCounters_Cache>> &vec);
+        static uint64_t GetAllThreadLocalCountNum(const uint64_t &epoch, const uint64_t &shard_id, const std::vector<std::shared_ptr<AtomicCounters_Cache>> &vec);
 
     };
 

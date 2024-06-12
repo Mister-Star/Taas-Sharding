@@ -32,7 +32,7 @@ namespace Taas {
 
 
         static std::atomic<uint64_t> inc_id;
-        uint64_t thread_id = 0, max_length = 0, sharding_num = 0, local_server_id;
+        uint64_t thread_id = 0, max_length = 0, shard_num = 0, local_server_id;
         std::shared_ptr<AtomicCounters_Cache>
                 epoch_should_push_down_txn_num_local,
                 epoch_pushed_down_txn_num_local;

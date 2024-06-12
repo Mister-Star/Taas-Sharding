@@ -24,11 +24,11 @@ namespace Taas {
 
     void Nebula::Init() {
         thread_id = inc_id.fetch_add(1);
-        sharding_num = ctx.taasContext.kTxnNodeNum;
+        shard_num = ctx.taasContext.kTxnNodeNum;
         max_length = ctx.taasContext.kCacheMaxLength;
         local_server_id = ctx.taasContext.txn_node_ip_index;
-        epoch_should_push_down_txn_num_local= std::make_shared<AtomicCounters_Cache>(max_length, sharding_num);
-        epoch_pushed_down_txn_num_local= std::make_shared<AtomicCounters_Cache>(max_length, sharding_num);
+        epoch_should_push_down_txn_num_local= std::make_shared<AtomicCounters_Cache>(max_length, shard_num);
+        epoch_pushed_down_txn_num_local= std::make_shared<AtomicCounters_Cache>(max_length, shard_num);
         epoch_should_push_down_txn_num_local_vec[thread_id] = epoch_should_push_down_txn_num_local;
         epoch_pushed_down_txn_num_local_vec[thread_id] = epoch_pushed_down_txn_num_local;
     }
@@ -69,11 +69,11 @@ namespace Taas {
         }
         return ans;
     }
-    uint64_t Nebula::GetAllThreadLocalCountNum(const uint64_t &epoch, const uint64_t &sharding_id, const std::vector<std::shared_ptr<AtomicCounters_Cache>> &vec) {
+    uint64_t Nebula::GetAllThreadLocalCountNum(const uint64_t &epoch, const uint64_t &shard_id, const std::vector<std::shared_ptr<AtomicCounters_Cache>> &vec) {
         uint64_t ans = 0;
         for(const auto& i : vec) {
             if(i != nullptr)
-                ans += i->GetCount(epoch, sharding_id);
+                ans += i->GetCount(epoch, shard_id);
         }
         return ans;
     }
@@ -95,9 +95,9 @@ namespace Taas {
         return false;
     }
     void Nebula::DBRedoLogQueueEnqueue(const uint64_t& thread_id, const uint64_t &epoch, std::shared_ptr<proto::Transaction> txn_ptr) {
-//        epoch_should_push_down_txn_num_local->IncCount(epoch, txn_ptr->server_id(), 1);
+//        epoch_should_push_down_txn_num_local->IncCount(epoch, txn_ptr->txn_server_id(), 1);
         auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
-        epoch_should_push_down_txn_num_local_vec[thread_id % inc_id.load() ]->IncCount(epoch, txn_ptr->server_id(), 1);
+        epoch_should_push_down_txn_num_local_vec[thread_id % inc_id.load() ]->IncCount(epoch, txn_ptr->txn_server_id(), 1);
         epoch_redo_log_queue[epoch_mod]->enqueue(txn_ptr);
         epoch_redo_log_queue[epoch_mod]->enqueue(nullptr);
         txn_ptr.reset();
@@ -125,7 +125,7 @@ namespace Taas {
         sleep_flag = true;
         while (!EpochManager::IsTimerStop()) {
             epoch = EpochManager::GetPushDownEpoch();
-            while(!EpochManager::IsCommitComplete(epoch)) {
+            while(!EpochManager::IsRecordCommitted(epoch)) {
                 usleep(storage_sleep_time);
                 epoch = EpochManager::GetPushDownEpoch();
             }
@@ -151,6 +151,8 @@ namespace Taas {
                 sleep_flag = false;
             }
         }
+//        if(sleep_flag)
+//            usleep(storage_sleep_time);
         if(sleep_flag)
             usleep(storage_sleep_time);
     }

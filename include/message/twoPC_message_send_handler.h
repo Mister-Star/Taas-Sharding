@@ -27,8 +27,8 @@ namespace Taas {
         ///一下函数都由single one线程执行
         static void StaticInit(const Context& ctx);
         static void StaticClear();
-        static std::vector<std::unique_ptr<std::atomic<uint64_t>>> sharding_send_epoch, backup_send_epoch, abort_set_send_epoch, insert_set_send_epoch;
-        static uint64_t sharding_sent_epoch, backup_sent_epoch, abort_sent_epoch, insert_set_sent_epoch, abort_set_sent_epoch;
+        static std::vector<std::unique_ptr<std::atomic<uint64_t>>> shard_send_epoch, backup_send_epoch, abort_set_send_epoch, insert_set_send_epoch;
+        static uint64_t shard_sent_epoch, backup_sent_epoch, abort_sent_epoch, insert_set_sent_epoch, abort_set_sent_epoch;
         static bool SendEpochEndMessage(const Context& ctx);
         static bool SendBackUpEpochEndMessage(const Context& ctx);
         static bool SendAbortSet(const Context& ctx);

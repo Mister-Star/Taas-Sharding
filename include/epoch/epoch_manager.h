@@ -67,8 +67,8 @@ namespace Taas {
         static void SetTimerStop(bool value) {timerStop = value;}
         static bool IsTimerStop() {return timerStop;}
 
-        static bool IsShardingMergeComplete(uint64_t epoch) {return merge_complete[epoch % max_length]->load();}
-        static void SetShardingMergeComplete(uint64_t epoch, bool value) {merge_complete[epoch % max_length]->store(value);}
+        static bool IsEpochMergeComplete(uint64_t epoch) {return merge_complete[epoch % max_length]->load();}
+        static void SetEpochMergeComplete(uint64_t epoch, bool value) {merge_complete[epoch % max_length]->store(value);}
 
         static bool IsAbortSetMergeComplete(uint64_t epoch) {return abort_set_merge_complete[epoch % max_length]->load();}
         static void SetAbortSetMergeComplete(uint64_t epoch, bool value) {abort_set_merge_complete[epoch % max_length]->store(value);}
@@ -144,8 +144,7 @@ namespace Taas {
 
         static bool IsInitOK() {
             return init_ok_num.load() >= (int)(ctx.taasContext.kEpochMessageThreadNum +
-            ctx.taasContext.kEpochTxnThreadNum + ctx.taasContext.kMergeThreadNum + 1);
-
+            ctx.taasContext.kEpochTxnThreadNum + ctx.taasContext.kMergeThreadNum + 1 + 4);
         }
     };
 }

@@ -45,7 +45,8 @@ namespace Taas{
         static std::vector<std::unique_ptr<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>>
                 epoch_read_validate_queue,
                 epoch_merge_queue,///存放要进行merge的事务，分片
-        epoch_commit_queue;///存放每个epoch要进行写日志的事务，分片写日志
+                epoch_commit_queue,
+                epoch_redo_log_queue;///存放每个epoch要进行写日志的事务，分片写日志
 
         static void CacheInit(const Context& context);
         static void EpochCacheClear(uint64_t& epoch);
