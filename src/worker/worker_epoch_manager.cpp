@@ -71,7 +71,7 @@ namespace Taas {
 //                            sleep_flag = false;
 //                        }
 //                        if(sleep_flag) usleep(100);
-                        if(sleep_flag) std::this_thread::yield();
+                        if(sleep_flag) usleep(sleep_time);
                     }
                     break;
                 }

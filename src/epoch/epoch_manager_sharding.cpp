@@ -181,40 +181,40 @@ namespace Taas {
 
 
 
-        while(!EpochManager::IsInitOK()) usleep(sleep_time);
+        while(!EpochManager::IsInitOK()) usleep(logical_sleep_timme);
         uint64_t epoch = 1;
         OUTPUTLOG("===== Start Epoch的合并 ===== ", epoch);
         util::thread_pool_light workers(5);
 //        while(!EpochManager::IsInitOK() || EpochManager::GetPhysicalEpoch() < 10) usleep(sleep_time);
         while(!EpochManager::IsTimerStop()){
 
-            while(epoch >= EpochManager::GetPhysicalEpoch()) std::this_thread::yield();;
+            while(epoch >= EpochManager::GetPhysicalEpoch()) usleep(logical_sleep_timme);
             auto time1 = now_to_us();
 //                LOG(INFO) << "**** Start Epoch Merge Epoch : " << epoch << "****\n";
-            while(!EpochMessageReceiveHandler::CheckEpochClientTxnHandleComplete(epoch)) std::this_thread::yield();;
+            while(!EpochMessageReceiveHandler::CheckEpochClientTxnHandleComplete(epoch)) usleep(logical_sleep_timme);
 
-            while(!EpochMessageReceiveHandler::CheckEpochShardReceiveComplete(epoch)) std::this_thread::yield();;
+            while(!EpochMessageReceiveHandler::CheckEpochShardReceiveComplete(epoch)) usleep(logical_sleep_timme);
 
-            while(!EpochMessageReceiveHandler::CheckEpochShardTxnHandleComplete(epoch)) std::this_thread::yield();;
+            while(!EpochMessageReceiveHandler::CheckEpochShardTxnHandleComplete(epoch)) usleep(logical_sleep_timme);
 
-            while(!EpochMessageReceiveHandler::CheckEpochBackUpComplete(epoch)) std::this_thread::yield();;
+            while(!EpochMessageReceiveHandler::CheckEpochBackUpComplete(epoch)) usleep(logical_sleep_timme);
 
-            while(!EpochMessageReceiveHandler::CheckEpochRemoteServerReceiveComplete(epoch)) std::this_thread::yield();;
+            while(!EpochMessageReceiveHandler::CheckEpochRemoteServerReceiveComplete(epoch)) usleep(logical_sleep_timme);
 
-            while(!Merger::CheckEpochMergeComplete(epoch)) std::this_thread::yield();;
+            while(!Merger::CheckEpochMergeComplete(epoch)) usleep(logical_sleep_timme);
             EpochManager::SetEpochMergeComplete(epoch, true);
             merge_epoch.fetch_add(1);
             auto time5 = now_to_us();
 
-            while(!EpochMessageReceiveHandler::CheckEpochAbortSetMergeComplete(epoch)) std::this_thread::yield();;
+            while(!EpochMessageReceiveHandler::CheckEpochAbortSetMergeComplete(epoch)) usleep(logical_sleep_timme);
             EpochManager::SetAbortSetMergeComplete(epoch, true);
             abort_set_epoch.fetch_add(1);
             auto time6 = now_to_us();
 
-            while(!Merger::CheckEpochCommitComplete(epoch)) std::this_thread::yield();;
+            while(!Merger::CheckEpochCommitComplete(epoch)) usleep(logical_sleep_timme);
             EpochManager::SetCommitComplete(epoch, true);
 
-            while(!Merger::CheckEpochRecordCommitted(epoch)) std::this_thread::yield();;
+            while(!Merger::CheckEpochRecordCommitted(epoch)) usleep(logical_sleep_timme);
             EpochManager::SetRecordCommitted(epoch, true);
 
             commit_epoch.fetch_add(1);
