@@ -24,7 +24,7 @@ namespace Taas {
         switch(ctx.taasContext.taasMode) {
             case TaasMode::MultiModel :
             case TaasMode::MultiMaster :
-            case TaasMode::Sharding :
+            case TaasMode::Shard :
             case TaasMode::TwoPC :{ ///only for multi-master full replica
                 MultiMasterEpochManager::EpochLogicalTimerManagerThreadMain(ctx);
                 break;
@@ -39,7 +39,7 @@ namespace Taas {
             switch(ctx.taasContext.taasMode) {
                 case TaasMode::MultiModel :
                 case TaasMode::MultiMaster :
-                case TaasMode::Sharding : {
+                case TaasMode::Shard : {
                     CheckRedoLogPushDownState(ctx);
                     break;
                 }

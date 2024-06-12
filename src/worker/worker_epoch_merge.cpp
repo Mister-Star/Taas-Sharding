@@ -10,27 +10,6 @@
 namespace Taas {
 
     void WorkerFroMergeThreadMain(const Context& ctx, uint64_t id) {
-        std::string name = "EpochMerge-" + std::to_string(id);
-        pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
-        Merger merger;
-        while(init_ok_num.load() < 1) usleep(sleep_time);
-        merger.MergeInit(id, ctx);
-        init_ok_num.fetch_add(1);
-        while(!EpochManager::IsInitOK()) usleep(sleep_time);
-        auto txn_ptr = std::make_shared<proto::Transaction>();
-        switch(ctx.taasContext.taasMode) {
-            case TaasMode::MultiModel :
-            case TaasMode::MultiMaster :
-            case TaasMode::Sharding : {
-                while(!EpochManager::IsTimerStop()) {
-                    merger.EpochMerge();
-                }
-                break;
-            }
-            case TaasMode::TwoPC : {
-                break;
-            }
-        }
     }
 
     void EpochWorkerThreadMain(const Context& ctx, uint64_t id) {
@@ -50,7 +29,7 @@ namespace Taas {
         switch(ctx.taasContext.taasMode) {
             case TaasMode::MultiModel :
             case TaasMode::MultiMaster :
-            case TaasMode::Sharding : {
+            case TaasMode::Shard : {
                 while(!EpochManager::IsTimerStop()) {
                     sleep_flag = false;
 
@@ -65,7 +44,7 @@ namespace Taas {
                     }
 
 
-                    if(!EpochManager::IsShardingMergeComplete(merger.epoch)) {
+                    if(!EpochManager::IsEpochMergeComplete(merger.epoch)) {
                         while (TransactionCache::epoch_merge_queue[merger.epoch_mod]->try_dequeue(merger.txn_ptr)) {
                             if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() != proto::TxnType::NullMark) {
                                 merger.Merge();

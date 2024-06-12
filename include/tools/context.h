@@ -28,7 +28,7 @@ namespace Taas {
     };
     enum TaasMode {
         MultiMaster = 1,
-        Sharding = 2,
+        Shard = 2,
         TwoPC = 3,
         MultiModel = 4
     };
