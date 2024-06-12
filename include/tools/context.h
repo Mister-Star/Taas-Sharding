@@ -76,7 +76,7 @@ namespace Taas {
         }
 
         /// storage info
-        bool is_tikv_enable = true, is_leveldb_enable = true, is_hbase_enable = true, is_mot_enable = true;
+        bool is_tikv_enable = false, is_leveldb_enable = false, is_hbase_enable = false, is_mot_enable = true, is_nebula_enable = false;
         std::string kMasterIp, kPrivateIp, kTiKVIP, kLevelDBIP, kHbaseIP;
         uint64_t kTikvThreadNum = 10, kLeveldbThreadNum = 10, kHbaseThreadNum = 10, kMOTThreadNum = 10;
 

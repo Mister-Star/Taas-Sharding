@@ -113,6 +113,10 @@ namespace Taas {
         tinyxml2::XMLElement* mot_thread_num = root->FirstChildElement("mot_thread_num");
         kMOTThreadNum = std::stoull(mot_thread_num->GetText());
 
+        tinyxml2::XMLElement* nebula = root->FirstChildElement("is_nebula_enable");
+        is_nebula_enable = std::stoull(nebula->GetText());
+
+
         tinyxml2::XMLElement* tikv = root->FirstChildElement("is_tikv_enable");
         is_tikv_enable = std::stoull(tikv->GetText());
         tinyxml2::XMLElement *ip_port= root->FirstChildElement("tikv_ip");

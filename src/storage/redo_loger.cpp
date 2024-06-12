@@ -32,17 +32,23 @@ namespace Taas {
         if(ctx.storageContext.is_hbase_enable) {
             HBase::StaticInit(ctx);
         }
-        MOT::StaticInit(ctx);
-        Nebula::StaticInit(ctx);
+        if(ctx.storageContext.is_mot_enable) {
+            MOT::StaticInit(ctx);
+        }
+        if(ctx.storageContext.is_nebula_enable) {
+            Nebula::StaticInit(ctx);
+        }
     }
 
     void RedoLoger::ClearRedoLog(const uint64_t& epoch) {
         auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
         committed_txn_cache[epoch_mod]->clear();
-//        committed_txn_cache[epoch_mod] = std::make_unique<concurrent_unordered_map<std::string, std::shared_ptr<proto::Transaction>>>();
         epoch_log_lsn.SetCount(epoch_mod, 0);
         if(ctx.storageContext.is_mot_enable) {
             MOT::StaticClear(epoch);
+        }
+        if(ctx.storageContext.is_nebula_enable) {
+            Nebula::StaticClear(epoch);
         }
         if(ctx.storageContext.is_tikv_enable) {
             TiKV::StaticClear(epoch);
@@ -62,8 +68,10 @@ namespace Taas {
         auto key = std::to_string(epoch_id) + ":" + std::to_string(lsn);
         committed_txn_cache[epoch_id % ctx.taasContext.kCacheMaxLength]->insert(key, txn_ptr);
         if(ctx.storageContext.is_mot_enable) {
-            if(txn_ptr->storage_type() == "mot")
+            if (txn_ptr->storage_type() == "mot")
                 MOT::DBRedoLogQueueEnqueue(thread_id, epoch_id, txn_ptr);
+        }
+        if(ctx.storageContext.is_nebula_enable) {
             if(txn_ptr->storage_type() == "nebula")
                 Nebula::DBRedoLogQueueEnqueue(thread_id, epoch_id, txn_ptr);
         }
@@ -87,6 +95,9 @@ namespace Taas {
         if(ctx.storageContext.is_mot_enable) {
             MOT::GeneratePushDownTask(epoch);
         }
+        if(ctx.storageContext.is_nebula_enable) {
+            Nebula::GeneratePushDownTask(epoch);
+        }
         if(ctx.storageContext.is_tikv_enable) {
             TiKV::GeneratePushDownTask(epoch);
         }
@@ -101,6 +112,7 @@ namespace Taas {
 
     bool RedoLoger::CheckPushDownComplete(const uint64_t &epoch) {
         return (ctx.storageContext.is_mot_enable == 0 || MOT::CheckEpochPushDownComplete(epoch))
+            && (ctx.storageContext.is_nebula_enable == 0 || Nebula::CheckEpochPushDownComplete(epoch))
             && (ctx.storageContext.is_tikv_enable == 0 || TiKV::CheckEpochPushDownComplete(epoch))
             && (ctx.storageContext.is_leveldb_enable == 0 || LevelDB::CheckEpochPushDownComplete(epoch))
             && (ctx.storageContext.is_hbase_enable == 0 || HBase::CheckEpochPushDownComplete(epoch));

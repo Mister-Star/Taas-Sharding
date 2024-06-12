@@ -154,7 +154,7 @@ namespace Taas {
 //        if(sleep_flag)
 //            usleep(storage_sleep_time);
         if(sleep_flag)
-            std::this_thread::yield();
+            usleep(storage_sleep_time);
     }
 
     void Nebula::SendTransactionToDB_Block() {

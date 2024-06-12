@@ -2,6 +2,7 @@
 <root>
 <!--Storage config-->
     <is_mot_enable>1</is_mot_enable>
+    <is_nebula_enbale>0</is_nebula_enbale> <!--use the same thread number as mot-->
     <mot_thread_num>1</mot_thread_num><!--MOT port 5556 & Nebula port 5557-->
 
     <!--    tikv config -->
