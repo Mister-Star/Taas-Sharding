@@ -56,20 +56,6 @@ namespace Taas {
 
     void EpochMessageReceiveHandler::HandleReceivedMessage() {
         while(!EpochManager::IsTimerStop()) {
-//            if(MessageQueue::listen_message_txn_queue->try_dequeue(message_ptr)) {
-//                if (message_ptr == nullptr || message_ptr->empty()) continue;
-//                message_string_ptr = std::make_unique<std::string>(static_cast<const char *>(message_ptr->data()),
-//                                                                   message_ptr->size());
-//                msg_ptr = std::make_unique<proto::Message>();
-//                res = UnGzip(msg_ptr.get(), message_string_ptr.get());
-//                assert(res);
-//                txn_ptr = std::make_shared<proto::Transaction>(msg_ptr->txn());
-//                HandleReceivedTxn();
-//                txn_ptr.reset();
-//            }
-//            else {
-//                usleep(50);
-//            }
             MessageQueue::listen_message_txn_queue->wait_dequeue(message_ptr);
             if (message_ptr == nullptr || message_ptr->empty()) continue;
             message_string_ptr = std::make_unique<std::string>(static_cast<const char *>(message_ptr->data()), message_ptr->size());
@@ -83,16 +69,20 @@ namespace Taas {
     }
 
     void EpochMessageReceiveHandler::TryHandleReceivedMessage() {
-        begin:
-        if(MessageQueue::listen_message_txn_queue->try_dequeue(message_ptr)) {
-            if (message_ptr == nullptr || message_ptr->empty()) goto begin;
-            message_string_ptr = std::make_unique<std::string>(static_cast<const char *>(message_ptr->data()),message_ptr->size());
-            msg_ptr = std::make_unique<proto::Message>();
-            res = UnGzip(msg_ptr.get(), message_string_ptr.get());
-            assert(res);
-            txn_ptr = std::make_shared<proto::Transaction>(msg_ptr->txn());
-            HandleReceivedTxn();
-            txn_ptr.reset();
+        for (int i = 0; i < (int)ctx.taasContext.kHandleTxnMessageNumOfEachTraversal; ++i) {
+            if (MessageQueue::listen_message_txn_queue->try_dequeue(message_ptr)) {
+                sleep_flag = false;
+                if (message_ptr == nullptr) return;
+                if (message_ptr->empty()) continue;
+                message_string_ptr = std::make_unique<std::string>(static_cast<const char *>(message_ptr->data()),
+                                                                   message_ptr->size());
+                msg_ptr = std::make_unique<proto::Message>();
+                res = UnGzip(msg_ptr.get(), message_string_ptr.get());
+                assert(res);
+                txn_ptr = std::make_shared<proto::Transaction>(msg_ptr->txn());
+                HandleReceivedTxn();
+                txn_ptr.reset();
+            }
         }
     }
 
@@ -107,76 +97,28 @@ namespace Taas {
             txn_ptr = std::make_shared<proto::Transaction>(msg_ptr->txn());
             HandleReceivedTxn();
             txn_ptr.reset();
-//            if(MessageQueue::listen_message_epoch_queue->try_dequeue(message_ptr)) {
-//                if (message_ptr == nullptr || message_ptr->empty()) continue;
-//                message_string_ptr = std::make_unique<std::string>(static_cast<const char *>(message_ptr->data()),message_ptr->size());
-//                msg_ptr = std::make_unique<proto::Message>();
-//                res = UnGzip(msg_ptr.get(), message_string_ptr.get());
-//                assert(res);
-//                txn_ptr = std::make_shared<proto::Transaction>(msg_ptr->txn());
-//                HandleReceivedTxn();
-//                txn_ptr.reset();
-//            }
-//            else {
-//                usleep(50);
-//            }
         }
     }
 
     void EpochMessageReceiveHandler::TryHandleReceivedControlMessage() {
-        begin:
-        if(MessageQueue::listen_message_epoch_queue->try_dequeue(message_ptr)) {
-            if (message_ptr == nullptr || message_ptr->empty()) goto begin;
-            message_string_ptr = std::make_unique<std::string>(static_cast<const char *>(message_ptr->data()),message_ptr->size());
-            msg_ptr = std::make_unique<proto::Message>();
-            res = UnGzip(msg_ptr.get(), message_string_ptr.get());
-            assert(res);
-            txn_ptr = std::make_shared<proto::Transaction>(msg_ptr->txn());
-            HandleReceivedTxn();
-            txn_ptr.reset();
-            sleep_flag = false;
+        for (int i = 0; i < (int)ctx.taasContext.kHandleEpochMessageNumOfEachTraversal; ++i) {
+            if(MessageQueue::listen_message_epoch_queue->try_dequeue(message_ptr)) {
+                sleep_flag = false;
+                if (message_ptr == nullptr) return;
+                if(message_ptr->empty()) continue;
+                message_string_ptr = std::make_unique<std::string>(static_cast<const char *>(message_ptr->data()),message_ptr->size());
+                msg_ptr = std::make_unique<proto::Message>();
+                res = UnGzip(msg_ptr.get(), message_string_ptr.get());
+                assert(res);
+                txn_ptr = std::make_shared<proto::Transaction>(msg_ptr->txn());
+                HandleReceivedTxn();
+                txn_ptr.reset();
+            }
         }
     }
 
     void EpochMessageReceiveHandler::Sharding() {
-        if(ctx.taasContext.taasMode == TaasMode::Sharding) {/// send then validate on the remote server
-            auto sharding_row_vector = std::make_shared<std::vector<std::shared_ptr<proto::Transaction>>>() ;
-            for(uint64_t i = 0; i < sharding_num; i ++) {
-                sharding_row_vector->emplace_back(std::make_shared<proto::Transaction>());
-                auto vector_i = &(*((*sharding_row_vector)[i]));
-                vector_i->set_csn(txn_ptr->csn());
-                vector_i->set_commit_epoch(txn_ptr->commit_epoch());
-                vector_i->set_server_id(txn_ptr->server_id());
-                vector_i->set_client_ip(txn_ptr->client_ip());
-                vector_i->set_client_txn_id(txn_ptr->client_txn_id());
-                vector_i->set_sharding_id(i);
-                vector_i->set_txn_type(proto::RemoteServerTxn);
-            }
-            for(auto i = 0; i < txn_ptr->row_size(); i ++) {
-                const auto& row = txn_ptr->row(i);
-                auto row_ptr = (*sharding_row_vector)[GetHashValue(row.key())]->add_row();
-                (*row_ptr) = row;
-            }
-            for(uint64_t i = 0; i < sharding_num; i ++) {
-                if(i == ctx.taasContext.txn_node_ip_index) {
-                    ReadValidateQueueEnqueue(message_epoch, (*sharding_row_vector)[i]);
-                    MergeQueueEnqueue(message_epoch, (*sharding_row_vector)[i]);
-                } else {
-                    if((*sharding_row_vector)[i]->row_size() > 0) {
-                        sharding_should_send_txn_num_local->IncCount(message_epoch, i, 1);
-                        EpochMessageSendHandler::SendTxnToServer(message_epoch, i, (*sharding_row_vector)[i], proto::TxnType::RemoteServerTxn);
-                        sharding_send_txn_num_local->IncCount(message_epoch, i, 1);
-                    }
-                }
-            }
-            backup_should_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
-            EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, txn_ptr, proto::TxnType::BackUpTxn);
-            backup_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
-            CommitQueueEnqueue(message_epoch, txn_ptr);
-        }
-        else if(ctx.taasContext.taasMode == TaasMode::MultiMaster) {/// validate and then send
-            ReadValidateQueueEnqueue(message_epoch, txn_ptr);
-        }
+        // delete
     }
 
     bool EpochMessageReceiveHandler::SetMessageRelatedCountersInfo() {
@@ -203,7 +145,37 @@ namespace Taas {
                     txn_ptr->set_server_id(ctx.taasContext.txn_node_ip_index);
                     txn_ptr->set_txn_type(proto::RemoteServerTxn);/// change to server txn, then, use server_id to check
                     SetMessageRelatedCountersInfo();
-                    Sharding();
+                    if(ctx.taasContext.is_send_speed_up) {///send txn before read validation
+                    ///this will cause more aborts, but speed up transmission
+                        auto write_set = std::make_shared<proto::Transaction>();
+                        write_set->set_csn(txn_ptr->csn());
+                        write_set->set_commit_epoch(txn_ptr->commit_epoch());
+                        write_set->set_server_id(txn_ptr->server_id());
+                        write_set->set_client_ip(txn_ptr->client_ip());
+                        write_set->set_client_txn_id(txn_ptr->client_txn_id());
+                        write_set->set_sharding_id(ctx.taasContext.txn_node_ip_index);
+                        write_set->set_txn_type(proto::RemoteServerTxn);
+                        for(auto i = 0; i < txn_ptr->row_size(); i ++) { /// for SI isolation only seng the wriet set.
+                            const auto& row = txn_ptr->row(i);
+                            if(row.op_type() == proto::OpType::Read) continue;
+                            auto row_ptr = write_set->add_row();
+                            (*row_ptr) = row;
+                        }
+                        /// only local txn send its write set or complete txn,
+                        /// SI only send write set,
+                        /// if you want to achieve SER, you need to send the complete txn,
+                        ///to speed up, send the write set before read validation,
+                        /// remote servers should insert this txn into merge queue,
+                        /// also local server should insert this txn into merge queue no matter this txn pass the
+                        /// read validation or not to insure the replication consistency! (in merge.cpp)
+                        sharding_should_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
+                        backup_should_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
+                        EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, write_set, proto::TxnType::RemoteServerTxn);
+                        EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, txn_ptr, proto::TxnType::BackUpTxn);
+                        sharding_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
+                        backup_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
+                    }
+                    ReadValidateQueueEnqueue(message_epoch, txn_ptr);
                     sharding_handled_local_txn_num_local->IncCount(message_epoch, local_server_id, 1);
                 }
                 break;

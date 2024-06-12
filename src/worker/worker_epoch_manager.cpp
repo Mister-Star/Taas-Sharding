@@ -23,16 +23,11 @@ namespace Taas {
         SetCPU();
         switch(ctx.taasContext.taasMode) {
             case TaasMode::MultiModel :
-            case TaasMode::MultiMaster : {
+            case TaasMode::MultiMaster :
+            case TaasMode::Sharding :
+            case TaasMode::TwoPC :{ ///only for multi-master full replica
                 MultiMasterEpochManager::EpochLogicalTimerManagerThreadMain(ctx);
                 break;
-            }
-            case TaasMode::Sharding : {
-                ShardingEpochManager::EpochLogicalTimerManagerThreadMain(ctx);
-                break;
-            }
-            case TaasMode::TwoPC : {
-                TwoPhaseCommitManager::TwoPhaseCommitManagerThreadMain(ctx);
             }
         }
     }
@@ -50,6 +45,7 @@ namespace Taas {
                 }
                 case TaasMode::TwoPC : {
 //                    TwoPhaseCommitManager::TwoPhaseCommitManagerThreadMain(ctx);
+                    break;
                 }
             }
 //            CheckRedoLogPushDownState(ctx);

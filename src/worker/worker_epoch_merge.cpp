@@ -5,7 +5,6 @@
 #include "worker/worker_epoch_merge.h"
 #include "epoch/epoch_manager.h"
 #include "transaction/merge.h"
-#include "message/message.h"
 #include "transaction/transaction_cache.h"
 
 namespace Taas {
@@ -44,7 +43,8 @@ namespace Taas {
         merger.MergeInit(id, ctx);
         receiveHandler.Init(id, ctx);
         Taas::TwoPC::Init(ctx, id);
-        auto sleep_flag = true;
+        bool sleep_flag;
+        uint64_t safe_length = ctx.taasContext.kSafeEpochDistance;
         init_ok_num.fetch_add(1);
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         switch(ctx.taasContext.taasMode) {
@@ -86,7 +86,9 @@ namespace Taas {
                     }
 
                     receiveHandler.TryHandleReceivedControlMessage();
-                    receiveHandler.TryHandleReceivedMessage();
+                    if (EpochManager::GetLogicalEpoch() + safe_length >
+                        EpochManager::GetPhysicalEpoch()) /// avoid task backlogs, stop handling txn comes from the client
+                        receiveHandler.TryHandleReceivedMessage();
 
                     sleep_flag = sleep_flag & receiveHandler.sleep_flag;
 

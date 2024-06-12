@@ -54,10 +54,7 @@ namespace Taas {
 
 
     void Merger::Send() {
-        if(ctx.taasContext.taasMode == TaasMode::Sharding) {
-            /// already send
-        }
-        else if(ctx.taasContext.taasMode == TaasMode::MultiMaster && txn_ptr->server_id() == ctx.taasContext.txn_node_ip_index) {
+        if(!ctx.taasContext.is_send_speed_up){
             write_set = std::make_shared<proto::Transaction>();
             write_set->set_csn(txn_ptr->csn());
             write_set->set_commit_epoch(txn_ptr->commit_epoch());
@@ -81,9 +78,9 @@ namespace Taas {
             EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, txn_ptr, proto::TxnType::BackUpTxn);
             sharding_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
             backup_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
-            MergeQueueEnqueue(message_epoch, txn_ptr);
-            CommitQueueEnqueue(message_epoch, txn_ptr);
         }
+        MergeQueueEnqueue(message_epoch, txn_ptr);
+        CommitQueueEnqueue(message_epoch, txn_ptr);
     }
 
     void Merger::ReadValidate() {
@@ -91,9 +88,17 @@ namespace Taas {
         message_epoch_mod = message_epoch % ctx.taasContext.kCacheMaxLength;
         message_server_id = txn_ptr->server_id();
         if (CRDTMerge::ValidateReadSet(txn_ptr)) {
-            Send();
+            if(ctx.taasContext.taasMode == TaasMode::MultiMaster && txn_ptr->server_id() == ctx.taasContext.txn_node_ip_index)
+                Send();
         }
         else {
+            if(ctx.taasContext.is_send_speed_up) {
+            ///cause it has been send to other servers before read validate
+            ///to ensure the replica consistency
+            ///false txn also need to be inserted into merge queue
+                MergeQueueEnqueue(message_epoch, txn_ptr);
+                CommitQueueEnqueue(message_epoch, txn_ptr);
+            }
             total_read_version_check_failed_txn_num_local.fetch_add(1);
             csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->server_id());
             TransactionCache::epoch_abort_txn_set[message_epoch_mod]->insert(csn_temp, csn_temp);

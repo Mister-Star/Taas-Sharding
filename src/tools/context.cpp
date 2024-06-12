@@ -45,10 +45,6 @@ namespace Taas {
 
         tinyxml2::XMLElement* merge_thread_num = root->FirstChildElement("merge_thread_num");
         kMergeThreadNum = std::stoull(merge_thread_num->GetText());
-        tinyxml2::XMLElement* epoch_txn_thread_num = root->FirstChildElement("epoch_txn_thread_num");
-        kEpochTxnThreadNum = std::stoull(epoch_txn_thread_num->GetText());
-        tinyxml2::XMLElement* epoch_message_thread_num = root->FirstChildElement("epoch_message_thread_num");
-        kEpochMessageThreadNum = std::stoull(epoch_message_thread_num->GetText());
 
         tinyxml2::XMLElement* duration_time = root->FirstChildElement("duration_time_us");
         kDurationTime_us = std::stoull(duration_time->GetText());
@@ -58,6 +54,16 @@ namespace Taas {
         kTestKeyRange = std::stoull(key_range->GetText());
         tinyxml2::XMLElement* test_txn_op_num = root->FirstChildElement("test_txn_op_num");
         kTestTxnOpNum = std::stoull(test_txn_op_num->GetText());
+
+        tinyxml2::XMLElement* handle_epoch_message_num_each_traversal = root->FirstChildElement("handle_epoch_message_num_each_traversal");
+        kHandleEpochMessageNumOfEachTraversal = std::stoull(handle_epoch_message_num_each_traversal->GetText());
+        tinyxml2::XMLElement* handle_txn_message_num_each_traversal = root->FirstChildElement("handle_txn_message_num_each_traversal");
+        kHandleTxnMessageNumOfEachTraversal = std::stoull(handle_txn_message_num_each_traversal->GetText());
+        tinyxml2::XMLElement* safe_epoch_distance = root->FirstChildElement("safe_epoch_distance");
+        kSafeEpochDistance = std::stoull(safe_epoch_distance->GetText());
+
+        tinyxml2::XMLElement* send_speed_up = root->FirstChildElement("is_send_speed_up");
+        is_send_speed_up = std::stoull(send_speed_up->GetText());
 
         /** Get glog path */
         tinyxml2::XMLElement *glog_path = root->FirstChildElement("glog_path");

@@ -52,10 +52,12 @@ namespace Taas {
                 kCacheMaxLength = 200000, kDelayEpochNum = 0, print_mode_size = 1000;
         uint64_t kMergeThreadNum = 10, kEpochTxnThreadNum = 10, kEpochMessageThreadNum = 10;
         uint64_t kTestClientNum = 2, kTestKeyRange = 1000000, kTestTxnOpNum = 10;
+        uint64_t kHandleEpochMessageNumOfEachTraversal = 1, kHandleTxnMessageNumOfEachTraversal = 1, kSafeEpochDistance = 10;
 
         bool is_read_repeatable = false, is_snap_isolation = false,
                 is_breakdown = false, is_sync_start = false,
-                is_cache_server_available = false;
+                is_cache_server_available = false,
+                is_send_speed_up = false;
         std::string glog_path_ = "/tmp";
 
         void GetTaaSServerInfo(const std::string &config_file_path = "../TaaS_config.xml");
