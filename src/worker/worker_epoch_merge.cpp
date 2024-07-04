@@ -145,7 +145,7 @@ namespace Taas {
 
                         sleep_flag = sleep_flag & receiveHandler.sleep_flag;
 
-                        if (sleep_flag) std::this_thread::yield();
+                        if (sleep_flag) usleep(merge_sleep_time);
                     }
 //                }
                 break;
