@@ -35,8 +35,8 @@ namespace Taas {
 //                        sleep_flag = sleep_flag & receiveHandler.sleep_flag;
 //
 //                        if(sleep_flag) usleep(merge_sleep_time);
-
-                        receiveHandler.HandleReceivedMessage();
+                        while(!EpochManager::IsTimerStop())
+                            receiveHandler.HandleReceivedMessage();
                     }
                     break;
                 }
