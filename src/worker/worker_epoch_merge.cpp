@@ -137,7 +137,7 @@ namespace Taas {
                                 merger.txn_ptr.reset();
                                 sleep_flag = false;
                             }
-                        }sss
+                        }
 
 //                        receiveHandler.TryHandleReceivedControlMessage();
 //                        if (EpochManager::GetLogicalEpoch() + safe_length >
