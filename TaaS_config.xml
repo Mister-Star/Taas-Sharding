@@ -21,7 +21,8 @@
     <replica_num>3</replica_num>
 
     <merge_thread_num>14</merge_thread_num> <!--handle txn merge-->
-<!--    <epoch_message_thread_num>0</epoch_message_thread_num> &lt;!&ndash;handle remote server message, be same as the core num&ndash;&gt;-->
+    <epoch_txn_thread_num>14</epoch_txn_thread_num>
+    <epoch_message_thread_num>14</epoch_message_thread_num> <!--handle remote server message, be same as the core num-->
 
     <handle_epoch_message_num_each_traversal>5</handle_epoch_message_num_each_traversal>
     <handle_txn_message_num_each_traversal>5</handle_txn_message_num_each_traversal>

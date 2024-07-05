@@ -50,6 +50,7 @@ namespace Taas {
         init_ok_num.fetch_add(1);
 //        LOG(INFO) << "finish worker init" << id;
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
+        SetCPU();
         switch(ctx.taasContext.taasMode) {
             case TaasMode::MultiModel :
             case TaasMode::MultiMaster :
@@ -136,14 +137,13 @@ namespace Taas {
                                 merger.txn_ptr.reset();
                                 sleep_flag = false;
                             }
-                        }
+                        }sss
 
-                        receiveHandler.TryHandleReceivedControlMessage();
-                        if (EpochManager::GetLogicalEpoch() + safe_length >
-                            EpochManager::GetPhysicalEpoch()) /// avoid task backlogs, stop handling txn comes from the client
-                            receiveHandler.TryHandleReceivedMessage();
-
-                        sleep_flag = sleep_flag & receiveHandler.sleep_flag;
+//                        receiveHandler.TryHandleReceivedControlMessage();
+//                        if (EpochManager::GetLogicalEpoch() + safe_length >
+//                            EpochManager::GetPhysicalEpoch()) /// avoid task backlogs, stop handling txn comes from the client
+//                            receiveHandler.TryHandleReceivedMessage();
+//                        sleep_flag = sleep_flag & receiveHandler.sleep_flag;
 
                         if (sleep_flag) usleep(merge_sleep_time);
                     }
