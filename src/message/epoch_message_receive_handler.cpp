@@ -166,6 +166,7 @@ namespace Taas {
                 break;
             }
             case proto::TxnType::EpochRemoteServerEndFlag : {
+                LOG(INFO) << "EpochRemoteServerEndFlag";
                 remote_server_should_receive_txn_num.IncCount(message_epoch,message_server_id,txn_ptr->csn());
                 remote_server_received_pack_num.IncCount(message_epoch, message_server_id, 1);
                 EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, empty_txn_ptr, proto::TxnType::EpochRemoteServerACK);
@@ -198,6 +199,7 @@ namespace Taas {
                 break;
             }
             case proto::EpochRemoteServerACK: {
+                LOG(INFO) << "EpochRemoteServerACK";
                 remote_server_received_ack_num.IncCount(message_epoch,message_server_id, 1);
             }
             case proto::TxnType::BackUpACK : {
