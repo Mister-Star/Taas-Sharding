@@ -150,9 +150,9 @@ namespace Taas {
             HandleReceivedTxn();
             txn_ptr.reset();
             if(total_single_shard_num > 0 && total_single_shard_num % ctx.taasContext.print_mode_size == 0) {
-                LOG(INFO) << "ClientTxnHandle Time Cost : " << total_single_shard_time  << " Validate Time count : " << total_single_shard_num
-                          << "ShardedClientTxn Time Cost : " << total_single_remote_handle_time << " Merge Time count : " << total_single_remote_handle_num
-                          << " end";
+                LOG(INFO) << "ClientTxnHandle Time Cost : " << total_single_shard_time  << " ClientTxnHandle Time count : " << total_single_shard_num << " ClientTxnHandle avg: " << total_single_shard_time/total_single_shard_num
+                          << "ShardedClientTxn Time Cost : " << total_single_remote_handle_time << " ShardedClientTxn Time count : " << total_single_remote_handle_num << " ShardedClientTxn Tavg: " << total_single_remote_handle_time/total_single_remote_handle_num
+                        << " end";
             }
         }
     }
