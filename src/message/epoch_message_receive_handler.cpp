@@ -280,7 +280,7 @@ namespace Taas {
                     SetMessageRelatedCountersInfo();
                     Shard();
                     shard_handled_local_txn_num_local->IncCount(message_epoch, local_server_id, 1);
-//                    LOG(INFO) << "ClientTxnHandle Time Cost" << now_to_us() - time1;
+                    LOG(INFO) << "ClientTxnHandle Time Cost" << now_to_us() - time1;
                 }
                 break;
             }
@@ -310,7 +310,7 @@ namespace Taas {
 //                TransactionCache::epoch_txn_map[message_epoch_mod]->insert(csn_temp, txn_ptr);
 
                 shard_handled_remote_txn_num_local->IncCount(message_epoch, message_server_id, 1);
-//                LOG(INFO) << "ClientTxnHandle Time Cost" << now_to_us() - time1;
+                LOG(INFO) << "ShardedClientTxn Time Cost" << now_to_us() - time1;
                 break;
             }
             case proto::TxnType::RemoteServerTxn : {

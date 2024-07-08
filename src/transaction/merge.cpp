@@ -78,7 +78,7 @@ namespace Taas {
             TransactionCache::epoch_abort_txn_set[message_epoch_mod]->insert(csn_temp, csn_temp);
         }
         epoch_read_validated_txn_num_local->IncCount(message_epoch, message_server_id, 1);
-//        LOG(INFO) << "Validate Time Cost" << now_to_us() - time1;
+        LOG(INFO) << "Validate Time Cost" << now_to_us() - time1;
     }
 
     void Merger::Merge() {
@@ -88,7 +88,7 @@ namespace Taas {
         total_merge_txn_num_local.fetch_add(1);
         total_merge_latency_local.fetch_add(now_to_us() - time1);
         epoch_merged_txn_num_local->IncCount(epoch, txn_server_id, 1);
-//        LOG(INFO) << "Merge Time Cost" << now_to_us() - time1;
+        LOG(INFO) << "Merge Time Cost" << now_to_us() - time1;
     }
 
     void Merger::Commit() {
@@ -97,7 +97,7 @@ namespace Taas {
             CRDTMerge::Commit(txn_ptr);
         }
         epoch_committed_txn_num_local->IncCount(epoch, txn_ptr->txn_server_id(), 1);
-//        LOG(INFO) << "Commit Time Cost" << now_to_us() - time1;
+        LOG(INFO) << "Commit Time Cost" << now_to_us() - time1;
     }
 
     void Merger::RedoLog() {
@@ -115,7 +115,7 @@ namespace Taas {
         total_commit_latency_local.fetch_add(now_to_us() - time1);
 //        LOG(INFO) << "******* Merge RedoLog Epoch : " << epoch << "txn_server_id" << txn_ptr->txn_server_id() << "********\n";
         epoch_record_committed_txn_num_local->IncCount(epoch, txn_ptr->txn_server_id(), 1);
-//        LOG(INFO) << "RedoLog Time Cost" << now_to_us() - time1;
+        LOG(INFO) << "RedoLog Time Cost" << now_to_us() - time1;
     }
 
     void Merger::ResultReturn() {
@@ -126,7 +126,7 @@ namespace Taas {
             EpochMessageSendHandler::SendTxnCommitResultToClient(txn_ptr, proto::TxnState::Commit);
         }
         epoch_result_returned_txn_num_local->IncCount(epoch, txn_ptr->txn_server_id(), 1);
-//        LOG(INFO) << "ResultReturn Time Cost" << now_to_us() - time1;
+        LOG(INFO) << "ResultReturn Time Cost" << now_to_us() - time1;
     }
 
     void Merger::EpochMerge() {
