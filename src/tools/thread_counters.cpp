@@ -784,7 +784,7 @@ namespace Taas{
 
     bool ThreadCounters::CheckEpochResultReturned(const uint64_t& epoch) {
         if (epoch_result_returned[epoch % ctx.taasContext.kCacheMaxLength]->load()) return true;
-        if (epoch < EpochManager::GetPhysicalEpoch() && IsCommitComplete(epoch) && IsRecordCommitted(epoch)) {
+        if (epoch < EpochManager::GetPhysicalEpoch() && IsRecordCommitted(epoch) && IsResultReturned(epoch)) {
             epoch_result_returned[epoch % ctx.taasContext.kCacheMaxLength]->store(true);
             return true;
         }
