@@ -58,6 +58,13 @@ namespace Taas {
         TransactionCache::epoch_redo_log_queue[epoch_mod_temp]->enqueue(nullptr);
     }
 
+    void EpochMessageReceiveHandler::ResultReturnQueueEnqueue(uint64_t& epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_) {
+        auto epoch_mod_temp = epoch_ % ctx.taasContext.kCacheMaxLength;
+        epoch_result_return_txn_num_local->IncCount(epoch_mod_temp, txn_ptr_->txn_server_id(), 1);
+        TransactionCache::epoch_result_return_queue[epoch_mod_temp]->enqueue(txn_ptr_);
+        TransactionCache::epoch_result_return_queue[epoch_mod_temp]->enqueue(nullptr);
+    }
+
 
 
     void EpochMessageReceiveHandler::HandleReceivedMessage() {

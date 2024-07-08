@@ -178,7 +178,9 @@ namespace Taas {
                 epoch_should_commit_txn_num_local,
                 epoch_committed_txn_num_local,
                 epoch_record_commit_txn_num_local,
-                epoch_record_committed_txn_num_local;
+                epoch_record_committed_txn_num_local,
+                epoch_result_return_txn_num_local,
+                epoch_result_returned_txn_num_local;
 
         std::atomic<uint64_t>
                 total_merge_txn_num_local,
@@ -198,7 +200,9 @@ namespace Taas {
                 epoch_should_commit_txn_num_local_vec,
                 epoch_committed_txn_num_local_vec,
                 epoch_record_commit_txn_num_local_vec,
-                epoch_record_committed_txn_num_local_vec;
+                epoch_record_committed_txn_num_local_vec,
+                epoch_result_return_txn_num_local_vec,
+                epoch_result_returned_txn_num_local_vec;
 
         static std::vector<std::unique_ptr<std::atomic<bool>>>
                 epoch_read_validate_complete,

@@ -47,6 +47,12 @@ namespace Taas {
         TransactionCache::epoch_redo_log_queue[epoch_mod_temp]->enqueue(txn_ptr_);
         TransactionCache::epoch_redo_log_queue[epoch_mod_temp]->enqueue(nullptr);
     }
+    void Merger::ResultReturnQueueEnqueue(uint64_t& epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_) {
+        auto epoch_mod_temp = epoch_ % ctx.taasContext.kCacheMaxLength;
+        epoch_result_return_txn_num_local->IncCount(epoch_mod_temp, txn_ptr_->txn_server_id(), 1);
+        TransactionCache::epoch_result_return_queue[epoch_mod_temp]->enqueue(txn_ptr_);
+        TransactionCache::epoch_result_return_queue[epoch_mod_temp]->enqueue(nullptr);
+    }
 
     bool Merger::MergeQueueTryDequeue(uint64_t &epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_) {
         ///not use for now
@@ -116,6 +122,7 @@ namespace Taas {
                     MergeQueueEnqueue(message_epoch, txn_ptr);
                     CommitQueueEnqueue(message_epoch, txn_ptr);
                     RedoLogQueueEnqueue(message_epoch, txn_ptr);
+//                    ResultReturnQueueEnqueue(message_epoch, txn_ptr);
                 } else {
                     total_read_version_check_failed_txn_num_local.fetch_add(1);
                     csn_temp = std::to_string(txn_ptr->csn()) + ":"
@@ -159,8 +166,8 @@ namespace Taas {
     void Merger::RedoLog() {
         auto time1 = now_to_us();
         if (!CRDTMerge::ValidateWriteSet(txn_ptr)) {
-            total_failed_txn_num_local.fetch_add(1);
             EpochMessageSendHandler::SendTxnCommitResultToClient(txn_ptr, proto::TxnState::Abort);
+            total_failed_txn_num_local.fetch_add(1);
         } else {
             RedoLoger::RedoLog(thread_id, txn_ptr);
             EpochMessageSendHandler::SendTxnCommitResultToClient(txn_ptr, proto::TxnState::Commit);
@@ -169,8 +176,17 @@ namespace Taas {
         }
         total_commit_txn_num_local.fetch_add(1);
         total_commit_latency_local.fetch_add(now_to_us() - time1);
-//        LOG(INFO) << "******* Merge RedoLog Epoch : " << epoch << "txn_server_id" << txn_ptr->txn_server_id() << "********\n";
         epoch_record_committed_txn_num_local->IncCount(epoch, txn_ptr->txn_server_id(), 1);
+    }
+
+    void Merger::ResultReturn() {
+        auto time1 = now_to_us();
+        if (!CRDTMerge::ValidateWriteSet(txn_ptr)) {
+            EpochMessageSendHandler::SendTxnCommitResultToClient(txn_ptr, proto::TxnState::Abort);
+        } else {
+            EpochMessageSendHandler::SendTxnCommitResultToClient(txn_ptr, proto::TxnState::Commit);
+        }
+        epoch_result_returned_txn_num_local->IncCount(epoch, txn_ptr->txn_server_id(), 1);
     }
 
     void Merger::EpochMerge() {

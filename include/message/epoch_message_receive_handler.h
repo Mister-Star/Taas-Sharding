@@ -42,6 +42,7 @@ class EpochMessageReceiveHandler : public ThreadCounters {
         void MergeQueueEnqueue(uint64_t &epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_);
         void CommitQueueEnqueue(uint64_t &epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_);
         void RedoLogQueueEnqueue(uint64_t &epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_);
+        void ResultReturnQueueEnqueue(uint64_t &epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_);
 
         static bool StaticInit(const Context& context);
         static bool StaticClear([[maybe_unused]] uint64_t& epoch);

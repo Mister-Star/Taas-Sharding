@@ -228,12 +228,11 @@ namespace Taas {
 //            EpochMessageSendHandler::SendTxnToServer(i,i, empty_txn_ptr, proto::TxnType::EpochLogPushDownComplete);
 //            while(!EpochMessageReceiveHandler::IsRedoLogPushDownACKReceiveComplete(i)) usleep(logical_sleep_timme);
 
-            while(i >= commit_epoch.load()) std::this_thread::yield();;
-            while(!EpochManager::IsCommitComplete(i)) std::this_thread::yield();;
-            while(!RedoLoger::CheckPushDownComplete(i)) std::this_thread::yield();;
+            while(i >= commit_epoch.load()) usleep(logical_sleep_timme);
+            while(!EpochManager::IsRecordCommitted(i)) usleep(logical_sleep_timme);
+            while(!RedoLoger::CheckPushDownComplete(i)) usleep(logical_sleep_timme);
             EpochMessageSendHandler::SendTxnToServer(i,i, empty_txn_ptr, proto::TxnType::EpochLogPushDownComplete);
-            while(!EpochMessageReceiveHandler::IsRedoLogPushDownACKReceiveComplete(i)) std::this_thread::yield();;
-
+            while(!EpochMessageReceiveHandler::IsRedoLogPushDownACKReceiveComplete(i)) usleep(logical_sleep_timme);
             {
                 if(i % ctx.taasContext.print_mode_size == 0)
                     LOG(INFO) << PrintfToString("=-=-=-=-=-=-= 完成一个Epoch的 Log Push Down Epoch: %8lu ClearEpoch: %8lu =-=-=-=-=-=-=\n", commit_epoch.load(), i);

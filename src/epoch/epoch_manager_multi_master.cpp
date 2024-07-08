@@ -74,10 +74,11 @@ namespace Taas {
                 auto time6 = now_to_us();
 //                LOG(INFO) << "******* Finished Abort Set Merge Epoch : " << epoch << ",time cost : " << time6 - time5 << "********\n";
 
-
                 while(!Merger::CheckEpochCommitComplete(epoch)) usleep(logical_sleep_timme);
                 EpochManager::SetCommitComplete(epoch, true);
                 commit_epoch.fetch_add(1);
+                while(!Merger::CheckEpochRecordCommitted(epoch)) usleep(logical_sleep_timme);
+                EpochManager::SetRecordCommitted(epoch, true);
                 EpochManager::AddLogicalEpoch();
                 auto time7 = now_to_us();
                 auto epoch_commit_success_txn_num = ThreadCounters::GetAllThreadLocalCountNum(epoch,
@@ -131,6 +132,7 @@ namespace Taas {
                 auto time6 = now_to_us();
 //                LOG(INFO) << "******* Finished Abort Set Merge Epoch : " << epoch << ",time cost : " << time6 - time5 << "********\n";
                 while(!Merger::CheckEpochCommitComplete(epoch)) usleep(logical_sleep_timme);
+
                 EpochManager::SetCommitComplete(epoch, true);
                 commit_epoch.fetch_add(1);
                 EpochManager::AddLogicalEpoch();
