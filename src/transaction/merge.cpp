@@ -127,6 +127,7 @@ namespace Taas {
         }
         epoch_result_returned_txn_num_local->IncCount(epoch, txn_ptr->txn_server_id(), 1);
         LOG(INFO) << "ResultReturn Time Cost" << now_to_us() - time1;
+        LOG(INFO) << "Total Cost" << now_to_us() - txn_ptr->csn();
     }
 
     void Merger::EpochMerge() {
