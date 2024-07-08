@@ -55,6 +55,7 @@ class EpochMessageReceiveHandler : public ThreadCounters {
         std::shared_ptr<proto::Transaction> txn_ptr;
         std::unique_ptr<pack_params> pack_param;
         std::string csn_temp, key_temp, key_str, table_name, csn_result;
+        uint64_t total_single_shard_time = 0, total_single_remote_handle_time = 0, total_single_shard_num = 0, total_single_remote_handle_num = 0;
         uint64_t thread_id = 0, local_server_id = 0, epoch_mod = 0, epoch = 0, max_length = 0, server_num = 1, shard_num = 0, replica_num = 1,
                 round_robin = 0, sent_to = 0,///cache check
                 message_epoch = 0, message_epoch_mod = 0, message_server_id = 0, txn_server_id = 0,shard_id = 0, shard_server_id =0, ///message epoch info

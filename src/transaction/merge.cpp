@@ -78,7 +78,9 @@ namespace Taas {
             TransactionCache::epoch_abort_txn_set[message_epoch_mod]->insert(csn_temp, csn_temp);
         }
         epoch_read_validated_txn_num_local->IncCount(message_epoch, message_server_id, 1);
-        LOG(INFO) << "Validate Time Cost " << now_to_us() - time1 << " us";
+//        LOG(INFO) << "Validate Time Cost " << now_to_us() - time1 << " us";
+        total_single_validate_time += now_to_us() - time1;
+        total_single_validate_num ++;
     }
 
     void Merger::Merge() {
@@ -88,7 +90,9 @@ namespace Taas {
         total_merge_txn_num_local.fetch_add(1);
         total_merge_latency_local.fetch_add(now_to_us() - time1);
         epoch_merged_txn_num_local->IncCount(epoch, txn_server_id, 1);
-        LOG(INFO) << "Merge Time Cost " << now_to_us() - time1 << " us";
+//        LOG(INFO) << "Merge Time Cost " << now_to_us() - time1 << " us";
+        total_single_merge_time += now_to_us() - time1;
+        total_single_merge_num ++;
     }
 
     void Merger::Commit() {
@@ -97,7 +101,9 @@ namespace Taas {
             CRDTMerge::Commit(txn_ptr);
         }
         epoch_committed_txn_num_local->IncCount(epoch, txn_ptr->txn_server_id(), 1);
-        LOG(INFO) << "Commit Time Cost " << now_to_us() - time1 << " us";
+//        LOG(INFO) << "Commit Time Cost " << now_to_us() - time1 << " us";
+        total_single_commit_time += now_to_us() - time1;
+        total_single_commit_num ++;
     }
 
     void Merger::RedoLog() {
@@ -115,7 +121,9 @@ namespace Taas {
         total_commit_latency_local.fetch_add(now_to_us() - time1);
 //        LOG(INFO) << "******* Merge RedoLog Epoch : " << epoch << "txn_server_id" << txn_ptr->txn_server_id() << "********\n";
         epoch_record_committed_txn_num_local->IncCount(epoch, txn_ptr->txn_server_id(), 1);
-        LOG(INFO) << "RedoLog Time Cost " << now_to_us() - time1 << " us";
+//        LOG(INFO) << "RedoLog Time Cost " << now_to_us() - time1 << " us";
+        total_single_log_time += now_to_us() - time1;
+        total_single_log_num ++;
     }
 
     void Merger::ResultReturn() {
@@ -126,8 +134,12 @@ namespace Taas {
             EpochMessageSendHandler::SendTxnCommitResultToClient(txn_ptr, proto::TxnState::Commit);
         }
         epoch_result_returned_txn_num_local->IncCount(epoch, txn_ptr->txn_server_id(), 1);
-        LOG(INFO) << "ResultReturn Time Cost " << now_to_us() - time1 << " us";
-        LOG(INFO) << "Total Cost " << now_to_us() - txn_ptr->csn() << " us";
+        total_single_result_time += now_to_us() - time1;
+        total_single_result_num ++;
+        total_single_time += now_to_us() - txn_ptr->csn();
+        total_single_num ++;
+//        LOG(INFO) << "ResultReturn Time Cost " << now_to_us() - time1 << " us";
+//        LOG(INFO) << "Total Cost " << now_to_us() - txn_ptr->csn() << " us";
     }
 
     void Merger::EpochMerge() {

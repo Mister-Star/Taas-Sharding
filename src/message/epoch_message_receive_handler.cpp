@@ -149,6 +149,11 @@ namespace Taas {
             txn_ptr = std::make_shared<proto::Transaction>(msg_ptr->txn());
             HandleReceivedTxn();
             txn_ptr.reset();
+            if(total_single_shard_num % ctx.taasContext.print_mode_size == 0) {
+                LOG(INFO) << "ClientTxnHandle Time Cost : " << total_single_shard_time  << " Validate Time count : " << total_single_shard_num
+                          << "ShardedClientTxn Time Cost : " << total_single_remote_handle_time << " Merge Time count : " << total_single_remote_handle_num
+                          << " end";
+            }
         }
     }
 
@@ -280,7 +285,9 @@ namespace Taas {
                     SetMessageRelatedCountersInfo();
                     Shard();
                     shard_handled_local_txn_num_local->IncCount(message_epoch, local_server_id, 1);
-                    LOG(INFO) << "ClientTxnHandle Time Cost " << now_to_us() - time1 << " us";
+//                    LOG(INFO) << "ClientTxnHandle Time Cost " << now_to_us() - time1 << " us";
+                    total_single_shard_time += now_to_us() - time1 ;
+                    total_single_shard_num  ++;
                 }
                 break;
             }
@@ -310,7 +317,9 @@ namespace Taas {
 //                TransactionCache::epoch_txn_map[message_epoch_mod]->insert(csn_temp, txn_ptr);
 
                 shard_handled_remote_txn_num_local->IncCount(message_epoch, message_server_id, 1);
-                LOG(INFO) << "ShardedClientTxn Time Cost " << now_to_us() - time1 << " us";
+//                LOG(INFO) << "ShardedClientTxn Time Cost " << now_to_us() - time1 << " us";
+                total_single_remote_handle_time += now_to_us() - time1 ;
+                total_single_remote_handle_num ++;
                 break;
             }
             case proto::TxnType::RemoteServerTxn : {

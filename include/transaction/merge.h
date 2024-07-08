@@ -39,6 +39,26 @@ namespace Taas {
         std::shared_ptr<proto::Transaction> empty_txn_ptr;
         std::hash<std::string> _hash;
 
+        uint64_t total_single_shard_time = 0,
+        total_single_remote_handle_time = 0,
+        total_single_validate_time = 0,
+        total_single_merge_time = 0,
+        total_single_abort_set_time = 0,
+        total_single_commit_time = 0,
+        total_single_log_time = 0,
+        total_single_result_time = 0,
+        total_single_time = 0,
+
+        total_single_shard_num = 0,
+        total_single_remote_handle_num = 0,
+        total_single_validate_num = 0,
+        total_single_merge_num = 0,
+        total_single_abort_set_num = 0,
+        total_single_commit_num = 0,
+        total_single_log_num = 0,
+        total_single_result_num = 0,
+        total_single_num = 0;
+
         [[nodiscard]] uint64_t GetHashValue(const std::string& key) const {
             return _hash(key) % shard_num;
         }
