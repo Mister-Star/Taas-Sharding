@@ -39,11 +39,11 @@ namespace Taas {
 //                auto time2 = now_to_us();
 //                LOG(INFO) << "**** Finished CheckEpochShardSendComplete Epoch : " << epoch << ",time cost : " << time2 - time1 << "****\n";
 
-                while(!EpochMessageReceiveHandler::IsShardPackReceiveComplete(epoch)) usleep(logical_sleep_timme);
+                while(!EpochMessageReceiveHandler::IsRemoteServerPackReceiveComplete(epoch)) usleep(logical_sleep_timme);
 //                LOG(INFO) << "**** finished IsShardPackReceiveComplete : " << epoch << "****\n";
-                while(!EpochMessageReceiveHandler::IsShardTxnReceiveComplete(epoch)) usleep(logical_sleep_timme);
+                while(!EpochMessageReceiveHandler::IsRemoteServerTxnReceiveComplete(epoch)) usleep(logical_sleep_timme);
 //                LOG(INFO) << "**** finished IsShardTxnReceiveComplete : " << epoch << "****\n";
-                while(!EpochMessageReceiveHandler::CheckEpochShardReceiveComplete(epoch)) usleep(logical_sleep_timme);
+                while(!EpochMessageReceiveHandler::CheckEpochRemoteServerReceiveComplete(epoch)) usleep(logical_sleep_timme);
 //                auto time3 = now_to_us();
 //                LOG(INFO) << "**** Finished CheckEpochShardReceiveComplete Epoch : " << epoch << ",time cost : " << time3 - time2 << "****\n";
 
