@@ -147,36 +147,36 @@ namespace Taas {
                     txn_ptr->set_txn_server_id(ctx.taasContext.txn_node_ip_index);
                     txn_ptr->set_txn_type(proto::RemoteServerTxn);/// change to server txn, then, use server_id to check
                     SetMessageRelatedCountersInfo();
-                    if(ctx.taasContext.is_send_speed_up) {///send txn before read validation
-                    ///this will cause more aborts, but speed up transmission
-                        auto write_set = std::make_shared<proto::Transaction>();
-                        write_set->set_csn(txn_ptr->csn());
-                        write_set->set_commit_epoch(txn_ptr->commit_epoch());
-                        write_set->set_txn_server_id(txn_ptr->txn_server_id());
-                        write_set->set_client_ip(txn_ptr->client_ip());
-                        write_set->set_client_txn_id(txn_ptr->client_txn_id());
-                        write_set->set_shard_id(ctx.taasContext.txn_node_ip_index);
-                        write_set->set_txn_type(proto::RemoteServerTxn);
-                        for(auto i = 0; i < txn_ptr->row_size(); i ++) { /// for SI isolation only seng the wriet set.
-                            const auto& row = txn_ptr->row(i);
-                            if(row.op_type() == proto::OpType::Read) continue;
-                            auto row_ptr = write_set->add_row();
-                            (*row_ptr) = row;
-                        }
-                        /// only local txn send its write set or complete txn,
-                        /// SI only send write set,
-                        /// if you want to achieve SER, you need to send the complete txn,
-                        ///to speed up, send the write set before read validation,
-                        /// remote servers should insert this txn into merge queue,
-                        /// also local server should insert this txn into merge queue no matter this txn pass the
-                        /// read validation or not to insure the replication consistency! (in merge.cpp)
-                        shard_should_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
-                        backup_should_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
-                        EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, write_set, proto::TxnType::RemoteServerTxn);
-                        EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, txn_ptr, proto::TxnType::BackUpTxn);
-                        shard_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
-                        backup_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
-                    }
+//                    if(ctx.taasContext.is_send_speed_up) {///send txn before read validation
+//                    ///this will cause more aborts, but speed up transmission
+//                        auto write_set = std::make_shared<proto::Transaction>();
+//                        write_set->set_csn(txn_ptr->csn());
+//                        write_set->set_commit_epoch(txn_ptr->commit_epoch());
+//                        write_set->set_txn_server_id(txn_ptr->txn_server_id());
+//                        write_set->set_client_ip(txn_ptr->client_ip());
+//                        write_set->set_client_txn_id(txn_ptr->client_txn_id());
+//                        write_set->set_shard_id(ctx.taasContext.txn_node_ip_index);
+//                        write_set->set_txn_type(proto::RemoteServerTxn);
+//                        for(auto i = 0; i < txn_ptr->row_size(); i ++) { /// for SI isolation only seng the wriet set.
+//                            const auto& row = txn_ptr->row(i);
+//                            if(row.op_type() == proto::OpType::Read) continue;
+//                            auto row_ptr = write_set->add_row();
+//                            (*row_ptr) = row;
+//                        }
+//                        /// only local txn send its write set or complete txn,
+//                        /// SI only send write set,
+//                        /// if you want to achieve SER, you need to send the complete txn,
+//                        ///to speed up, send the write set before read validation,
+//                        /// remote servers should insert this txn into merge queue,
+//                        /// also local server should insert this txn into merge queue no matter this txn pass the
+//                        /// read validation or not to insure the replication consistency! (in merge.cpp)
+//                        shard_should_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
+//                        backup_should_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
+//                        EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, write_set, proto::TxnType::RemoteServerTxn);
+//                        EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, txn_ptr, proto::TxnType::BackUpTxn);
+//                        shard_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
+//                        backup_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
+//                    }
                     ReadValidateQueueEnqueue(message_epoch, txn_ptr);
                     shard_handled_local_txn_num_local->IncCount(message_epoch, local_server_id, 1);
                 }
@@ -185,7 +185,7 @@ namespace Taas {
             case proto::TxnType::RemoteServerTxn : {
                 shard_should_handle_remote_txn_num_local->IncCount(message_epoch, local_server_id, 1);
                 TransactionCache::epoch_txn_map[message_epoch_mod]->insert(csn_temp, txn_ptr);
-                ReadValidateQueueEnqueue(message_epoch, txn_ptr);
+//                ReadValidateQueueEnqueue(message_epoch, txn_ptr);
                 MergeQueueEnqueue(message_epoch, txn_ptr);
                 CommitQueueEnqueue(message_epoch, txn_ptr);
                 shard_received_txn_num_local->IncCount(message_epoch,message_server_id, 1);
