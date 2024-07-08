@@ -18,7 +18,7 @@ namespace Taas {
         Merger merger;
         EpochMessageReceiveHandler receiveHandler;
         class TwoPC two_pc;
-        while(init_ok_num.load() < 1) usleep(sleep_time);
+        while(init_ok_num.load() < 5) usleep(sleep_time);
         merger.MergeInit(id, ctx);
         receiveHandler.Init(id, ctx);
         Taas::TwoPC::Init(ctx, id);
@@ -83,7 +83,7 @@ namespace Taas {
 //
 //                    sleep_flag = sleep_flag & receiveHandler.sleep_flag;
 
-                    if(sleep_flag) usleep(merge_sleep_time);
+                    if(!sleep_flag) usleep(merge_sleep_time);
                 }
                 break;
             }
