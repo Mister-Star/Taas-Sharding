@@ -152,26 +152,29 @@ namespace Taas {
                 }
                 break;
             }
+            case proto::TxnType::ShardedClientTxn :
+            case proto::TxnType::EpochShardEndFlag : {
+                break;
+            }
             case proto::TxnType::RemoteServerTxn : {
-                shard_should_handle_remote_txn_num_local->IncCount(message_epoch, local_server_id, 1);
+                remote_server_should_handle_txn_num_local->IncCount(message_epoch, local_server_id, 1);
                 TransactionCache::epoch_txn_map[message_epoch_mod]->insert(csn_temp, txn_ptr);
                 MergeQueueEnqueue(message_epoch, txn_ptr);
                 CommitQueueEnqueue(message_epoch, txn_ptr);
-                shard_received_txn_num_local->IncCount(message_epoch,message_server_id, 1);
-                shard_handled_remote_txn_num_local->IncCount(message_epoch, local_server_id, 1);
+                remote_server_received_txn_num_local->IncCount(message_epoch,message_server_id, 1);
+                remote_server_handled_txn_num_local->IncCount(message_epoch, local_server_id, 1);
                 break;
             }
-            case proto::TxnType::EpochShardEndFlag : {
-                shard_should_receive_txn_num.IncCount(message_epoch,message_server_id,txn_ptr->csn());
+            case proto::TxnType::EpochRemoteServerEndFlag : {
+                remote_server_should_receive_txn_num.IncCount(message_epoch,message_server_id,txn_ptr->csn());
                 shard_received_pack_num.IncCount(message_epoch,message_server_id, 1);
                 CheckEpochShardReceiveComplete(message_epoch);
-                EpochMessageSendHandler::SendTxnToServer(message_epoch,message_server_id, empty_txn_ptr, proto::TxnType::EpochShardACK);
+                EpochMessageSendHandler::SendTxnToServer(message_epoch,message_server_id, empty_txn_ptr, proto::TxnType::EpochRemoteServerACK);
                 break;
             }
             case proto::TxnType::BackUpTxn : {
                 TransactionCache::epoch_back_txn_map[message_epoch_mod]->insert(csn_temp, txn_ptr);
                 backup_received_txn_num_local->IncCount(message_epoch,message_server_id, 1);
-//                backup_received_txn_num.IncCount(message_epoch,message_server_id, 1);
                 break;
             }
             case proto::TxnType::EpochBackUpEndFlag : {
@@ -193,17 +196,17 @@ namespace Taas {
             }
             case proto::TxnType::EpochShardACK : {
                 shard_received_ack_num.IncCount(message_epoch,message_server_id, 1);
-//                CheckEpochShardingSendComplete(message_epoch);
                 break;
+            }
+            case proto::EpochRemoteServerACK: {
+                remote_server_received_ack_num.IncCount(message_epoch,message_server_id, 1);
             }
             case proto::TxnType::BackUpACK : {
                 backup_received_ack_num.IncCount(message_epoch,message_server_id, 1);
-//                CheckEpochBackUpComplete(message_epoch);
                 break;
             }
             case proto::TxnType::AbortSetACK : {
                 abort_set_received_ack_num.IncCount(message_epoch,message_server_id, 1);
-//                CheckEpochAbortSetMergeComplete(message_epoch);
                 break;
             }
             case proto::TxnType::InsertSetACK : {
@@ -212,9 +215,9 @@ namespace Taas {
             }
             case proto::TxnType::EpochLogPushDownComplete : {
                 redo_log_push_down_ack_num.IncCount(message_epoch,message_server_id, 1);
-            break;
-        }
-        case proto::NullMark:
+                break;
+            }
+            case proto::NullMark:
             case proto::TxnType_INT_MIN_SENTINEL_DO_NOT_USE_:
             case proto::TxnType_INT_MAX_SENTINEL_DO_NOT_USE_:
             case proto::CommittedTxn:
@@ -227,6 +230,7 @@ namespace Taas {
             case proto::Commit_ok:
             case proto::Commit_abort:
             case proto::Abort_txn:
+            case proto::EpochCommittedTxnEndFlag:
                 break;
         }
         return true;

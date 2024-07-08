@@ -36,7 +36,7 @@ namespace Taas {
 
         static void CheckAndSendEpochMessage();
         static void CheckAndSendEpochShardEndMessage();
-        static bool SendEpochShardEndMessage(const uint64_t &txn_node_ip_index, const uint64_t &epoch, const uint64_t &kTxnNodeNum);
+        static bool SendEpochEndMessage(const uint64_t &txn_node_ip_index, const uint64_t &epoch, const uint64_t &kTxnNodeNum);
         static void CheckAndSendEpochRemoteServerEndMessage();
         static bool SendEpochRemoteServerEndMessage(const uint64_t &txn_node_ip_index, const uint64_t &epoch, const uint64_t &kTxnNodeNum);
         static void CheckAndSendAbortSet();

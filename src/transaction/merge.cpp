@@ -80,10 +80,12 @@ namespace Taas {
             /// SI only send write set
             /// if you want to achieve SER, you need to send the complete txn
             shard_should_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
+            remote_server_should_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
             backup_should_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
             EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, write_set, proto::TxnType::RemoteServerTxn);
             EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, txn_ptr, proto::TxnType::BackUpTxn);
             shard_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
+            remote_server_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
             backup_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
 //        }
     }
