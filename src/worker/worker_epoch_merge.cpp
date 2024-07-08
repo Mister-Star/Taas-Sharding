@@ -31,7 +31,7 @@ namespace Taas {
             case TaasMode::MultiMaster :
             case TaasMode::Shard : {
                 while(!EpochManager::IsTimerStop()) {
-                    sleep_flag = false;
+                    sleep_flag = true;
 
                     merger.epoch = EpochManager::GetLogicalEpoch();
                     merger.epoch_mod = merger.epoch % ctx.taasContext.kCacheMaxLength;
@@ -83,7 +83,7 @@ namespace Taas {
 //
 //                    sleep_flag = sleep_flag & receiveHandler.sleep_flag;
 
-                    if(!sleep_flag) usleep(merge_sleep_time);
+                    if(sleep_flag) usleep(merge_sleep_time);
                 }
                 break;
             }
