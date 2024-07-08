@@ -24,7 +24,7 @@
     <handle_epoch_message_num_each_traversal>5</handle_epoch_message_num_each_traversal>
     <handle_txn_message_num_each_traversal>5</handle_txn_message_num_each_traversal>
     <safe_epoch_distance>10</safe_epoch_distance>
-    <is_send_speed_up>0</is_send_speed_up>
+    <is_send_speed_up>0</is_send_speed_up> <!-- do not set it to 1 -->
 
     <glog_path>/tmp</glog_path>
     <print_mode_size>100</print_mode_size>
