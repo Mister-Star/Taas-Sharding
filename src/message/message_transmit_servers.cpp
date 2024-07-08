@@ -80,14 +80,12 @@ namespace Taas {
         std::unique_ptr<send_params> params;
         std::unique_ptr<zmq::message_t> msg;
         assert(ctx.taasContext.kServerIp.size() >= ctx.taasContext.kTxnNodeNum);
-        for (uint64_t i = 0; i < shard_num; i++) {
-            auto socket = std::make_unique<zmq::socket_t>(context, ZMQ_PUB);
-            socket->set(zmq::sockopt::sndhwm, queue_length);
-            socket->set(zmq::sockopt::rcvhwm, queue_length);
-            socket->bind("tcp://*:" + std::to_string(21000 + i));
-            socket_map[i] = std::move(socket);
-            printf("Send Server connect ZMQ_PUB %s", (std::to_string(21000+i) + "\n").c_str());///Shard Replica
-        }
+        std::unique_ptr<zmq::socket_t> socket_to_all_txn;
+        socket_to_all_txn= std::make_unique<zmq::socket_t>(context, ZMQ_PUB);
+        socket_to_all_txn->set(zmq::sockopt::sndhwm, queue_length);
+        socket_to_all_txn->set(zmq::sockopt::rcvhwm, queue_length);
+        socket_to_all_txn->bind("tcp://*:" + std::to_string(21000+ctx.taasContext.txn_node_ip_index));
+        printf("Send Server bind ZMQ_PUB %s", ("tcp://*:" + std::to_string(21000+ctx.taasContext.txn_node_ip_index) + "\n").c_str());///write set
 
         std::unique_ptr<zmq::socket_t> socket_to_all;
         socket_to_all= std::make_unique<zmq::socket_t>(context, ZMQ_PUB);
@@ -119,7 +117,7 @@ namespace Taas {
                 socket_to_all->send(*msg, sendFlags);
                 continue;
             }
-            socket_map[params->id]->send(*msg, sendFlags);
+            socket_to_all_txn->send(*msg, sendFlags);
         }
         socket_map[0]->send((zmq::message_t &) "end", sendFlags);
     }
@@ -185,37 +183,12 @@ namespace Taas {
         int queue_length = 1000000000;
         zmq::socket_t socket_listen(listen_context, ZMQ_SUB);
 
-          for(uint64_t i = 0; i < shard_num; i ++) {
-              if(i % server_num == local_server_id) {
-                  for(uint64_t j = 1; j < replica_num; j ++ ) {
-                      socket_listen.connect("tcp://" + ctx.taasContext.kServerIp[(i + j) % server_num] + ":"
-                                            + std::to_string(21000 + i));  /// shard replica
-                      LOG(INFO) << "Server:" << (i + j) % server_num << "Shard: " << i;
-                  }
-              }
-              else {
-                  for(uint64_t j = 0; j < replica_num; j ++ ) {
-                      if((i + j) % server_num == local_server_id) {
-                          for(uint64_t k = 0; k < replica_num; k ++) {
-                              if((i + k) % server_num == local_server_id) continue;
-                              socket_listen.connect("tcp://" + ctx.taasContext.kServerIp[(i + k) % server_num] + ":"
-                                                    + std::to_string(21000 + i));  /// shard replica
-                              LOG(INFO) << "Server:" << (i + k) % server_num << "Shard: " << i;
-                          }
-                      }
-                  }
-              }
-          }
 
-//        for (uint64_t i = 0; i < server_num; i++) {
-//            if (i == ctx.taasContext.txn_node_ip_index) continue;
-//            for(uint64_t j = 0; j < shard_num; j++) {
-//                if(is_local_shard[i][j]) {///shard j send from i is a local shard of current server, then receive the replica
-//                    socket_listen.connect("tcp://" + ctx.taasContext.kServerIp[i] + ":" + std::to_string(21000+j));///shard replica
-//                    printf("Listen Server connect ZMQ_SUB %s", ("tcp://" + ctx.taasContext.kServerIp[i] + ":" + std::to_string(21000+j) + "\n").c_str());
-//                }
-//            }
-//        }
+        for (uint64_t i = 0; i < server_num; i++) {
+            if (i == ctx.taasContext.txn_node_ip_index) continue;
+            socket_listen.connect("tcp://" + ctx.taasContext.kServerIp[i] + ":" + std::to_string(21000+i));///write set replica
+            printf("Listen Server connect ZMQ_SUB %s", ("tcp://" + ctx.taasContext.kServerIp[i] + ":" + std::to_string(21000+i) + "\n").c_str());
+        }
 
         for (uint64_t i = 0; i < server_num; i++) {
             if (i == ctx.taasContext.txn_node_ip_index) continue;
