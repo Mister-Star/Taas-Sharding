@@ -64,12 +64,24 @@ namespace Taas {
                         }
                     }
 
-                    receiveHandler.TryHandleReceivedControlMessage();
-                    if (EpochManager::GetLogicalEpoch() + safe_length >
-                        EpochManager::GetPhysicalEpoch()) /// avoid task backlogs, stop handling txn comes from the client
-                        receiveHandler.TryHandleReceivedMessage();
+                    while (EpochManager::IsAbortSetMergeComplete(merger.epoch) &&
+                           !EpochManager::IsRecordCommitted(merger.epoch) &&
+                           TransactionCache::epoch_redo_log_queue[merger.epoch_mod]->try_dequeue(
+                               merger.txn_ptr)) {
+                        if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() !=
+                                                             proto::TxnType::NullMark) { /// only local txn do redo log
+                            merger.RedoLog();
+                            merger.txn_ptr.reset();
+                            sleep_flag = false;
+                        }
+                    }
 
-                    sleep_flag = sleep_flag & receiveHandler.sleep_flag;
+//                    receiveHandler.TryHandleReceivedControlMessage();
+//                    if (EpochManager::GetLogicalEpoch() + safe_length >
+//                        EpochManager::GetPhysicalEpoch()) /// avoid task backlogs, stop handling txn comes from the client
+//                        receiveHandler.TryHandleReceivedMessage();
+//
+//                    sleep_flag = sleep_flag & receiveHandler.sleep_flag;
 
                     if(sleep_flag) usleep(merge_sleep_time);
                 }

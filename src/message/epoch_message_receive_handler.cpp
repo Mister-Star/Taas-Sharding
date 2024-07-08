@@ -51,6 +51,13 @@ namespace Taas {
         TransactionCache::epoch_commit_queue[epoch_mod_temp]->enqueue(nullptr);
     }
 
+    void EpochMessageReceiveHandler::RedoLogQueueEnqueue(uint64_t& epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_) {
+        auto epoch_mod_temp = epoch_ % ctx.taasContext.kCacheMaxLength;
+        epoch_record_commit_txn_num_local->IncCount(epoch_mod_temp, txn_ptr_->txn_server_id(), 1);
+        TransactionCache::epoch_redo_log_queue[epoch_mod_temp]->enqueue(txn_ptr_);
+        TransactionCache::epoch_redo_log_queue[epoch_mod_temp]->enqueue(nullptr);
+    }
+
 
 
     void EpochMessageReceiveHandler::HandleReceivedMessage() {
@@ -178,9 +185,7 @@ namespace Taas {
             case proto::TxnType::RemoteServerTxn : {
                 shard_should_handle_remote_txn_num_local->IncCount(message_epoch, local_server_id, 1);
                 TransactionCache::epoch_txn_map[message_epoch_mod]->insert(csn_temp, txn_ptr);
-                if(ctx.taasContext.taasMode == TaasMode::Shard) { /// multi-master mode, remote txn no need to do read validate.
-                    ReadValidateQueueEnqueue(message_epoch, txn_ptr);
-                }
+                ReadValidateQueueEnqueue(message_epoch, txn_ptr);
                 MergeQueueEnqueue(message_epoch, txn_ptr);
                 CommitQueueEnqueue(message_epoch, txn_ptr);
                 shard_received_txn_num_local->IncCount(message_epoch,message_server_id, 1);

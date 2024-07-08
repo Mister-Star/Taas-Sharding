@@ -41,6 +41,13 @@ namespace Taas {
         TransactionCache::epoch_commit_queue[epoch_mod_temp]->enqueue(nullptr);
     }
 
+    void EpochMessageReceiveHandler::RedoLogQueueEnqueue(uint64_t& epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_) {
+        auto epoch_mod_temp = epoch_ % ctx.taasContext.kCacheMaxLength;
+        epoch_record_commit_txn_num_local->IncCount(epoch_mod_temp, txn_ptr_->txn_server_id(), 1);
+        TransactionCache::epoch_redo_log_queue[epoch_mod_temp]->enqueue(txn_ptr_);
+        TransactionCache::epoch_redo_log_queue[epoch_mod_temp]->enqueue(nullptr);
+    }
+
     bool Merger::MergeQueueTryDequeue(uint64_t &epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_) {
         ///not use for now
         return false;
@@ -79,33 +86,57 @@ namespace Taas {
             shard_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
             backup_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
         }
-        MergeQueueEnqueue(message_epoch, txn_ptr);
-        CommitQueueEnqueue(message_epoch, txn_ptr);
     }
 
     void Merger::ReadValidate() {
         message_epoch = txn_ptr->commit_epoch();
         message_epoch_mod = message_epoch % ctx.taasContext.kCacheMaxLength;
         message_server_id = txn_ptr->txn_server_id();
-        if (CRDTMerge::ValidateReadSet(txn_ptr)) {
-            if(ctx.taasContext.taasMode == TaasMode::MultiMaster && txn_ptr->txn_server_id() == ctx.taasContext.txn_node_ip_index)
-                Send();
-        }
-        else {
+
+        if(txn_ptr->txn_server_id() == ctx.taasContext.txn_node_ip_index) {
             if(ctx.taasContext.is_send_speed_up) {
-            ///cause it has been send to other servers before read validate
-            ///to ensure the replica consistency
-            ///false txn also need to be inserted into merge queue
+                if (CRDTMerge::ValidateReadSet(txn_ptr)) { ///already send
+                    RedoLogQueueEnqueue(message_epoch, txn_ptr);
+                }
+                else {
+                    total_read_version_check_failed_txn_num_local.fetch_add(1);
+                    csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
+                    TransactionCache::epoch_abort_txn_set[message_epoch_mod]->insert(csn_temp, csn_temp);
+                    if(txn_ptr->txn_server_id() == ctx.taasContext.txn_node_ip_index)
+                        EpochMessageSendHandler::SendTxnCommitResultToClient(txn_ptr, proto::TxnState::Abort);
+                }
                 MergeQueueEnqueue(message_epoch, txn_ptr);
                 CommitQueueEnqueue(message_epoch, txn_ptr);
             }
-            total_read_version_check_failed_txn_num_local.fetch_add(1);
-            csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
-            TransactionCache::epoch_abort_txn_set[message_epoch_mod]->insert(csn_temp, csn_temp);
-            if(ctx.taasContext.taasMode == TaasMode::MultiMaster && txn_ptr->txn_server_id() == ctx.taasContext.txn_node_ip_index)
-                EpochMessageSendHandler::SendTxnCommitResultToClient(txn_ptr, proto::TxnState::Abort);
+            else {
+                if (CRDTMerge::ValidateReadSet(
+                        txn_ptr)) {  /// validate ok, send its write set to peers
+                    send();
+                    MergeQueueEnqueue(message_epoch, txn_ptr);
+                    CommitQueueEnqueue(message_epoch, txn_ptr);
+                    RedoLogQueueEnqueue(message_epoch, txn_ptr);
+                } else {
+                    total_read_version_check_failed_txn_num_local.fetch_add(1);
+                    csn_temp = std::to_string(txn_ptr->csn()) + ":"
+                               + std::to_string(txn_ptr->txn_server_id());
+                    TransactionCache::epoch_abort_txn_set[message_epoch_mod]->insert(csn_temp,
+                                                                                     csn_temp);
+                    if (txn_ptr->txn_server_id() == ctx.taasContext.txn_node_ip_index)
+                        EpochMessageSendHandler::SendTxnCommitResultToClient(
+                            txn_ptr, proto::TxnState::Abort);
+                }
+            }
         }
-        epoch_read_validated_txn_num_local->IncCount(message_epoch, message_server_id, 1);
+        else{///remote txn or write set
+            if(ctx.taasContext.is_send_speed_up) { ///remote txn, need to validate
+                if (!CRDTMerge::ValidateReadSet(txn_ptr)) {
+                    total_read_version_check_failed_txn_num_local.fetch_add(1);
+                    csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
+                    TransactionCache::epoch_abort_txn_set[message_epoch_mod]->insert(csn_temp, csn_temp);
+                }
+            }
+        }
+      epoch_read_validated_txn_num_local->IncCount(message_epoch, message_server_id, 1);
     }
 
     void Merger::Merge() {

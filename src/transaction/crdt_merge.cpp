@@ -29,9 +29,9 @@ namespace Taas {
                 continue;
             }
             if (version != row.data()) {
-                continue; ///only for debug
+//                continue; ///only for debug
                 auto csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
-                if(ctx.taasContext.taasMode == Shard)
+//                if(ctx.taasContext.taasMode == Shard)
                     TransactionCache::epoch_abort_txn_set[epoch_mod]->insert(csn_temp, csn_temp);
 //                LOG(INFO) <<"Txn read version check failed";
 //                LOG(INFO) <<"read version check failed version : " << version << ", row.data() : " << row.data();
