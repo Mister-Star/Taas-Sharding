@@ -33,7 +33,7 @@ namespace Taas {
                 while(!EpochMessageReceiveHandler::IsShardSendFinish(epoch)) usleep(logical_sleep_timme);
 
 //                LOG(INFO) << "**** finished IsShardSendFinish : " << epoch << "****\n";
-                while(!EpochMessageReceiveHandler::IsShardACKReceiveComplete(epoch)) usleep(logical_sleep_timme);
+                while(!EpochMessageReceiveHandler::IsRemoteServerACKReceiveComplete(epoch)) usleep(logical_sleep_timme);
 //                LOG(INFO) << "**** finished IsShardACKReceiveComplete : " << epoch << "****\n";
                 while(!EpochMessageReceiveHandler::CheckEpochShardSendComplete(epoch)) usleep(logical_sleep_timme);
 //                auto time2 = now_to_us();
