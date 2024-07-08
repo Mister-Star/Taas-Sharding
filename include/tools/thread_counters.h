@@ -178,7 +178,9 @@ namespace Taas {
                 epoch_should_commit_txn_num_local,
                 epoch_committed_txn_num_local,
                 epoch_record_commit_txn_num_local,
-                epoch_record_committed_txn_num_local;
+                epoch_record_committed_txn_num_local,
+                epoch_result_return_txn_num_local,
+                epoch_result_returned_txn_num_local;
 
         std::atomic<uint64_t>
                 total_merge_txn_num_local,
@@ -198,13 +200,16 @@ namespace Taas {
                 epoch_should_commit_txn_num_local_vec,
                 epoch_committed_txn_num_local_vec,
                 epoch_record_commit_txn_num_local_vec,
-                epoch_record_committed_txn_num_local_vec;
+                epoch_record_committed_txn_num_local_vec,
+                epoch_result_return_txn_num_local_vec,
+                epoch_result_returned_txn_num_local_vec;
 
         static std::vector<std::unique_ptr<std::atomic<bool>>>
                 epoch_read_validate_complete,
                 epoch_merge_complete,
                 epoch_commit_complete,
-                epoch_record_committed;
+                epoch_record_committed,
+                epoch_result_returned;
 
         static std::atomic<uint64_t>
                 total_merge_txn_num,
@@ -221,11 +226,13 @@ namespace Taas {
         static bool CheckEpochMergeComplete(const uint64_t& epoch) ;
         static bool CheckEpochCommitComplete(const uint64_t& epoch) ;
         static bool CheckEpochRecordCommitted(const uint64_t& epoch) ;
+        static bool CheckEpochResultReturned(const uint64_t& epoch) ;
 
         static bool IsReadValidateComplete(const uint64_t& epoch) ;
         static bool IsMergeComplete(const uint64_t& epoch) ;
         static bool IsCommitComplete(const uint64_t & epoch) ;
         static bool IsRecordCommitted(const uint64_t & epoch) ;
+        static bool IsResultReturned(const uint64_t & epoch) ;
 
 
 

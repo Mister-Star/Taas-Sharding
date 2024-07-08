@@ -40,6 +40,12 @@ namespace Taas {
         TransactionCache::epoch_commit_queue[epoch_mod_temp]->enqueue(txn_ptr_);
         TransactionCache::epoch_commit_queue[epoch_mod_temp]->enqueue(nullptr);
     }
+    void Merger::ResultReturnQueueEnqueue(uint64_t& epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_) {
+        auto epoch_mod_temp = epoch_ % ctx.taasContext.kCacheMaxLength;
+        epoch_result_return_txn_num_local->IncCount(epoch_mod_temp, txn_ptr_->txn_server_id(), 1);
+        TransactionCache::epoch_result_return_queue[epoch_mod_temp]->enqueue(txn_ptr_);
+        TransactionCache::epoch_result_return_queue[epoch_mod_temp]->enqueue(nullptr);
+    }
 
     bool Merger::MergeQueueTryDequeue(uint64_t &epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_) {
         ///not use for now
@@ -54,36 +60,6 @@ namespace Taas {
 
 
     void Merger::Send() {
-//        if(ctx.taasContext.taasMode == TaasMode::Shard) {
-//            /// already send
-//        }
-//        else if(ctx.taasContext.taasMode == TaasMode::MultiMaster && txn_ptr->txn_server_id() == ctx.taasContext.txn_node_ip_index) {
-//            write_set = std::make_shared<proto::Transaction>();
-//            write_set->set_csn(txn_ptr->csn());
-//            write_set->set_commit_epoch(txn_ptr->commit_epoch());
-//            write_set->set_txn_server_id(txn_ptr->txn_server_id());
-//            write_set->set_client_ip(txn_ptr->client_ip());
-//            write_set->set_client_txn_id(txn_ptr->client_txn_id());
-//            write_set->set_shard_id(ctx.taasContext.txn_node_ip_index);
-//            write_set->set_txn_type(proto::RemoteServerTxn);
-//            for(auto i = 0; i < txn_ptr->row_size(); i ++) { /// for SI isolation only seng the wriet set.
-//                const auto& row = txn_ptr->row(i);
-//                if(row.op_type() == proto::OpType::Read) continue;
-//                auto row_ptr = write_set->add_row();
-//                (*row_ptr) = row;
-//            }
-//            /// only local txn send its write set or complete txn
-//            /// SI only send write set
-//            /// if you want to achieve SER, you need to send the complete txn
-//            shard_should_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
-//            backup_should_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
-//            EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, write_set, proto::TxnType::RemoteServerTxn);
-//            EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, txn_ptr, proto::TxnType::BackUpTxn);
-//            shard_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
-//            backup_send_txn_num_local->IncCount(message_epoch, message_server_id, 1);
-//            MergeQueueEnqueue(message_epoch, txn_ptr);
-//            CommitQueueEnqueue(message_epoch, txn_ptr);
-//        }
     }
 
     void Merger::ReadValidate() {
@@ -92,46 +68,17 @@ namespace Taas {
         message_server_id = txn_ptr->txn_server_id();
         shard_id = txn_ptr->shard_id();
         shard_server_id = txn_ptr->shard_server_id();
+        auto time1 = now_to_us();
         if (CRDTMerge::ValidateReadSet(txn_ptr)) {
-//            write_set = std::make_shared<proto::Transaction>();
-//            write_set->set_csn(txn_ptr->csn());
-//            write_set->set_commit_epoch(txn_ptr->commit_epoch());
-//            write_set->set_txn_server_id(txn_ptr->txn_server_id());
-//            write_set->set_client_ip(txn_ptr->client_ip());
-//            write_set->set_client_txn_id(txn_ptr->client_txn_id());
-//            write_set->set_shard_id(txn_ptr->shard_id());
-//            write_set->set_shard_server_id(txn_ptr->shard_server_id());
-//
-////            write_set->set_shard_id(ctx.taasContext.txn_node_ip_index);
-//            write_set->set_message_server_id(local_server_id);
-//            write_set->set_txn_type(proto::RemoteServerTxn);
-//            for(auto i = 0; i < txn_ptr->row_size(); i ++) { /// for SI isolation only seng the wriet set.
-//                const auto& row = txn_ptr->row(i);
-//                if(row.op_type() == proto::OpType::Read) continue;
-//                auto row_ptr = write_set->add_row();
-//                (*row_ptr) = row;
-//            }
-//            for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) {
-//                auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum - j) % ctx.taasContext.kTxnNodeNum;
-//                if (to_id == ctx.taasContext.txn_node_ip_index) continue;
-//                remote_server_should_send_txn_num_local->IncCount(message_epoch, to_id, 1);
-//            }
-//            EpochMessageSendHandler::SendTxnToServer(message_epoch, sent_to, txn_ptr, proto::TxnType::RemoteServerTxn);
-////            EpochMessageSendHandler::SendTxnToServer(message_epoch, sent_to, write_set, proto::TxnType::RemoteServerTxn);
-//            for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) {
-//                auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum - j) % ctx.taasContext.kTxnNodeNum;
-//                if (to_id == ctx.taasContext.txn_node_ip_index) continue;
-//                remote_server_send_txn_num_local->IncCount(message_epoch, to_id, 1);
-//            }
+            /// already enqueue merge_queue, commit_queue, redo_log_queue, result_return_queue
         }
         else {
             total_read_version_check_failed_txn_num_local.fetch_add(1);
             csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
             TransactionCache::epoch_abort_txn_set[message_epoch_mod]->insert(csn_temp, csn_temp);
-//            if(txn_ptr->txn_server_id() == ctx.taasContext.txn_node_ip_index)
-//                EpochMessageSendHandler::SendTxnCommitResultToClient(txn_ptr, proto::TxnState::Abort);
         }
         epoch_read_validated_txn_num_local->IncCount(message_epoch, message_server_id, 1);
+//        LOG(INFO) << "Validate Time Cost" << now_to_us() - time1;
     }
 
     void Merger::Merge() {
@@ -141,23 +88,26 @@ namespace Taas {
         total_merge_txn_num_local.fetch_add(1);
         total_merge_latency_local.fetch_add(now_to_us() - time1);
         epoch_merged_txn_num_local->IncCount(epoch, txn_server_id, 1);
+//        LOG(INFO) << "Merge Time Cost" << now_to_us() - time1;
     }
 
     void Merger::Commit() {
+        auto time1 = now_to_us();
         if (CRDTMerge::ValidateWriteSet(txn_ptr)) {
             CRDTMerge::Commit(txn_ptr);
         }
         epoch_committed_txn_num_local->IncCount(epoch, txn_ptr->txn_server_id(), 1);
+//        LOG(INFO) << "Commit Time Cost" << now_to_us() - time1;
     }
 
     void Merger::RedoLog() {
         auto time1 = now_to_us();
         if (!CRDTMerge::ValidateWriteSet(txn_ptr)) {
             total_failed_txn_num_local.fetch_add(1);
-            EpochMessageSendHandler::SendTxnCommitResultToClient(txn_ptr, proto::TxnState::Abort);
+//            EpochMessageSendHandler::SendTxnCommitResultToClient(txn_ptr, proto::TxnState::Abort);
         } else {
             RedoLoger::RedoLog(thread_id, txn_ptr);
-            EpochMessageSendHandler::SendTxnCommitResultToClient(txn_ptr, proto::TxnState::Commit);
+//            EpochMessageSendHandler::SendTxnCommitResultToClient(txn_ptr, proto::TxnState::Commit);
             success_commit_txn_num_local.fetch_add(1);
             success_commit_latency_local.fetch_add(now_to_us() - time1);
         }
@@ -165,6 +115,18 @@ namespace Taas {
         total_commit_latency_local.fetch_add(now_to_us() - time1);
 //        LOG(INFO) << "******* Merge RedoLog Epoch : " << epoch << "txn_server_id" << txn_ptr->txn_server_id() << "********\n";
         epoch_record_committed_txn_num_local->IncCount(epoch, txn_ptr->txn_server_id(), 1);
+//        LOG(INFO) << "RedoLog Time Cost" << now_to_us() - time1;
+    }
+
+    void Merger::ResultReturn() {
+        auto time1 = now_to_us();
+        if (!CRDTMerge::ValidateWriteSet(txn_ptr)) {
+            EpochMessageSendHandler::SendTxnCommitResultToClient(txn_ptr, proto::TxnState::Abort);
+        } else {
+            EpochMessageSendHandler::SendTxnCommitResultToClient(txn_ptr, proto::TxnState::Commit);
+        }
+        epoch_result_returned_txn_num_local->IncCount(epoch, txn_ptr->txn_server_id(), 1);
+//        LOG(INFO) << "ResultReturn Time Cost" << now_to_us() - time1;
     }
 
     void Merger::EpochMerge() {

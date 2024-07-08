@@ -88,13 +88,16 @@ namespace Taas{
             ThreadCounters::epoch_should_commit_txn_num_local_vec,
             ThreadCounters::epoch_committed_txn_num_local_vec,
             ThreadCounters::epoch_record_commit_txn_num_local_vec,
-            ThreadCounters::epoch_record_committed_txn_num_local_vec;
+            ThreadCounters::epoch_record_committed_txn_num_local_vec,
+            ThreadCounters::epoch_result_return_txn_num_local_vec,
+            ThreadCounters::epoch_result_returned_txn_num_local_vec;
 
     std::vector<std::unique_ptr<std::atomic<bool>>>
             ThreadCounters::epoch_read_validate_complete,
             ThreadCounters::epoch_merge_complete,
             ThreadCounters::epoch_commit_complete,
-            ThreadCounters::epoch_record_committed;
+            ThreadCounters::epoch_record_committed,
+            ThreadCounters::epoch_result_returned;
 
     std::atomic<uint64_t>
             ThreadCounters::total_merge_txn_num(0),
@@ -170,6 +173,9 @@ namespace Taas{
         epoch_committed_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num),
         epoch_record_commit_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num),
         epoch_record_committed_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num);
+        epoch_result_return_txn_num_local  = std::make_shared<AtomicCounters_Cache>(max_length, server_num);
+        epoch_result_returned_txn_num_local  = std::make_shared<AtomicCounters_Cache>(max_length, server_num);
+
 
         epoch_should_read_validate_txn_num_local_vec[thread_id] = epoch_should_read_validate_txn_num_local;
         epoch_read_validated_txn_num_local_vec[thread_id] = epoch_read_validated_txn_num_local;
@@ -179,6 +185,8 @@ namespace Taas{
         epoch_committed_txn_num_local_vec[thread_id] = epoch_committed_txn_num_local;
         epoch_record_commit_txn_num_local_vec[thread_id] = epoch_record_commit_txn_num_local;
         epoch_record_committed_txn_num_local_vec[thread_id] = epoch_record_committed_txn_num_local;
+        epoch_result_return_txn_num_local_vec[thread_id] = epoch_result_return_txn_num_local;
+        epoch_result_returned_txn_num_local_vec[thread_id] = epoch_result_returned_txn_num_local;
 
     }
 
@@ -297,17 +305,21 @@ namespace Taas{
         epoch_committed_txn_num_local_vec.resize(thread_total_num);
         epoch_record_commit_txn_num_local_vec.resize(thread_total_num);
         epoch_record_committed_txn_num_local_vec.resize(thread_total_num);
+        epoch_result_return_txn_num_local_vec.resize(thread_total_num);
+        epoch_result_returned_txn_num_local_vec.resize(thread_total_num);
 
         ///epoch merge state
         epoch_read_validate_complete.resize(ctx.taasContext.kCacheMaxLength);
         epoch_merge_complete.resize(ctx.taasContext.kCacheMaxLength);
         epoch_commit_complete.resize(ctx.taasContext.kCacheMaxLength);
         epoch_record_committed.resize(ctx.taasContext.kCacheMaxLength);
+        epoch_result_returned.resize(ctx.taasContext.kCacheMaxLength);
         for(int i = 0; i < static_cast<int>(ctx.taasContext.kCacheMaxLength); i ++) {
             epoch_read_validate_complete[i] = std::make_unique<std::atomic<bool>>(false);
             epoch_merge_complete[i] = std::make_unique<std::atomic<bool>>(false);
             epoch_commit_complete[i] = std::make_unique<std::atomic<bool>>(false);
             epoch_record_committed[i] = std::make_unique<std::atomic<bool>>(false);
+            epoch_result_returned[i] = std::make_unique<std::atomic<bool>>(false);
         }
         return true;
     }
@@ -357,6 +369,7 @@ namespace Taas{
         epoch_merge_complete[epoch_mod_temp]->store(false);
         epoch_commit_complete[epoch_mod_temp]->store(false);
         epoch_record_committed[epoch_mod_temp]->store(false);
+        epoch_result_returned[epoch_mod_temp]->store(false);
 
 
         ClearAllThreadLocalCountNum(epoch, shard_should_send_txn_num_local_vec);
@@ -388,6 +401,8 @@ namespace Taas{
         ClearAllThreadLocalCountNum(epoch, epoch_committed_txn_num_local_vec);
         ClearAllThreadLocalCountNum(epoch, epoch_record_commit_txn_num_local_vec);
         ClearAllThreadLocalCountNum(epoch, epoch_record_committed_txn_num_local_vec);
+        ClearAllThreadLocalCountNum(epoch, epoch_result_return_txn_num_local_vec);
+        ClearAllThreadLocalCountNum(epoch, epoch_result_returned_txn_num_local_vec);
 
         return true;
     }
@@ -767,6 +782,17 @@ namespace Taas{
         return false;
     }
 
+    bool ThreadCounters::CheckEpochResultReturned(const uint64_t& epoch) {
+        if (epoch_result_returned[epoch % ctx.taasContext.kCacheMaxLength]->load()) return true;
+        if (epoch < EpochManager::GetPhysicalEpoch() && IsCommitComplete(epoch) && IsRecordCommitted(epoch)) {
+            epoch_result_returned[epoch % ctx.taasContext.kCacheMaxLength]->store(true);
+            return true;
+        }
+        return false;
+    }
+
+
+
 
 
     bool ThreadCounters::IsReadValidateComplete(const uint64_t& epoch) {
@@ -793,6 +819,13 @@ namespace Taas{
     bool ThreadCounters::IsRecordCommitted(const uint64_t & epoch) {
         if(GetAllThreadLocalCountNum(epoch, epoch_record_commit_txn_num_local_vec) >
            GetAllThreadLocalCountNum(epoch, epoch_record_committed_txn_num_local_vec))
+            return false;
+        return true;
+    }
+
+    bool ThreadCounters::IsResultReturned(const uint64_t & epoch) {
+        if(GetAllThreadLocalCountNum(epoch, epoch_result_return_txn_num_local_vec) >
+           GetAllThreadLocalCountNum(epoch, epoch_result_returned_txn_num_local_vec))
             return false;
         return true;
     }
