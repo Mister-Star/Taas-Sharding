@@ -11,78 +11,8 @@
 #include "tools/thread_pool_light.h"
 
 namespace Taas {
-//
-//    bool ShardEpochManager::CheckEpochMergeState(const Context& ctx) {
-//        auto res = false;
-//        while (EpochManager::IsShardMergeComplete(merge_epoch.load()) &&
-//               merge_epoch.load() < EpochManager::GetPhysicalEpoch()) {
-//            merge_epoch.fetch_add(1);
-//        }
-//        auto i = merge_epoch.load();
-//        while(i < EpochManager::GetPhysicalEpoch() &&
-//              (ctx.taasContext.kTxnNodeNum == 1 ||
-//               (EpochMessageReceiveHandler::CheckEpochShardSendComplete(i) &&
-//                       EpochMessageReceiveHandler::CheckEpochShardReceiveComplete(i) &&
-//                       EpochMessageReceiveHandler::CheckEpochBackUpComplete(i))
-//              ) &&
-//              Merger::CheckEpochMergeComplete(i)
-//                ) {
-//            EpochManager::SetShardMergeComplete(i, true);
-//            merge_epoch.fetch_add(1);
-//            LOG(INFO) << "**** Finished Epoch Merge Epoch : " << i << "****\n";
-//            i ++;
-//            res = true;
-//        }
-//        return res;
-//    }
-//
-//    bool ShardEpochManager::CheckEpochAbortMergeState(const Context& ctx) {
-//        auto i = abort_set_epoch.load();
-//        if(i >= merge_epoch.load() && commit_epoch.load() >= abort_set_epoch.load()) return false;
-//        if(EpochManager::IsAbortSetMergeComplete(i)) return true;
-//        if( i < merge_epoch.load()  && EpochManager::IsShardMergeComplete(i) &&
-//            (ctx.taasContext.kTxnNodeNum == 1 || EpochMessageReceiveHandler::CheckEpochAbortSetMergeComplete(i))) {
-//
-//            EpochManager::SetAbortSetMergeComplete(i, true);
-//            abort_set_epoch.fetch_add(1);
-//            LOG(INFO) << "******** Finished Abort Set Merge Epoch : " << i << "********\n";
-//            i ++;
-//            return true;
-//        }
-//        return false;
-//    }
 
     static uint64_t last_total_commit_txn_num = 0;
-//    bool ShardEpochManager::CheckEpochCommitState(const Context& ctx) {
-//        if(commit_epoch.load() >= abort_set_epoch.load()) return false;
-//        auto i = commit_epoch.load();
-//        if( i < abort_set_epoch.load() && EpochManager::IsShardMergeComplete(i) &&
-//            EpochManager::IsAbortSetMergeComplete(i) &&
-//            Merger::CheckEpochCommitComplete(i)
-//                ) {
-//            EpochManager::SetCommitComplete(i, true);
-//            auto epoch_commit_success_txn_num = ThreadCounters::GetAllThreadLocalCountNum(i,
-//                                                           ThreadCounters::epoch_record_committed_txn_num_local_vec);
-//            total_commit_txn_num += epoch_commit_success_txn_num;///success
-//            if(i % ctx.taasContext.print_mode_size == 0) {
-//                LOG(INFO) << PrintfToString("************ 完成一个Epoch的合并 Epoch: %lu, EpochSuccessCommitTxnNum: %lu, EpochCommitTxnNum: %lu ************\n",
-//                                        i, epoch_commit_success_txn_num, EpochMessageSendHandler::TotalTxnNum.load() - last_total_commit_txn_num);
-//                LOG(INFO) << PrintfToString("Epoch: %lu ClearEpoch: %lu, SuccessTxnNumber %lu, ToTalSuccessLatency %lu, SuccessAvgLatency %lf, TotalCommitTxnNum %lu, TotalCommitlatency %lu, TotalCommitAvglatency %lf ************\n",
-//                                            i, clear_epoch.load(),
-//                                            EpochMessageSendHandler::TotalSuccessTxnNUm.load(), EpochMessageSendHandler::TotalSuccessLatency.load(),
-//                                            (((double)EpochMessageSendHandler::TotalSuccessLatency.load()) / ((double)EpochMessageSendHandler::TotalSuccessTxnNUm.load())),
-//                                            EpochMessageSendHandler::TotalTxnNum.load(),///receive from client
-//                                            EpochMessageSendHandler::TotalLatency.load(),
-//                                            (((double)EpochMessageSendHandler::TotalLatency.load()) / ((double)EpochMessageSendHandler::TotalTxnNum.load())));
-//            }
-//            last_total_commit_txn_num = EpochMessageSendHandler::TotalTxnNum.load();
-//            commit_epoch.fetch_add(1);
-//            EpochManager::AddLogicalEpoch();
-//            return true;
-//        }
-//        return false;
-//    }
-
 
     void ShardEpochManager::EpochLogicalTimerManagerThreadMain(const Context& ctx) {
 
