@@ -79,7 +79,8 @@ namespace Taas {
                         }
                     }
 
-                    while (!EpochManager::IsResultReturned(merger.epoch) &&
+                    while (EpochManager::IsRecordCommitted(merger.epoch) &&
+                        !EpochManager::IsResultReturned(merger.epoch) &&
                         TransactionCache::epoch_result_return_queue[merger.epoch_mod]->try_dequeue(
                                merger.txn_ptr)) {
                         if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() !=
