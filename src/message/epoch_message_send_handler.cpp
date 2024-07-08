@@ -201,6 +201,7 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
             txn_end->set_txn_server_id(txn_node_ip_index);
             txn_end->set_txn_type(proto::TxnType::EpochRemoteServerEndFlag);
             txn_end->set_commit_epoch(epoch);
+            txn_end->set_txn_server_id(ctx.taasContext.txn_node_ip_index);
             txn_end->set_message_server_id(ctx.taasContext.txn_node_ip_index);
             txn_end->set_csn(EpochMessageReceiveHandler::GetAllThreadLocalCountNum(epoch,
                                                                                    EpochMessageReceiveHandler::remote_server_should_send_txn_num_local_vec));

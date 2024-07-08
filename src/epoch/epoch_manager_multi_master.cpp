@@ -30,8 +30,8 @@ namespace Taas {
                 workers.push_emergency_task([&epoch, &ctx] () {
                     EpochMessageSendHandler::SendEpochEndMessage(ctx.taasContext.txn_node_ip_index, epoch, ctx.taasContext.kTxnNodeNum);
                 });
-                while(!EpochMessageReceiveHandler::IsRemoteServerSendFinish(epoch)) usleep(logical_sleep_timme);
 
+                while(!EpochMessageReceiveHandler::IsRemoteServerSendFinish(epoch)) usleep(logical_sleep_timme);
                 LOG(INFO) << "**** finished IsRemoteServerSendFinish : " << epoch << "****\n";
                 while(!EpochMessageReceiveHandler::IsRemoteServerACKReceiveComplete(epoch)) usleep(logical_sleep_timme);
                 LOG(INFO) << "**** finished IsRemoteServerACKReceiveComplete : " << epoch << "****\n";
