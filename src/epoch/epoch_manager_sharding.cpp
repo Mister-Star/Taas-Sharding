@@ -70,14 +70,14 @@ namespace Taas {
                         EpochManager::GetPhysicalEpoch(), epoch, epoch_commit_success_txn_num, total_commit_txn_num,
                         EpochMessageSendHandler::TotalTxnNum.load() - last_total_commit_txn_num)
                           << "\n Time Cost  Epoch: " << epoch
-                          << ",Shard Transmit Txn cost: " << time2 - time1
-                          << ",Validate and Transmit write set Txn cost: " << time3 - time2
-                          << ",Merge time cost : " << time4 - time3
-                          << ",Abort Set Merge time cost : " << time5 - time4
-                          << ",Commit time cost : " << time6 - time5
-                          << ",Log time cost : " << time7 - time6
-                          << "Total Time Cost ****" << time7 - time1
-                          << "****end\n";
+                          << " ,Shard Transmit Txn cost: " << time2 - time1
+                          << " ,Validate and Transmit write set Txn cost: " << time3 - time2
+                          << " ,Merge time cost : " << time4 - time3
+                          << " ,Abort Set Merge time cost : " << time5 - time4
+                          << " ,Commit time cost : " << time6 - time5
+                          << " ,Log time cost : " << time7 - time6
+                          << " Total Time Cost **** " << time7 - time1
+                          << " ****end\n";
                 OUTPUTLOG("===== Logical Start Epoch的合并 ===== ", epoch);
             }
             epoch ++;
