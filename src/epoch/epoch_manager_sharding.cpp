@@ -76,7 +76,8 @@ namespace Taas {
                           << " ,Abort Set Merge time cost : " << time5 - time4
                           << " ,Commit time cost : " << time6 - time5
                           << " ,Log time cost : " << time7 - time6
-                          << " Total Time Cost **** " << time7 - time1
+                          << " ,Result time cost : " << time8 - time7
+                          << " Total Time Cost **** " << time8 - time1
                           << " ****end\n";
                 OUTPUTLOG("===== Logical Start Epoch的合并 ===== ", epoch);
             }
