@@ -27,26 +27,26 @@ namespace Taas {
 //                LOG(INFO) << "**** Start Epoch Merge Epoch : " << epoch << "****\n";
                 while(!EpochMessageReceiveHandler::CheckEpochClientTxnHandleComplete(epoch)) usleep(logical_sleep_timme);
                 while(!Merger::CheckEpochReadValidateComplete(epoch)) usleep(logical_sleep_timme);
-                LOG(INFO) << "**** finished CheckEpochReadValidateComplete : " << epoch << "****\n";
+//                LOG(INFO) << "**** finished CheckEpochReadValidateComplete : " << epoch << "****\n";
                 workers.push_emergency_task([&epoch, &ctx] () {
                     EpochMessageSendHandler::SendEpochEndMessage(ctx.taasContext.txn_node_ip_index, epoch, ctx.taasContext.kTxnNodeNum);
                 });
 
                 while(!EpochMessageReceiveHandler::IsRemoteServerSendFinish(epoch)) usleep(logical_sleep_timme);
-                LOG(INFO) << "**** finished IsRemoteServerSendFinish : " << epoch << "****\n";
+//                LOG(INFO) << "**** finished IsRemoteServerSendFinish : " << epoch << "****\n";
                 while(!EpochMessageReceiveHandler::IsRemoteServerACKReceiveComplete(epoch)) usleep(logical_sleep_timme);
-                LOG(INFO) << "**** finished IsRemoteServerACKReceiveComplete : " << epoch << "****\n";
+//                LOG(INFO) << "**** finished IsRemoteServerACKReceiveComplete : " << epoch << "****\n";
                 while(!EpochMessageReceiveHandler::CheckEpochRemoteServerSendComplete(epoch)) usleep(logical_sleep_timme);
                 auto time2 = now_to_us();
-                LOG(INFO) << "**** Finished CheckEpochRemoteServerSendComplete Epoch : " << epoch << ",time cost : " << time2 - time1 << "****\n";
+//                LOG(INFO) << "**** Finished CheckEpochRemoteServerSendComplete Epoch : " << epoch << ",time cost : " << time2 - time1 << "****\n";
 
                 while(!EpochMessageReceiveHandler::IsRemoteServerPackReceiveComplete(epoch)) usleep(logical_sleep_timme);
-                LOG(INFO) << "**** finished IsRemoteServerPackReceiveComplete : " << epoch << "****\n";
+//                LOG(INFO) << "**** finished IsRemoteServerPackReceiveComplete : " << epoch << "****\n";
                 while(!EpochMessageReceiveHandler::IsRemoteServerTxnReceiveComplete(epoch)) usleep(logical_sleep_timme);
-                LOG(INFO) << "**** finished IsRemoteServerTxnReceiveComplete : " << epoch << "****\n";
+//                LOG(INFO) << "**** finished IsRemoteServerTxnReceiveComplete : " << epoch << "****\n";
                 while(!EpochMessageReceiveHandler::CheckEpochRemoteServerReceiveComplete(epoch)) usleep(logical_sleep_timme);
                 auto time3 = now_to_us();
-                LOG(INFO) << "**** Finished CheckEpochRemoteServerReceiveComplete Epoch : " << epoch << ",time cost : " << time3 - time1 << "****\n";
+//                LOG(INFO) << "**** Finished CheckEpochRemoteServerReceiveComplete Epoch : " << epoch << ",time cost : " << time3 - time1 << "****\n";
 
                 while(!EpochMessageReceiveHandler::IsBackUpACKReceiveComplete(epoch)) usleep(logical_sleep_timme);
 //                LOG(INFO) << "**** finished IsBackUpACKReceiveComplete : " << epoch << "****\n";
@@ -54,13 +54,13 @@ namespace Taas {
 //                LOG(INFO) << "**** finished IsBackUpSendFinish : " << epoch << "****\n";
                 while(!EpochMessageReceiveHandler::CheckEpochBackUpComplete(epoch)) usleep(logical_sleep_timme);
                 auto time4 = now_to_us();
-                LOG(INFO) << "**** Finished CheckEpochBackUpComplete Epoch : " << epoch << ",time cost : " << time4 - time3 << "****\n";
+//                LOG(INFO) << "**** Finished CheckEpochBackUpComplete Epoch : " << epoch << ",time cost : " << time4 - time3 << "****\n";
 
                 while(!Merger::CheckEpochMergeComplete(epoch)) usleep(logical_sleep_timme);
                 EpochManager::SetEpochMergeComplete(epoch, true);
                 merge_epoch.fetch_add(1);
                 auto time5 = now_to_us();
-                LOG(INFO) << "**** Finished Epoch Merge Epoch : " << epoch << ",time cost : " << time5 - time1 << ",rest time cost : " << time5 - time4 << "****\n";
+//                LOG(INFO) << "**** Finished Epoch Merge Epoch : " << epoch << ",time cost : " << time5 - time1 << ",rest time cost : " << time5 - time4 << "****\n";
 
 
                 /// in multi master mode, there is no need to send and merge shard abort set
