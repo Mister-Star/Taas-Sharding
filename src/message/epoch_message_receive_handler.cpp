@@ -167,7 +167,7 @@ namespace Taas {
             }
             case proto::TxnType::EpochRemoteServerEndFlag : {
                 remote_server_should_receive_txn_num.IncCount(message_epoch,message_server_id,txn_ptr->csn());
-                shard_received_pack_num.IncCount(message_epoch,message_server_id, 1);
+                remote_server_received_pack_num.IncCount(message_epoch,message_server_id, 1);
                 CheckEpochShardReceiveComplete(message_epoch);
                 EpochMessageSendHandler::SendTxnToServer(message_epoch,message_server_id, empty_txn_ptr, proto::TxnType::EpochRemoteServerACK);
                 break;
