@@ -31,7 +31,7 @@ namespace Taas {
     uint64_t EpochManager::max_length = 10000;
     //epoch merge state
     std::vector<std::unique_ptr<std::atomic<bool>>> EpochManager::merge_complete, EpochManager::abort_set_merge_complete,
-            EpochManager::commit_complete, EpochManager::record_committed, EpochManager::is_current_epoch_abort;
+            EpochManager::commit_complete, EpochManager::record_committed, EpochManager::result_returned, EpochManager::is_current_epoch_abort;
     //cluster state
     std::vector<std::unique_ptr<std::atomic<uint64_t>>> EpochManager::online_server_num;
     AtomicCounters_Cache EpochManager::server_state(10, 2);
@@ -62,6 +62,7 @@ namespace Taas {
         EpochManager::abort_set_merge_complete.resize(EpochManager::max_length);
         EpochManager::commit_complete.resize(EpochManager::max_length);
         EpochManager::record_committed.resize(EpochManager::max_length);
+        EpochManager::result_returned.resize(EpochManager::max_length);
         EpochManager::is_current_epoch_abort.resize(EpochManager::max_length);
         //cluster state
         EpochManager::online_server_num.resize(EpochManager::max_length + 1);
@@ -79,6 +80,7 @@ namespace Taas {
             EpochManager::abort_set_merge_complete[i] = std::make_unique<std::atomic<bool>>(false);
             EpochManager::commit_complete[i] = std::make_unique<std::atomic<bool>>(false);
             EpochManager::record_committed[i] = std::make_unique<std::atomic<bool>>(false);
+            EpochManager::result_returned[i] = std::make_unique<std::atomic<bool>>(false);
             EpochManager::is_current_epoch_abort[i] = std::make_unique<std::atomic<bool>>(false);
             //cluster state
             EpochManager::online_server_num[i] = std::make_unique<std::atomic<uint64_t>>();

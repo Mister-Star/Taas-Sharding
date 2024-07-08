@@ -54,7 +54,7 @@ namespace Taas {
         static uint64_t max_length;
         static std::vector<std::unique_ptr<std::atomic<bool>>>
                     merge_complete, abort_set_merge_complete,
-                    commit_complete, record_committed,
+                    commit_complete, record_committed, result_returned,
                     is_current_epoch_abort;
 
         ///epoch, index, value  for 集群状态
@@ -78,6 +78,9 @@ namespace Taas {
 
         static bool IsRecordCommitted(uint64_t epoch){ return record_committed[epoch % max_length]->load();}
         static void SetRecordCommitted(uint64_t epoch, bool value){ record_committed[epoch % max_length]->store(value);}
+
+        static bool IsResultReturned(uint64_t epoch){ return result_returned[epoch % max_length]->load();}
+        static void SetResultReturned(uint64_t epoch, bool value){ result_returned[epoch % max_length]->store(value);}
 
         static bool IsCurrentEpochAbort(uint64_t epoch){ return is_current_epoch_abort[epoch % max_length]->load();}
         static void SetCurrentEpochAbort(uint64_t epoch, bool value){ is_current_epoch_abort[epoch % max_length]->store(value);}
@@ -107,6 +110,7 @@ namespace Taas {
             abort_set_merge_complete[epoch_mod]->store(false);
             commit_complete[epoch_mod]->store(false);
             record_committed[epoch_mod]->store(false);
+            result_returned[epoch_mod]->store(false);
             is_current_epoch_abort[epoch_mod]->store(false);
         }
 
