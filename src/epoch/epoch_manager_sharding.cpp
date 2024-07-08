@@ -58,7 +58,7 @@ namespace Taas {
 //            while(redo_log_epoch.load() < epoch) std::this_thread::yield();;
 
             while(!Merger::CheckEpochResultReturned(epoch)) std::this_thread::yield();;
-            EpochManager::SetRecordCommitted(epoch, true);
+            EpochManager::SetResultReturned(epoch, true);
             auto time8 = now_to_us();
             commit_epoch.fetch_add(1);
             EpochManager::AddLogicalEpoch();
