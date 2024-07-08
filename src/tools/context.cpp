@@ -103,6 +103,8 @@ namespace Taas {
 
         tinyxml2::XMLElement* mot = root->FirstChildElement("is_mot_enable");
         is_mot_enable = std::stoull(mot->GetText());
+        tinyxml2::XMLElement* nebula = root->FirstChildElement("is_nebula_enable");
+        is_nebula_enable = std::stoull(nebula->GetText());
         tinyxml2::XMLElement* mot_thread_num = root->FirstChildElement("mot_thread_num");
         kMOTThreadNum = std::stoull(mot_thread_num->GetText());
 
