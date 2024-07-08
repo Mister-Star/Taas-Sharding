@@ -258,11 +258,13 @@ bool EpochMessageSendHandler::SendTxnCommitResultToClient(const std::shared_ptr<
     }
 
     bool EpochMessageSendHandler::SendEpochRemoteServerEndMessage(const uint64_t &txn_node_ip_index, const uint64_t &epoch, const uint64_t &kTxnNodeNum) {
+        return true;
     }
 
     void EpochMessageSendHandler::CheckAndSendAbortSet() {
     }
     bool EpochMessageSendHandler::SendAbortSet(const uint64_t &txn_node_ip_index, const uint64_t &epoch) {
+        return true;
     }
 
 }
