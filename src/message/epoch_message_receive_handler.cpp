@@ -149,7 +149,7 @@ namespace Taas {
             txn_ptr = std::make_shared<proto::Transaction>(msg_ptr->txn());
             HandleReceivedTxn();
             txn_ptr.reset();
-            if(total_single_shard_num % ctx.taasContext.print_mode_size == 0) {
+            if(total_single_shard_num > 0 && total_single_shard_num % ctx.taasContext.print_mode_size == 0) {
                 LOG(INFO) << "ClientTxnHandle Time Cost : " << total_single_shard_time  << " Validate Time count : " << total_single_shard_num
                           << "ShardedClientTxn Time Cost : " << total_single_remote_handle_time << " Merge Time count : " << total_single_remote_handle_num
                           << " end";

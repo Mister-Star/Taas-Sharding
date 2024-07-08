@@ -138,6 +138,14 @@ namespace Taas {
         total_single_result_num ++;
         total_single_time += now_to_us() - txn_ptr->csn();
         total_single_num ++;
+        if(total_single_num > 0 &&  total_single_num % ctx.taasContext.print_mode_size == 0) {
+            LOG(INFO) << " Validate Time Cost : " << total_single_validate_time  << " Validate Time count : " << total_single_validate_num
+                      << " Merge Time Cost : " << total_single_merge_time << " Merge Time count : " << total_single_merge_num
+                      << " Commit Time Cost : " << total_single_commit_time << " Commit Time count : " << total_single_commit_num
+                      << " RedoLog Time Cost : " << total_single_log_time << " RedoLog Time count : " << total_single_log_num
+                      << " ResultReturn Time Cost : " << total_single_result_time << " ResultReturn Time count : " << total_single_result_num
+                      << " Total Time Cost : " << total_single_time << " Total Time count : " << total_single_num << " end";
+        }
 //        LOG(INFO) << "ResultReturn Time Cost " << now_to_us() - time1 << " us";
 //        LOG(INFO) << "Total Cost " << now_to_us() - txn_ptr->csn() << " us";
     }
