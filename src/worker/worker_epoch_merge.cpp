@@ -90,13 +90,13 @@ namespace Taas {
                         }
                     }
 
-                    if(merger.total_single_num % ctx.taasContext.print_mode_size == 0) {
-                        LOG(INFO) << "Validate Time Cost : " << merger.total_single_validate_time  << " Validate Time count : " << merger.total_single_validate_num
-                        << "Merge Time Cost : " << merger.total_single_merge_time << " Merge Time count : " << merger.total_single_merge_num
-                        << "Commit Time Cost : " << merger.total_single_commit_time << " Commit Time count : " << merger.total_single_commit_num
-                        << "RedoLog Time Cost : " << merger.total_single_log_time << " RedoLog Time count : " << merger.total_single_log_num
-                        << "ResultReturn Time Cost : " << merger.total_single_result_time << " ResultReturn Time count : " << merger.total_single_result_num
-                        << "Total Time Cost : " << merger.total_single_time << " Total Time count : " << merger.total_single_num << " end";
+                    if(merger.total_single_num > 0 &&  merger.total_single_num % ctx.taasContext.print_mode_size == 0) {
+                        LOG(INFO) << " Validate Time Cost : " << merger.total_single_validate_time  << " Validate Time count : " << merger.total_single_validate_num
+                        << " Merge Time Cost : " << merger.total_single_merge_time << " Merge Time count : " << merger.total_single_merge_num
+                        << " Commit Time Cost : " << merger.total_single_commit_time << " Commit Time count : " << merger.total_single_commit_num
+                        << " RedoLog Time Cost : " << merger.total_single_log_time << " RedoLog Time count : " << merger.total_single_log_num
+                        << " ResultReturn Time Cost : " << merger.total_single_result_time << " ResultReturn Time count : " << merger.total_single_result_num
+                        << " Total Time Cost : " << merger.total_single_time << " Total Time count : " << merger.total_single_num << " end";
                     }
 
                     if (sleep_flag) usleep(merge_sleep_time);
