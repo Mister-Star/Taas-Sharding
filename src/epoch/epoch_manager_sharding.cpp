@@ -147,7 +147,7 @@ namespace Taas {
                           << ",Commit time cost : " << time6 - time5
                           << ",Log time cost : " << time7 - time6
                           << "Total Time Cost ****" << time7 - time1
-                          << "****\n";
+                          << "****end\n";
                 OUTPUTLOG("===== Logical Start Epoch的合并 ===== ", epoch);
             }
             epoch ++;
