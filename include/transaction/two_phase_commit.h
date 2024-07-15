@@ -173,7 +173,6 @@ namespace Taas {
     std::unique_ptr<std::string> message_string_ptr;
     std::unique_ptr<proto::Message> msg_ptr;
     std::shared_ptr<proto::Transaction> txn_ptr;
-    std::unique_ptr<proto::Transaction> local_txn_ptr;
     std::unique_ptr<pack_params> pack_param;
     std::string csn_temp, key_temp, key_str, table_name, csn_result;
     uint64_t thread_id = 0, server_dequeue_id, epoch_mod, epoch, max_length,
@@ -219,7 +218,7 @@ namespace Taas {
         tid = std::to_string(local_txn_ptr->csn()) + ":" + std::to_string(local_txn_ptr->txn_server_id());
         txn_phase_map.remove(tid);
         txn_state_map.remove(tid);
-//        abort_txn_set.remove(tid);
+        abort_txn_set.remove(tid);
     }
 
     void PrepareLockThread();

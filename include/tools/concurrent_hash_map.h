@@ -312,18 +312,22 @@ namespace Taas {
             std::unordered_map<key, value>& _map_temp = GetMapRef(k);
             std::unique_lock<std::mutex> lock(GetMutexRef(k));
             map_iterator iter = _map_temp.find(k);
+            value tmp = _map_temp[k];
             if(iter != _map_temp.end()){
                 if(_map_temp[k] == v) { /// locked already by itself
+                    tmp = _map_temp[k];
                     _map_temp[k] = "";
+                    _map_temp.erase(iter);
                 }
                 else if(_map_temp[k] == "" || _map_temp[k] == "0" || _map_temp[k] == "-1"){
+                    tmp = _map_temp[k];
                     _map_temp[k] = "";
+                    _map_temp.erase(iter);
                 }
                 else { /// locked already by others
                     /// do nothing
                 }
             }
-            value tmp = _map_temp[k];
             return tmp;
         }
 

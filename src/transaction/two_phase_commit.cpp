@@ -237,17 +237,18 @@ namespace Taas {
       uint64_t currTxnTime = now_to_us() - txn.csn();
 
       finishedTxnNumber.fetch_add(1);
-      lags_.store(totalTxnNumber.load() - finishedTxnNumber.load());
+      lags_.store(totalTxnNumber.load() - finishedTxnNumber.load() + 10);
+
       if (txn_state == proto::TxnState::Commit){
           successTxnNumber.fetch_add(1);
           successTime.fetch_add(currTxnTime);
           totalTime.fetch_add(currTxnTime);
-          if ((successTxnNumber.load() + failedTxnNumber.load()) % 100 == 0 || lags_ > 200) OUTPUTLOG("============= 2PC + 2PL INFO =============", currTxnTime);
+          if ((successTxnNumber.load() + failedTxnNumber.load()) % 1000 == 0 || lags_ > 200) OUTPUTLOG("============= 2PC + 2PL INFO =============", currTxnTime);
       } else {
           failedTxnNumber.fetch_add(1);
           failedTime.fetch_add(currTxnTime);
           totalTime.fetch_add(currTxnTime);
-          if ((successTxnNumber.load() + failedTxnNumber.load()) % 100 == 0 || lags_ > 200) OUTPUTLOG("============= 2PC + 2PL INFO =============", currTxnTime);
+          if ((successTxnNumber.load() + failedTxnNumber.load()) % 1000 == 0 || lags_ > 200) OUTPUTLOG("============= 2PC + 2PL INFO =============", currTxnTime);
       }
       // only coordinator can send to client
 
@@ -333,6 +334,10 @@ namespace Taas {
               MessageQueue::request_queue->enqueue(std::move(msg_ptr));
               MessageQueue::request_queue->enqueue(nullptr);
           }
+          message_ptr.reset();
+          message_string_ptr.reset();
+          msg_ptr.reset();
+          txn_ptr.reset();
       }
       return true;
   }
@@ -379,6 +384,10 @@ namespace Taas {
             MessageQueue::request_queue->enqueue(std::move(msg_ptr));
             MessageQueue::request_queue->enqueue(nullptr);
         }
+        message_ptr.reset();
+        message_string_ptr.reset();
+        msg_ptr.reset();
+        txn_ptr.reset();
     }
     return true;
   }
@@ -666,7 +675,6 @@ namespace Taas {
         break;
       }
       case proto::TxnType::Abort_txn: {
-          tid = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
           Two_PL_UNLOCK(*txn_ptr);
           CleanTxnState(txn_ptr);
           break;
@@ -689,7 +697,7 @@ namespace Taas {
 
   void TwoPC::OUTPUTLOG(const std::string& s, uint64_t time){
       LOG(INFO) << s.c_str() <<
-                "\ntotalTxnNumber: " << totalTxnNumber.load() << "\t\t\t disstance" << lags_ << "\t\t\tfailedTxnNumber: " << failedTxnNumber.load() <<"\t\t\tsuccessTxnNumber: " << successTxnNumber.load() <<
+                "\ntotalTxnNumber: " << totalTxnNumber.load() << "\t\t\t disstance: " << lags_ << "\t\t\tfailedTxnNumber: " << failedTxnNumber.load() <<"\t\t\tsuccessTxnNumber: " << successTxnNumber.load() <<
                 "\nlockFailed: " << lockFailed.load() << "\t\t\tvalidateFailed: " << validateFailed.load() << "\t\t\tcurTxnTime: " << time <<
                 "\n[TotalTxn] avgTotalTxnTime: " << totalTime/totalTxnNumber << "\t\t\t totalTime: " << totalTime.load() <<
                 "\n[SuccessTxn] avgSuccessTxnTime: " << (successTxnNumber.load() == 0 ? "Nan": std::to_string(successTime.load()/successTxnNumber.load())) << "\t\t\t successTime: " << successTime.load() <<
