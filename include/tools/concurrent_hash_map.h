@@ -251,6 +251,17 @@ namespace Taas {
             return false;
         }
 
+        bool get_value_or_empty(const key &k, value &v){
+            std::unordered_map<key, value>& _map_temp = GetMapRef(k);
+            std::unique_lock<std::mutex> lock(GetMutexRef(k));
+            map_iterator iter = _map_temp.find(k);
+            if(iter != _map_temp.end()){
+                v = _map_temp[k];
+                return true;
+            }
+            return false;
+        }
+
         bool try_lock(const key &k, value &v) {
             std::unordered_map<key, value>& _map_temp = GetMapRef(k);
             std::unique_lock<std::mutex> lock(GetMutexRef(k));
@@ -262,13 +273,38 @@ namespace Taas {
                 else if(_map_temp[k] == "" || _map_temp[k] == "0"){
                     _map_temp[k] = v;
                     return true;
-                }
+                }   // maybe wound-wait?
                 else { /// locked already by others
                     return false;
                 }
             }
             _map_temp[k] = v;
             return true;
+        }
+
+        int try_lock_wound_wait(const key &k, value &v, value &r) {
+            std::unordered_map<key, value>& _map_temp = GetMapRef(k);
+            std::unique_lock<std::mutex> lock(GetMutexRef(k));
+            map_iterator iter = _map_temp.find(k);
+            if(iter != _map_temp.end()){
+                if(_map_temp[k] == v) { /// locked already by itself
+                    return 1;
+                }
+                else if(_map_temp[k] == "" || _map_temp[k] == "0"){
+                    _map_temp[k] = v;
+                    return 1;
+                }   // maybe wound-wait?
+                else if (_map_temp[k] > v) {    // wound
+                    r = _map_temp[k];
+                    _map_temp[k] = v;
+                    return 2;
+                }
+                else { /// locked already by others
+                    return 0;
+                }
+            }
+            _map_temp[k] = v;
+            return 1;
         }
 
 

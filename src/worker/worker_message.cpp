@@ -13,6 +13,7 @@ namespace Taas {
         std::string name = "TxnMessage-" + std::to_string(id);
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         EpochMessageReceiveHandler receiveHandler;
+        //
         class TwoPC twoPC;
         while(init_ok_num.load() < 5) usleep(sleep_time);
         receiveHandler.Init(id, ctx);
@@ -42,9 +43,7 @@ namespace Taas {
                 }
                 case TaasMode::TwoPC : {
                     while(!EpochManager::IsTimerStop()) {
-                        twoPC.HandleClientMessage();        // test
-//                        twoPC.HandleReceivedMessage();
-
+                        twoPC.HandleClientMessage();
                     }
                     break;
                 }
@@ -74,7 +73,7 @@ namespace Taas {
                 }
                 case TaasMode::TwoPC : {
                     while(!EpochManager::IsTimerStop()) {
-                        twoPC.HandleReceivedMessage();      // test
+                        twoPC.HandleReceivedMessage();
                     }
                     break;
                 }

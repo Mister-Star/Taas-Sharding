@@ -141,7 +141,8 @@ namespace Taas {
                     cnt++;
                 }
                 else {
-                    threads.push_back(std::make_unique<std::thread>(Client, ctx, i));
+//                    threads.push_back(std::make_unique<std::thread>(Client, ctx, i));
+                    threads.push_back(std::make_unique<std::thread>(Client_2PC, ctx, i));
                     cnt++;
                 }
             }

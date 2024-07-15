@@ -32,8 +32,8 @@ namespace Taas {
   struct TwoPCTxnStateStruct {
     uint64_t txn_shard_num;         /// 有多少个分片子事务
     std::atomic<uint64_t> two_pl_num;  /// 用来记录有多少个子事务执行完成
-    std::atomic<uint64_t> two_pc_prepare_num,
-        two_pc_commit_num;  /// 2pc准备阶段子事务个数，提交阶段子事务个数
+    std::atomic<uint64_t> two_pc_prepare_num, two_pc_commit_num;  /// 2pc准备阶段子事务个数，提交阶段子事务个数
+      std::atomic<uint64_t> two_pl_failed_num, two_pc_prepare_failed_num, two_pc_commit_failed_num;  /// each phase failed num
     std::atomic<uint64_t> two_pl_reply;
     std::atomic<uint64_t> two_pc_prepare_reply, two_pc_commit_reply;
     TwoPCTxnState txn_state;
@@ -48,6 +48,10 @@ namespace Taas {
       two_pl_num.store(value.two_pl_num);
       two_pc_prepare_num.store(value.two_pc_prepare_num);
       two_pc_commit_num.store(value.two_pc_commit_num);
+      // failed num
+        two_pl_failed_num.store(value.two_pl_failed_num);
+        two_pc_prepare_failed_num.store(value.two_pc_prepare_failed_num);
+        two_pc_commit_failed_num.store(value.two_pc_commit_failed_num);
       txn_state = value.txn_state;
       return *this;
     }

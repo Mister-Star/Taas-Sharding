@@ -96,7 +96,9 @@ namespace Taas {
                 break;
             }
             case TaasMode::TwoPC : {
-                two_pc.HandleClientMessage();
+                // TODO: handle lock request
+                two_pc.PrepareLockThread();
+
                 break;
             }
         }
