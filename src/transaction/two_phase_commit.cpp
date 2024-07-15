@@ -12,8 +12,9 @@
 namespace Taas {
     Context TwoPC::ctx;
     uint64_t TwoPC::shard_num;
-    std::atomic<uint64_t> TwoPC::successTxnNumber , TwoPC::totalTxnNumber ,
-            TwoPC::failedTxnNumber ,TwoPC::lockFailed, TwoPC::validateFailed, TwoPC::totalTime,
+    uint64_t TwoPC::pre_time, TwoPC::curr_time;
+    std::atomic<uint64_t> TwoPC::successTxnNumber , TwoPC::totalTxnNumber , TwoPC::finishedTxnNumber, TwoPC::lags_,
+    TwoPC::failedTxnNumber ,TwoPC::lockFailed, TwoPC::validateFailed, TwoPC::totalTime,
             TwoPC::successTime, TwoPC::failedTime;
     concurrent_unordered_map<std::string, std::string> TwoPC::row_lock_map;
     concurrent_unordered_map<std::string, std::shared_ptr<TwoPCTxnStateStruct>> TwoPC::txn_state_map;
@@ -32,6 +33,7 @@ namespace Taas {
 
     // 事务发送到client初始化处理
   void TwoPC::ClientTxn_Init() {
+
     // txn_state_struct 记录当前事务的分片个数，完成个数
     totalTxnNumber.fetch_add(1);
     bool res = false;
@@ -81,13 +83,14 @@ namespace Taas {
     GetKeySorted(txn);
 
     std::shared_ptr<TwoPCTxnStateStruct> txn_state_struct;
-    if (txn_state_map.get_value_or_empty(tid, txn_state_struct) && txn_state_struct->txn_state == abort_txn) return false;
+//    if (txn_state_map.get_value_or_empty(tid, txn_state_struct) && txn_state_struct->txn_state == abort_txn) return false;
+    if (abort_txn_set.contain(tid)) return false;
     std::atomic<uint64_t> key_lock_num = 0;
 
     for (auto iter = key_sorted.begin(); iter != key_sorted.end(); iter++) {
         /// read needs lock
         std::string holder_tid;
-        if (txn_state_map.get_value_or_empty(tid, txn_state_struct) && txn_state_struct->txn_state == abort_txn) break;
+//        if (txn_state_map.get_value_or_empty(tid, txn_state_struct) && txn_state_struct->txn_state == abort_txn) break;
         if (abort_txn_set.contain(tid)) break;
         auto res = row_lock_map.try_lock(iter->first, tid);
         if (res) {
@@ -114,11 +117,17 @@ namespace Taas {
         }
     }
 
-    if (abort_txn_set.contain(tid) || txn_state_map.get_value_or_empty(tid, txn_state_struct) && txn_state_struct->txn_state == abort_txn) {
-      Two_PL_UNLOCK(txn);
-      return false;
-    }
-    if (false && !ValidateReadSet(txn)){
+//    if (abort_txn_set.contain(tid) || txn_state_map.get_value_or_empty(tid, txn_state_struct) && txn_state_struct->txn_state == abort_txn) {
+//      Two_PL_UNLOCK(txn);
+//      return false;
+//    }
+
+      if (abort_txn_set.contain(tid)) {
+          Two_PL_UNLOCK(txn);
+          return false;
+      }
+    if (!ValidateReadSet(txn)){
+        Two_PL_UNLOCK(txn);
        validateFailed.fetch_add(1);
        return false;
     }
@@ -226,16 +235,19 @@ namespace Taas {
     // 不是本地事务不进行回复
       if (txn.txn_server_id() != ctx.taasContext.txn_node_ip_index) return true;
       uint64_t currTxnTime = now_to_us() - txn.csn();
+
+      finishedTxnNumber.fetch_add(1);
+      lags_.store(totalTxnNumber.load() - finishedTxnNumber.load());
       if (txn_state == proto::TxnState::Commit){
           successTxnNumber.fetch_add(1);
           successTime.fetch_add(currTxnTime);
           totalTime.fetch_add(currTxnTime);
-          if ((successTxnNumber.load() + failedTxnNumber.load()) % 100 == 0) OUTPUTLOG("============= 2PC + 2PL INFO =============", currTxnTime);
+          if ((successTxnNumber.load() + failedTxnNumber.load()) % 100 == 0 || lags_ > 200) OUTPUTLOG("============= 2PC + 2PL INFO =============", currTxnTime);
       } else {
           failedTxnNumber.fetch_add(1);
           failedTime.fetch_add(currTxnTime);
           totalTime.fetch_add(currTxnTime);
-          if ((successTxnNumber.load() + failedTxnNumber.load()) % 100 == 0) OUTPUTLOG("============= 2PC + 2PL INFO =============", currTxnTime);
+          if ((successTxnNumber.load() + failedTxnNumber.load()) % 100 == 0 || lags_ > 200) OUTPUTLOG("============= 2PC + 2PL INFO =============", currTxnTime);
       }
       // only coordinator can send to client
 
@@ -273,7 +285,11 @@ namespace Taas {
     totalTime.store(0);
     successTime.store(0);
     failedTime.store(0);
+    finishedTxnNumber.store(0);
+    lags_.store(0);
     // static init
+    pre_time = now_to_us();
+    curr_time = now_to_us();
     return true;
   }
 
@@ -374,6 +390,11 @@ namespace Taas {
 //          Shard_2PL();       // shard and send to remote servers
 //          return true;
 //      }
+        curr_time = now_to_us();
+        if (curr_time - pre_time >= 1000) {
+            pre_time = curr_time;
+            OUTPUTLOG("============= 2PC + 2PL INFO =============", curr_time);
+        }
     switch (txn_ptr->txn_type()) {
       case proto::TxnType::ClientTxn: {
         ClientTxn_Init();
@@ -668,7 +689,7 @@ namespace Taas {
 
   void TwoPC::OUTPUTLOG(const std::string& s, uint64_t time){
       LOG(INFO) << s.c_str() <<
-                "\ntotalTxnNumber: " << totalTxnNumber.load() << "\t\t\tfailedTxnNumber: " << failedTxnNumber.load() <<"\t\t\tsuccessTxnNumber: " << successTxnNumber.load() <<
+                "\ntotalTxnNumber: " << totalTxnNumber.load() << "\t\t\t disstance" << lags_ << "\t\t\tfailedTxnNumber: " << failedTxnNumber.load() <<"\t\t\tsuccessTxnNumber: " << successTxnNumber.load() <<
                 "\nlockFailed: " << lockFailed.load() << "\t\t\tvalidateFailed: " << validateFailed.load() << "\t\t\tcurTxnTime: " << time <<
                 "\n[TotalTxn] avgTotalTxnTime: " << totalTime/totalTxnNumber << "\t\t\t totalTime: " << totalTime.load() <<
                 "\n[SuccessTxn] avgSuccessTxnTime: " << (successTxnNumber.load() == 0 ? "Nan": std::to_string(successTime.load()/successTxnNumber.load())) << "\t\t\t successTime: " << successTime.load() <<
@@ -682,6 +703,7 @@ namespace Taas {
   void TwoPC::PrepareLockThread() {
     std::shared_ptr<proto::Transaction> local_txn_ptr;
     bool sleep_flag;
+    LOG(INFO) << "PrepareLockThread starts";
     while (!EpochManager::IsTimerStop()) {
           sleep_flag = true;
           while(TwoPC::prepare_lock_queue.try_dequeue(local_txn_ptr)){

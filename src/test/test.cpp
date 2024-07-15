@@ -94,7 +94,7 @@ namespace Taas {
 
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         usleep(sleep_time);
-        while(!EpochManager::IsTimerStop()) {
+        while(!EpochManager::IsTimerStop() && txn_id <= 1000) {
             auto message_ptr = std::make_unique<proto::Message>();
             auto* txn_ptr = message_ptr->mutable_txn();
             txn_ptr->set_client_txn_id(txn_id * ctx.taasContext.kTestClientNum + id);

@@ -181,6 +181,8 @@ namespace Taas {
         message_epoch, message_shard_id, message_server_id;  /// message epoch info
     static uint64_t  shard_num;
     static Context ctx;
+    static uint64_t pre_time, curr_time;
+
     std::string tid;  // 记录当前tid
     std::map<std::string, uint64_t> key_sorted; // first is the key/row
 
@@ -196,7 +198,7 @@ namespace Taas {
 
     uint64_t shard_num_struct_progressing, two_pl_num_progressing,
         two_pc_prepare_num_progressing, two_pc_commit_num_progressing;
-    static std::atomic<uint64_t> successTxnNumber , totalTxnNumber, failedTxnNumber,
+    static std::atomic<uint64_t> successTxnNumber , totalTxnNumber, failedTxnNumber, finishedTxnNumber, lags_,
         lockFailed, validateFailed, totalTime, successTime, failedTime;
 
     // use queue to lock/unlock
