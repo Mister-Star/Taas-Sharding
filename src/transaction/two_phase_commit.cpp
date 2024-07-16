@@ -40,6 +40,7 @@ namespace Taas {
     // avoid txn have the same csn
     do{
         txn_ptr->set_csn(now_to_us());
+        txn_ptr->set_commit_epoch(EpochManager::GetPushDownEpoch());
         txn_ptr->set_txn_server_id(ctx.taasContext.txn_node_ip_index);
         tid = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
         res = txn_state_map.insertState(tid, std::make_shared<Taas::TwoPCTxnStateStruct>(shard_num, 0, 0, 0, 0, 0, 0, 0, 0, 0,
