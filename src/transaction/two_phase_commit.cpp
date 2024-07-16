@@ -33,7 +33,7 @@ namespace Taas {
     concurrent_unordered_map<std::string, std::string>
            TwoPC::row_map_data;
     BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>> TwoPC::prepare_lock_queue, TwoPC::commit_unlock_queue;
-    concurrent_crdt_unordered_map<std::string, std::string, std::string> TwoPC::abort_txn_set;
+    concurrent_crdt_unordered_map<std::string, std::string, std::string> TwoPC::abort_txn_set, TwoPC::sent_client_txn_set;
 
 // static 初始化哪些
     bool TwoPC::Init(const Taas::Context &ctx_) {
@@ -206,6 +206,10 @@ namespace Taas {
         if(!txn_state_map.getValue(tid, txn_state_struct)) return;
         if (!txn_phase_map.getValue(tid,tmp_vector)) return;
         if(txn_state_struct == nullptr || tmp_vector == nullptr) return;
+
+        if (sent_client_txn_set.contain(tid, tid)) return;
+        sent_client_txn_set.insert(tid, tid);
+
         for (uint64_t i = 0; i < shard_num; i++) {
             auto to_whom = (*tmp_vector)[i]->shard_id();
             Send(to_whom, *(*tmp_vector)[i], proto::TxnType::Abort_txn);
@@ -213,7 +217,7 @@ namespace Taas {
         SendToClient(*txn_ptr, proto::TxnType::Abort_txn, proto::TxnState::Abort);
         txn_state_map.insert(tid, nullptr);
         txn_phase_map.insert(tid, nullptr);
-        tmp_vector->clear();
+//        tmp_vector->clear();
         txn_state_struct.reset();
         tmp_vector.reset();
         CleanTxnState(txn_ptr);
@@ -223,6 +227,10 @@ namespace Taas {
         tid = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
         if(!txn_state_map.getValue(tid, txn_state_struct)) return;
         if (!txn_phase_map.getValue(tid,tmp_vector)) return;
+
+        if (sent_client_txn_set.contain(tid, tid)) return;
+        sent_client_txn_set.insert(tid, tid);
+
         // no need to notify participants
         txn_state_struct->txn_state = commit_done;
         SendToClient(*txn_ptr, proto::TxnType::CommittedTxn, proto::TxnState::Commit);
@@ -266,8 +274,8 @@ namespace Taas {
     bool sleep_flag;
     LOG(INFO) << "PrepareLockThread starts";
     while (!EpochManager::IsTimerStop()) {
-        sleep_flag = true;
-        TwoPC::prepare_lock_queue.wait_dequeue(local_txn_ptr);
+//        sleep_flag = true;
+//        TwoPC::prepare_lock_queue.wait_dequeue(local_txn_ptr);
     //        //              if (local_txn_ptr != nullptr && local_txn_ptr->txn_type() == proto::TxnType::NullMark) {
     //            if (local_txn_ptr != nullptr && local_txn_ptr->txn_type() == proto::TxnType::RemoteServerTxn) {
     //                two_pl_req_progressing.fetch_add(1);
@@ -285,11 +293,11 @@ namespace Taas {
     //          local_txn_ptr.reset();
     //          sleep_flag = false;
     //        }
-    //        if (sleep_flag) {
-    //            print_time.fetch_add(1);
-    //            if (print_time.load() % 50000 == 0) OUTPUTLOG("============= 2PC + 2PL INFO =============", now_to_us());
-    //            usleep(200);
-    //        }
+//            if (sleep_flag) {
+                print_time.fetch_add(1);
+                if (print_time.load() % 50000 == 0) OUTPUTLOG("============= 2PC + 2PL INFO =============", now_to_us());
+                usleep(200);
+//            }
     }
     }
 

@@ -203,6 +203,7 @@ namespace Taas {
     // use queue to lock/unlock
     static BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>> prepare_lock_queue, commit_unlock_queue;
     static concurrent_crdt_unordered_map<std::string, std::string, std::string> abort_txn_set;
+    static concurrent_crdt_unordered_map<std::string, std::string, std::string> sent_client_txn_set;
 
     static void PrepareLockueueEnqueue(const std::shared_ptr<proto::Transaction> &txn_ptr_) {
       prepare_lock_queue.enqueue(txn_ptr_);

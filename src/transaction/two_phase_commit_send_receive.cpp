@@ -119,7 +119,7 @@ namespace Taas {
             ///receive from client use listen_message_txn_queue
             MessageQueue::listen_message_txn_queue->wait_dequeue(message_ptr);
             if (message_ptr == nullptr || message_ptr->empty()) continue;
-            LOG(INFO) << message_ptr->size();
+//            LOG(INFO) << message_ptr->size();
             message_string_ptr = std::make_unique<std::string>(
                     static_cast<const char *>(message_ptr->data()), message_ptr->size());
             msg_ptr = std::make_unique<proto::Message>();
@@ -176,11 +176,11 @@ namespace Taas {
                 if (Two_PL_LOCK(*txn_ptr)) {
                     // 发送lock ok
                     auto to_whom = static_cast<uint64_t >(txn_ptr->txn_server_id());
-                    SendREP(to_whom, *txn_ptr, proto::TxnType::Lock_ok);
+                    Send(to_whom, *txn_ptr, proto::TxnType::Lock_ok);
                 } else {
                     // 发送lock abort
                     auto to_whom = static_cast<uint64_t >(txn_ptr->txn_server_id());
-                    SendREP(to_whom, *txn_ptr, proto::TxnType::Lock_abort);
+                    Send(to_whom, *txn_ptr, proto::TxnType::Lock_abort);
                 }
                 key_sorted.clear();
                 break;
@@ -202,7 +202,7 @@ namespace Taas {
                             if (tmp_vector->empty()) return;  // if already send to client
                             for (uint64_t i = 0; i < shard_num; i++) {
                                 auto to_whom = (*tmp_vector)[i]->shard_id();
-                                SendREP(to_whom, *(*tmp_vector)[i], proto::TxnType::Prepare_req);
+                                Send(to_whom, *(*tmp_vector)[i], proto::TxnType::Prepare_req);
                             }
                         } else {
                             AbortTxn();
@@ -231,7 +231,7 @@ namespace Taas {
                 // 日志操作等等，总之返回Prepare_ok
                 tid = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
                 auto to_whom = static_cast<uint64_t >(txn_ptr->txn_server_id());
-                SendREP(to_whom, *txn_ptr, proto::TxnType::Prepare_ok);
+                Send(to_whom, *txn_ptr, proto::TxnType::Prepare_ok);
                 break;
             }
             case proto::TxnType::Prepare_ok: {
