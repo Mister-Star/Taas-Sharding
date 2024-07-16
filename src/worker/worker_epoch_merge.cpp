@@ -22,7 +22,7 @@ namespace Taas {
 //        LOG(INFO) << "start worker init" << id;
         merger.MergeInit(id, ctx);
         receiveHandler.Init(id, ctx);
-        Taas::TwoPC::Init(ctx, id);
+        Taas::TwoPC::Init(ctx);
         bool sleep_flag;
         init_ok_num.fetch_add(1);
 //        LOG(INFO) << "finish worker init" << id;

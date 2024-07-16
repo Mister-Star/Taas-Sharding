@@ -17,7 +17,7 @@ namespace Taas {
         class TwoPC twoPC;
         while(init_ok_num.load() < 5) usleep(sleep_time);
         receiveHandler.Init(id, ctx);
-        Taas::TwoPC::Init(ctx, id);
+        Taas::TwoPC::Init(ctx);
         init_ok_num.fetch_add(1);
 //        bool sleep_flag;
 //        auto safe_length = ctx.taasContext.kCacheMaxLength / 10;
@@ -58,7 +58,7 @@ namespace Taas {
         class TwoPC twoPC;
         while(init_ok_num.load() < 5) usleep(sleep_time);
         receiveHandler.Init(id, ctx);
-        Taas::TwoPC::Init(ctx, id);
+        Taas::TwoPC::Init(ctx);
         init_ok_num.fetch_add(1);
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         while(!EpochManager::IsTimerStop()){

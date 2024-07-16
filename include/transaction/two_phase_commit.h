@@ -43,22 +43,15 @@ namespace Taas {
     struct Comparator {
       bool operator()(const std::string& x1, const std::string& x2) const{
         return x1 < x2;
-//        if(x1 <x2))
-//            return true;
-//        else
-//            return false;
       }
     };
 
     void SetTxnState(proto::Transaction& txn){
         if (txn.shard_id() == ctx.taasContext.txn_node_ip_index) {
             tid = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
-            std::shared_ptr<TwoPCTxnStateStruct> txn_state_struct;
             txn_state_map.getValue(tid, txn_state_struct);
             if (txn_state_struct == nullptr) {
-                txn_state_map.insert(tid, std::make_shared<Taas::TwoPCTxnStateStruct>(shard_num, 0, 0, 0, 0, 0, 0,
-                                                                                      client_txn));
-                txn_state_map.getValue(tid, txn_state_struct);
+                return;
             }
             if (txn_state_struct->txn_state == TwoPCTxnState::abort_txn) {
                 txn.set_txn_type(proto::TxnType::Abort_txn);            // set abort state
@@ -80,14 +73,14 @@ namespace Taas {
     void GetKeySorted(proto::Transaction& txn) {
         key_sorted.clear();
         // k-v : row_key txn
-      for (uint64_t i = 0; i < (uint64_t) txn.row_size(); i++) {
+      for (int i = 0; i < (int) txn.row_size(); i++) {
           if (txn.row(i).op_type() == proto::OpType::Read) continue;
           key_sorted[txn.row(i).key()] =  i;
       }
     }
 
     // validate set
-    bool ValidateReadSet(proto::Transaction& txn){
+    static bool ValidateReadSet(proto::Transaction& txn){
         std::string version;
         for(auto i = 0; i < txn.row_size(); i ++) {
             const auto& row = txn.row(i);
@@ -113,10 +106,10 @@ namespace Taas {
 
     // update set
     bool UpdateReadSet(proto::Transaction& txn){
-        tid = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
-        for(auto i = 0; i < txn_ptr->row_size(); i ++) {
-            const auto& row = txn_ptr->row(i);
-            auto key = txn_ptr->storage_type() + ":" + row.key();
+        tid = std::to_string(txn.csn()) + ":" + std::to_string(txn.txn_server_id());
+        for(auto i = 0; i < txn.row_size(); i ++) {
+            const auto& row = txn.row(i);
+            auto key = txn.storage_type() + ":" + row.key();
             if(row.op_type() == proto::OpType::Read) {
                 continue;
             }
@@ -127,25 +120,27 @@ namespace Taas {
     }
 
     void ClientTxn_Init();
-    bool Shard_2PL();
     bool Two_PL_LOCK(proto::Transaction& txn);
     bool Two_PL_LOCK_WAIT(proto::Transaction& txn);
     bool Two_PL_UNLOCK(proto::Transaction& txn);
-    bool Check_2PL_complete(proto::Transaction& txn, std::shared_ptr<TwoPCTxnStateStruct>);
-    bool Check_2PC_Prepare_complete(proto::Transaction& txn, std::shared_ptr<TwoPCTxnStateStruct>);
-    bool Check_2PC_Commit_complete(proto::Transaction& txn, std::shared_ptr<TwoPCTxnStateStruct>);
-    bool Send(const Context& ctx, uint64_t& epoch, uint64_t& to_whom, proto::Transaction& txn,
+    static bool Check_2PL_complete(const std::shared_ptr<TwoPCTxnStateStruct> &);
+    static bool Check_2PC_Prepare_complete(const std::shared_ptr<TwoPCTxnStateStruct> &);
+    static bool Check_2PC_Commit_complete(const std::shared_ptr<TwoPCTxnStateStruct> &);
+
+    void AbortTxn();
+    void CommitTxn();
+    bool Send(uint64_t& to_whom, proto::Transaction& txn,
               proto::TxnType txn_type);
-    bool SendToClient(const Context& ctx, proto::Transaction& txn, proto::TxnType txn_type,
+    static bool SendToClient(proto::Transaction& txn, proto::TxnType txn_type,
                    proto::TxnState txn_state);
-    static bool Init(const Taas::Context& ctx_, uint64_t id);
-      bool HandleClientMessage();// 处理接收到的消息 from client
-      bool HandleReceivedMessage();  // from coordinator
+    static bool Init(const Taas::Context &ctx_);
+      void HandleClientMessage();// 处理接收到的消息 from client
+      void HandleReceivedMessage();  // from coordinator
 
-    bool HandleReceivedTxn();      // 处理接收到的事务（coordinator/applicant）
-    bool SetMessageRelatedCountersInfo();
+      void HandleReceivedTxn();      // 处理接收到的事务（coordinator/applicant）
+      void SetMessageRelatedCountersInfo();
 
-    void OUTPUTLOG(const std::string& s, uint64_t time); // print logs
+    static void OUTPUTLOG(const std::string& s, uint64_t time); // print logs
 
 
     // debug map
@@ -159,10 +154,10 @@ namespace Taas {
         } else {
             std::cout << "Unlock  ";
         }
-        for (auto iter = key_sorted.begin(); iter!=key_sorted.end();iter++) {
-            row_lock_map.getValue(iter->first, tmp);
-            if (tmp != "" && tmp != "0" && tmp != "-1" && tmp != tid){
-                std::cout <<"{ key : "<< iter->first <<" tid :" << tmp <<"} ";
+        for (auto & iter : key_sorted) {
+            row_lock_map.getValue(iter.first, tmp);
+            if (!tmp.empty() && tmp != "0" && tmp != "-1" && tmp != tid){
+                std::cout <<"{ key : "<< iter.first <<" tid :" << tmp <<"} ";
             }
         }
         std::cout << std::endl;
@@ -174,6 +169,8 @@ namespace Taas {
     std::unique_ptr<proto::Message> msg_ptr;
     std::shared_ptr<proto::Transaction> txn_ptr;
     std::unique_ptr<pack_params> pack_param;
+    std::shared_ptr<std::vector<std::shared_ptr<proto::Transaction>>>  tmp_vector;
+    std::shared_ptr<TwoPCTxnStateStruct> txn_state_struct;
     std::string csn_temp, key_temp, key_str, table_name, csn_result;
     uint64_t thread_id = 0, server_dequeue_id, epoch_mod, epoch, max_length,
                                                          /// cache check
@@ -207,18 +204,18 @@ namespace Taas {
     static BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>> prepare_lock_queue, commit_unlock_queue;
     static concurrent_crdt_unordered_map<std::string, std::string, std::string> abort_txn_set;
 
-    void PrepareLockueueEnqueue(uint64_t &epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_) {
+    static void PrepareLockueueEnqueue(const std::shared_ptr<proto::Transaction> &txn_ptr_) {
       prepare_lock_queue.enqueue(txn_ptr_);
       prepare_lock_queue.enqueue(nullptr);
     }
 
-    void CommitUnlockueueEnqueue(uint64_t &epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_) {
+    static void CommitUnlockueueEnqueue(const std::shared_ptr<proto::Transaction>& txn_ptr_) {
         commit_unlock_queue.enqueue(txn_ptr_);
         commit_unlock_queue.enqueue(nullptr);
     }
 
-    void CleanTxnState(std::shared_ptr<proto::Transaction> local_txn_ptr) {
-        tid = std::to_string(local_txn_ptr->csn()) + ":" + std::to_string(local_txn_ptr->txn_server_id());
+    static void CleanTxnState(const std::shared_ptr<proto::Transaction>& local_txn_ptr) {
+        auto tid = std::to_string(local_txn_ptr->csn()) + ":" + std::to_string(local_txn_ptr->txn_server_id());
         txn_phase_map.remove(tid);
         txn_state_map.remove(tid);
         abort_txn_set.remove(tid);
@@ -226,7 +223,6 @@ namespace Taas {
 
     void PrepareLockThread();
     void CommitUnlockThread();
-
   };
 
 }  // namespace Taas

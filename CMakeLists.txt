@@ -197,6 +197,7 @@ add_library(
         ${PROJECT_NAME}
         ${headers}
         ${sources}
+        src/transaction/two_phase_commit_send_receive.cpp
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
 
