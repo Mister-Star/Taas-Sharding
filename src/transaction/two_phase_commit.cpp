@@ -8,14 +8,19 @@
 #include "tools/utilities.h"
 #include "proto/transaction.pb.h"
 #include "storage/redo_loger.h"
+#include "storage/mot.h"
 
 namespace Taas {
     Context TwoPC::ctx;
     uint64_t TwoPC::shard_num;
     uint64_t TwoPC::pre_time, TwoPC::curr_time;
+
+    std::atomic<uint64_t> TwoPC::shard_num_struct_progressing, TwoPC::two_pl_num_progressing, TwoPC::two_pl_req_progressing,
+            TwoPC::two_pc_prepare_num_progressing, TwoPC::two_pc_commit_num_progressing;
+
     std::atomic<uint64_t> TwoPC::successTxnNumber , TwoPC::totalTxnNumber , TwoPC::finishedTxnNumber, TwoPC::lags_,
     TwoPC::failedTxnNumber ,TwoPC::lockFailed, TwoPC::validateFailed, TwoPC::totalTime,
-            TwoPC::successTime, TwoPC::failedTime;
+            TwoPC::successTime, TwoPC::failedTime, TwoPC::print_time;
     concurrent_unordered_map<std::string, std::string> TwoPC::row_lock_map;
     concurrent_unordered_map<std::string, std::shared_ptr<TwoPCTxnStateStruct>> TwoPC::txn_state_map;
     std::mutex TwoPC::mutex;
@@ -69,6 +74,8 @@ namespace Taas {
     }
     tid = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
     txn_phase_map.insert(tid, std::make_shared<std::vector<std::shared_ptr<proto::Transaction>>>(shard_row_vector));
+
+    shard_num_struct_progressing.fetch_add(1);
 
     // send to participants
     for (uint64_t i = 0; i < shard_num; i++) {
@@ -245,13 +252,14 @@ namespace Taas {
           successTxnNumber.fetch_add(1);
           successTime.fetch_add(currTxnTime);
           totalTime.fetch_add(currTxnTime);
-          if ((successTxnNumber.load() + failedTxnNumber.load()) % 1000 == 0 || lags_ > 200) OUTPUTLOG("============= 2PC + 2PL INFO =============", currTxnTime);
+          if ((successTxnNumber.load() + failedTxnNumber.load()) % 1000 == 0) OUTPUTLOG("============= 2PC + 2PL INFO =============", currTxnTime);
       } else {
           failedTxnNumber.fetch_add(1);
           failedTime.fetch_add(currTxnTime);
           totalTime.fetch_add(currTxnTime);
-          if ((successTxnNumber.load() + failedTxnNumber.load()) % 1000 == 0 || lags_ > 200) OUTPUTLOG("============= 2PC + 2PL INFO =============", currTxnTime);
+          if ((successTxnNumber.load() + failedTxnNumber.load()) % 1000 == 0) OUTPUTLOG("============= 2PC + 2PL INFO =============", currTxnTime);
       }
+
       // only coordinator can send to client
 
     // 设置txn的状态并创建proto对象
@@ -293,6 +301,14 @@ namespace Taas {
     // static init
     pre_time = now_to_us();
     curr_time = now_to_us();
+    print_time.store(0);
+
+    shard_num_struct_progressing.store(0);
+    two_pl_num_progressing.store(0);
+    two_pl_req_progressing.store(0);
+    two_pc_prepare_num_progressing.store(0);
+    two_pc_commit_num_progressing.store(0);
+
     return true;
   }
 
@@ -444,6 +460,7 @@ namespace Taas {
 
               // 所有应答收到
               if (txn_state_struct->two_pl_reply.load() == txn_state_struct->txn_shard_num) {
+                  two_pl_num_progressing.fetch_add(1);
                   if (Check_2PL_complete(*txn_ptr, txn_state_struct)) {
                       // 2pl完成，开始2pc prepare阶段
                       std::shared_ptr<std::vector<std::shared_ptr<proto::Transaction>>>  tmp_vector;
@@ -467,6 +484,7 @@ namespace Taas {
                       std::shared_ptr<std::vector<std::shared_ptr<proto::Transaction>>>  tmp_vector;
                       if (!txn_phase_map.getValue(tid,tmp_vector)) return true;
                       if (tmp_vector->empty()) return true;  // if already send to client
+
                       for (uint64_t i = 0; i < shard_num; i++) {
                           auto to_whom = (*tmp_vector)[i]->shard_id();
                           Send(ctx, epoch, to_whom, *(*tmp_vector)[i], proto::TxnType::Abort_txn);
@@ -495,8 +513,8 @@ namespace Taas {
               txn_state_struct->two_pl_reply.fetch_add(1);
               txn_state_struct->two_pl_failed_num.fetch_add(1);
 
-//              LOG(INFO) << "************** Lock abort : "<< tid << " **************";
               if (txn_state_struct->two_pl_reply.load() == txn_state_struct->txn_shard_num) {
+                  two_pl_num_progressing.fetch_add(1);
                   std::shared_ptr<std::vector<std::shared_ptr<proto::Transaction>>>  tmp_vector;
                   if (!txn_phase_map.getValue(tid,tmp_vector)) return true;
                   if (tmp_vector->empty()) return true;  // if already send to client
@@ -516,8 +534,6 @@ namespace Taas {
         // 日志操作等等，总之返回Prepare_ok
         tid = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
         auto to_whom = static_cast<uint64_t >(txn_ptr->txn_server_id());
-//        if (abort_txn_set.contain(tid)) Send(ctx, epoch, to_whom, *txn_ptr, proto::TxnType::Prepare_abort);
-
         Send(ctx, epoch, to_whom, *txn_ptr, proto::TxnType::Prepare_ok);
         break;
       }
@@ -538,6 +554,7 @@ namespace Taas {
 
               // 当所有应答已经收到
               if (txn_state_struct->two_pc_prepare_reply.load() == txn_state_struct->txn_shard_num) {
+                  two_pc_prepare_num_progressing.fetch_add(1);
                   if (Check_2PC_Prepare_complete(*txn_ptr, txn_state_struct)) {
                       std::shared_ptr<std::vector<std::shared_ptr<proto::Transaction>>>  tmp_vector;
                       if (!txn_phase_map.getValue(tid,tmp_vector)) return true;
@@ -629,6 +646,7 @@ namespace Taas {
 
               // 当所有应答已经收到，并且commit阶段未完成
               if (txn_state_struct->two_pc_commit_reply.load() == txn_state_struct->txn_shard_num) {
+                  two_pc_commit_num_progressing.fetch_add(1);
                   if (Check_2PC_Commit_complete(*txn_ptr, txn_state_struct)) {
                       std::shared_ptr<std::vector<std::shared_ptr<proto::Transaction>>>  tmp_vector;
                       if (!txn_phase_map.getValue(tid,tmp_vector)) return true;
@@ -703,15 +721,21 @@ namespace Taas {
   }
 
   void TwoPC::OUTPUTLOG(const std::string& s, uint64_t time){
+      if(totalTxnNumber.load() == 0) return;
       LOG(INFO) << s.c_str() <<
-                "\ntotalTxnNumber: " << totalTxnNumber.load() << "\t\t\t disstance: " << lags_ << "\t\t\tfailedTxnNumber: " << failedTxnNumber.load() <<"\t\t\tsuccessTxnNumber: " << successTxnNumber.load() <<
+                "\ntotalTxnNumber: " << totalTxnNumber.load() << "\t\t\t finishedTxnNumber: " << finishedTxnNumber.load() << "\t\t\t disstance: " << lags_ << "\t\t\tfailedTxnNumber: " << failedTxnNumber.load() <<"\t\t\tsuccessTxnNumber: " << successTxnNumber.load() <<
                 "\nlockFailed: " << lockFailed.load() << "\t\t\tvalidateFailed: " << validateFailed.load() << "\t\t\tcurTxnTime: " << time <<
                 "\n[TotalTxn] avgTotalTxnTime: " << totalTime/totalTxnNumber << "\t\t\t totalTime: " << totalTime.load() <<
                 "\n[SuccessTxn] avgSuccessTxnTime: " << (successTxnNumber.load() == 0 ? "Nan": std::to_string(successTime.load()/successTxnNumber.load())) << "\t\t\t successTime: " << successTime.load() <<
                 "\n[FailedTxn] avgFailedTxnTime: " << (failedTxnNumber.load() == 0 ? "Nan": std::to_string(failedTime.load()/failedTxnNumber.load())) << "\t\t\t failedTime: " << failedTime.load() <<
                 "\n[Lock] lockedRowCount: " << row_lock_map.countLock() <<
                 "\n************************************************ ";
+      LOG(INFO) << "finish each process shard_num_struct_progressing: " << shard_num_struct_progressing.load() <<", two_pl_num_progressing: " << two_pl_num_progressing.load() << ", two_pl_req_progressing: " <<two_pl_req_progressing.load()
+      << ", two_pc_prepare_num_progressing: " << two_pc_prepare_num_progressing.load() << ", two_pc_commit_num_progressing: " << two_pc_commit_num_progressing.load();
 
+      LOG(INFO) << "redo_log_queue size: " << MOT::epoch_redo_log_queue[1]->size_approx()
+      << ",txn_phase_map size : " << txn_phase_map.size()
+      << ",txn_state_map size : " << txn_state_map.size();
   }
 
   // handle lock requests
@@ -726,6 +750,7 @@ namespace Taas {
 
 //              if (local_txn_ptr != nullptr && local_txn_ptr->txn_type() == proto::TxnType::NullMark) {
                 if (local_txn_ptr != nullptr && local_txn_ptr->txn_type() == proto::TxnType::RemoteServerTxn) {
+                    two_pl_req_progressing.fetch_add(1);
                   if (Two_PL_LOCK(*local_txn_ptr)) {
                       // 发送lock ok
                       auto to_whom = static_cast<uint64_t >(local_txn_ptr->txn_server_id());
@@ -740,7 +765,11 @@ namespace Taas {
               local_txn_ptr.reset();
               sleep_flag = false;
           }
-        if (sleep_flag) usleep(200);
+        if (sleep_flag) {
+            print_time.fetch_add(1);
+            if (print_time.load() % 50000 == 0) OUTPUTLOG("============= 2PC + 2PL INFO =============", now_to_us());
+            usleep(200);
+        }
     }
   }
 

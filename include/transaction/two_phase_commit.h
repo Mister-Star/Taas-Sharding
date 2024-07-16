@@ -195,10 +195,13 @@ namespace Taas {
     /// to_whom = all
     uint64_t to_whom_all = 0;
 
-    uint64_t shard_num_struct_progressing, two_pl_num_progressing,
-        two_pc_prepare_num_progressing, two_pc_commit_num_progressing;
+    static std::atomic<uint64_t> shard_num_struct_progressing, two_pl_num_progressing, two_pl_req_progressing,
+        two_pc_prepare_num_progressing, two_pc_commit_num_progressing;      // finish each process num
+
     static std::atomic<uint64_t> successTxnNumber , totalTxnNumber, failedTxnNumber, finishedTxnNumber, lags_,
         lockFailed, validateFailed, totalTime, successTime, failedTime;
+
+    static std::atomic<uint64_t> print_time;
 
     // use queue to lock/unlock
     static BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>> prepare_lock_queue, commit_unlock_queue;
