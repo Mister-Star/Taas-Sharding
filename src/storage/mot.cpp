@@ -120,19 +120,15 @@ namespace Taas {
         std::shared_ptr<proto::Transaction> txn_ptr;
         uint64_t epoch, epoch_mod;
         proto::Transaction* ptr;
-        epoch = EpochManager::GetPushDownEpoch();
+        epoch = epoch_mod= 1;
         sleep_flag = true;
         while (!EpochManager::IsTimerStop()) {
-            epoch = EpochManager::GetPushDownEpoch();
-            while(!EpochManager::IsRecordCommitted(epoch)) {
-                usleep(storage_sleep_time);
-                epoch = EpochManager::GetPushDownEpoch();
-            }
-            epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
+//            LOG(INFO) << "[LOG] queue size: " << epoch_redo_log_queue[epoch_mod]->size_approx() << ",epoch : " << epoch;
             while(epoch_redo_log_queue[epoch_mod]->try_dequeue(txn_ptr)) {
                 if(txn_ptr == nullptr || txn_ptr->txn_type() == proto::TxnType::NullMark) {
                     continue;
                 }
+//                LOG(INFO) << "send a log to mot, queue size: " << epoch_redo_log_queue[epoch_mod]->size_approx() << ",epoch : " << epoch;
 //                commit_cv.notify_all();
                 epoch = txn_ptr->commit_epoch();
                 auto push_msg = std::make_unique<proto::Message>();

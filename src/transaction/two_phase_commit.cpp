@@ -657,6 +657,8 @@ namespace Taas {
 
                       if (txn_ptr->txn_server_id() == ctx.taasContext.txn_node_ip_index) {
                           txn_ptr->set_commit_epoch(EpochManager::GetPushDownEpoch());
+                          txn_ptr->set_storage_type("mot");
+                          LOG(INFO) << "txn log cen: " << txn_ptr->commit_epoch();
                           RedoLoger::RedoLog(thread_id, txn_ptr);
                       }
                       UpdateReadSet(*txn_ptr);          // not this
