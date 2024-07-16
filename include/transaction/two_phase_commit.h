@@ -34,7 +34,7 @@ namespace Taas {
         row_map_data;            /// tid, changed data
 
     // store sharing txn
-    static concurrent_unordered_map<std::string ,std::vector<std::shared_ptr<proto::Transaction>>>
+    static concurrent_unordered_map<std::string, std::shared_ptr<std::vector<std::shared_ptr<proto::Transaction>>>>
         txn_phase_map;          /// tid, txn sharding vector
 
 
@@ -97,7 +97,7 @@ namespace Taas {
             }
             /// indeed, we should use the csn to check the read version,
             /// but there are some bugs in updating the csn to the storage(tikv).
-            if (!row_map_data.getValue(key, version)) {
+            if (!row_map_data.getValue_1(key, version)) {
                 /// should be abort, but Taas do not connect load data,
                 /// so read the init snap will get empty in read_version_map
                 continue;
@@ -121,7 +121,7 @@ namespace Taas {
                 continue;
             }
             row_map_data.insert(key, row.data());
-            row_map_csn.insert(key, tid);
+//            row_map_csn.insert(key, tid);
         }
         return true;
     }

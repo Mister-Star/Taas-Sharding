@@ -66,7 +66,7 @@ namespace Taas {
         uint64_t epoch_id = txn_ptr->commit_epoch();
         auto lsn = epoch_log_lsn.IncCount(epoch_id, 1);
         auto key = std::to_string(epoch_id) + ":" + std::to_string(lsn);
-        committed_txn_cache[epoch_id % ctx.taasContext.kCacheMaxLength]->insert(key, txn_ptr);
+//        committed_txn_cache[epoch_id % ctx.taasContext.kCacheMaxLength]->insert(key, txn_ptr);    // close if 2PC
         if(ctx.storageContext.is_mot_enable) {
             if (txn_ptr->storage_type() == "mot")
                 MOT::DBRedoLogQueueEnqueue(thread_id, epoch_id, txn_ptr);
