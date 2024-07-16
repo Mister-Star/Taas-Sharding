@@ -78,7 +78,7 @@ namespace Taas {
                                                                                        client_txn));
         } while (!res);
 
-        ///shardubg reroute
+        ///shard  reroute
         auto shard_row_vector = std::make_shared<std::vector<std::shared_ptr<proto::Transaction>>>();
         for (uint64_t i = 0; i < shard_num; i++) {
             shard_row_vector->emplace_back(std::make_shared<proto::Transaction>());
@@ -111,7 +111,6 @@ namespace Taas {
         tid = std::to_string(txn.csn()) + ":" + std::to_string(txn.txn_server_id());
         GetKeySorted(txn);
 
-        std::shared_ptr<TwoPCTxnStateStruct> txn_state_struct;
         if (abort_txn_set.contain(tid)) return false;
         std::atomic<uint64_t> key_lock_num = 0;
 
@@ -204,12 +203,19 @@ namespace Taas {
 
     void TwoPC::AbortTxn() {
         tid = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
+        if(!txn_state_map.getValue(tid, txn_state_struct)) return;
         if (!txn_phase_map.getValue(tid,tmp_vector)) return;
+        if(txn_state_struct == nullptr || tmp_vector == nullptr) return;
         for (uint64_t i = 0; i < shard_num; i++) {
             auto to_whom = (*tmp_vector)[i]->shard_id();
             Send(to_whom, *(*tmp_vector)[i], proto::TxnType::Abort_txn);
         }
         SendToClient(*txn_ptr, proto::TxnType::Abort_txn, proto::TxnState::Abort);
+        txn_state_map.insert(tid, nullptr);
+        txn_phase_map.insert(tid, nullptr);
+        tmp_vector->clear();
+        txn_state_struct.reset();
+        tmp_vector.reset();
         CleanTxnState(txn_ptr);
     }
 
@@ -234,7 +240,6 @@ namespace Taas {
   // 修改哪些元数据
     void TwoPC::SetMessageRelatedCountersInfo() {
         message_server_id = txn_ptr->txn_server_id();
-        txn_ptr->shard_id();
     }
 
     void TwoPC::OUTPUTLOG(const std::string& s, uint64_t time){

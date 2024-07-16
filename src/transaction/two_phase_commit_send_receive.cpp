@@ -44,6 +44,28 @@ namespace Taas {
                 to_whom, 0, "", epoch, proto::TxnType::NullMark, nullptr, nullptr));
     }
 
+    bool TwoPC::SendREP(uint64_t& to_whom, proto::Transaction& txn,
+                     proto::TxnType txn_type) {
+
+        auto msg = std::make_unique<proto::Message>();
+        auto* txn_temp = msg->mutable_txn();
+        txn_temp->set_txn_server_id(txn.txn_server_id());
+        txn_temp->set_csn(txn.csn());
+        txn_temp->set_txn_type(txn_type);
+        auto serialized_txn_str_ptr = std::make_unique<std::string>();
+        Gzip(msg.get(), serialized_txn_str_ptr.get());
+        if (to_whom == ctx.taasContext.txn_node_ip_index){
+            void *data = static_cast<void *>(const_cast<char *>(serialized_txn_str_ptr->data()));
+            MessageQueue::listen_message_epoch_queue->enqueue(
+                    std::make_unique<zmq::message_t>(data, serialized_txn_str_ptr->size()));
+            return MessageQueue::listen_message_epoch_queue->enqueue(nullptr);
+        }
+        MessageQueue::send_to_server_queue->enqueue(std::make_unique<send_params>(
+                to_whom, 0, "", epoch, txn_type, std::move(serialized_txn_str_ptr), nullptr));
+        return MessageQueue::send_to_server_queue->enqueue(std::make_unique<send_params>(
+                to_whom, 0, "", epoch, proto::TxnType::NullMark, nullptr, nullptr));
+    }
+
     // 发送给client abort/commit
     ///send to client use send_to_client_queue
     bool TwoPC::SendToClient(proto::Transaction& txn, proto::TxnType txn_type,
@@ -154,11 +176,11 @@ namespace Taas {
                 if (Two_PL_LOCK(*txn_ptr)) {
                     // 发送lock ok
                     auto to_whom = static_cast<uint64_t >(txn_ptr->txn_server_id());
-                    Send(to_whom, *txn_ptr, proto::TxnType::Lock_ok);
+                    SendREP(to_whom, *txn_ptr, proto::TxnType::Lock_ok);
                 } else {
                     // 发送lock abort
                     auto to_whom = static_cast<uint64_t >(txn_ptr->txn_server_id());
-                    Send(to_whom, *txn_ptr, proto::TxnType::Lock_abort);
+                    SendREP(to_whom, *txn_ptr, proto::TxnType::Lock_abort);
                 }
                 key_sorted.clear();
                 break;
@@ -167,6 +189,7 @@ namespace Taas {
                 if (txn_ptr->txn_server_id() == ctx.taasContext.txn_node_ip_index) {
                     tid = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
                     if(!txn_state_map.getValue(tid, txn_state_struct)) break;
+                    if(txn_state_struct == nullptr) return;
                     txn_state_struct->two_pl_reply.fetch_add(1);
                     txn_state_struct->two_pl_num.fetch_add(1);
                     // 所有应答收到
@@ -174,11 +197,12 @@ namespace Taas {
                         two_pl_num_progressing.fetch_add(1);
                         if (Check_2PL_complete(txn_state_struct)) {
                             // 2pl完成，开始2pc prepare阶段
-                            if (!txn_phase_map.getValue(tid,tmp_vector)) return;
+                            if(!txn_phase_map.getValue(tid,tmp_vector)) return;
+                            if(tmp_vector == nullptr) return;
                             if (tmp_vector->empty()) return;  // if already send to client
                             for (uint64_t i = 0; i < shard_num; i++) {
                                 auto to_whom = (*tmp_vector)[i]->shard_id();
-                                Send(to_whom, *(*tmp_vector)[i], proto::TxnType::Prepare_req);
+                                SendREP(to_whom, *(*tmp_vector)[i], proto::TxnType::Prepare_req);
                             }
                         } else {
                             AbortTxn();
@@ -192,6 +216,7 @@ namespace Taas {
                 if (txn_ptr->txn_server_id() == ctx.taasContext.txn_node_ip_index) {
                     tid = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
                     if(!txn_state_map.getValue(tid, txn_state_struct)) break;
+                    if(txn_state_struct == nullptr) return;
                     txn_state_struct->two_pl_reply.fetch_add(1);
                     txn_state_struct->two_pl_failed_num.fetch_add(1);
                     if (txn_state_struct->two_pl_reply.load() == txn_state_struct->txn_shard_num) {
@@ -206,7 +231,7 @@ namespace Taas {
                 // 日志操作等等，总之返回Prepare_ok
                 tid = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
                 auto to_whom = static_cast<uint64_t >(txn_ptr->txn_server_id());
-                Send(to_whom, *txn_ptr, proto::TxnType::Prepare_ok);
+                SendREP(to_whom, *txn_ptr, proto::TxnType::Prepare_ok);
                 break;
             }
             case proto::TxnType::Prepare_ok: {
@@ -214,6 +239,7 @@ namespace Taas {
                 if (txn_ptr->txn_server_id() == ctx.taasContext.txn_node_ip_index) {
                     tid = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
                     if(!txn_state_map.getValue(tid, txn_state_struct)) break;
+                    if(txn_state_struct == nullptr) return;
                     txn_state_struct->two_pc_prepare_reply.fetch_add(1);
                     txn_state_struct->two_pc_prepare_num.fetch_add(1);
 
@@ -222,6 +248,7 @@ namespace Taas {
                         two_pc_prepare_num_progressing.fetch_add(1);
                         if (Check_2PC_Prepare_complete(txn_state_struct)) {
                             if (!txn_phase_map.getValue(tid,tmp_vector)) break;
+                            if(tmp_vector == nullptr) return;
                             for (uint64_t i = 0; i < shard_num; i++) {
                                 auto to_whom = (*tmp_vector)[i]->shard_id();
                                 Send(to_whom, *(*tmp_vector)[i], proto::TxnType::Commit_req);
@@ -256,6 +283,7 @@ namespace Taas {
                 if (txn_ptr->txn_server_id() == ctx.taasContext.txn_node_ip_index) {
                     tid = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
                     if(!txn_state_map.getValue(tid, txn_state_struct)) break;
+                    if(txn_state_struct == nullptr) return;
                     txn_state_struct->two_pc_commit_reply.fetch_add(1);
                     txn_state_struct->two_pc_commit_num.fetch_add(1);
                     if (txn_state_struct->two_pc_commit_reply.load() == txn_state_struct->txn_shard_num) {

@@ -223,6 +223,8 @@ namespace Taas {
 
     void PrepareLockThread();
     void CommitUnlockThread();
+
+      bool SendREP(uint64_t &to_whom, proto::Transaction &txn, proto::TxnType txn_type);
   };
 
 }  // namespace Taas
