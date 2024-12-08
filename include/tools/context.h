@@ -122,10 +122,11 @@ namespace Taas {
         TaasContext taasContext;
         StorageContext storageContext;
         MultiModelContext multiModelContext;
-        Context(){
-            taasContext.GetTaaSServerInfo("../TaaS/TaaS_config.xml");
-            storageContext.GetStorageInfo("../Storage_config.xml");
-            multiModelContext.GetMultiModelInfo("../MultiModelConfig.xml");
+
+        void Init() {
+          taasContext.GetTaaSServerInfo("../TaaS_config.xml");
+          storageContext.GetStorageInfo("../Storage_config.xml");
+          multiModelContext.GetMultiModelInfo("../MultiModelConfig.xml");
         }
     };
 }

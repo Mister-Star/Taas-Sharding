@@ -177,6 +177,7 @@ namespace Taas {
 int main() {
 
     Taas::Context ctx;
+    ctx.Init();
 
     auto server_num = Taas::TaasContext::kTxnNodeNum,
             shard_num = Taas::TaasContext::kShardNum,
