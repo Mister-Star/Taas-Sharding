@@ -5,8 +5,6 @@
 #include "transaction/transaction_cache.h"
 
 namespace Taas{
-    Context TransactionCache::ctx;
-
     std::vector<std::unique_ptr<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>>
             TransactionCache::epoch_backup_txn,
             TransactionCache::epoch_insert_set,
@@ -25,6 +23,7 @@ namespace Taas{
             TransactionCache::epoch_back_txn_map;
 
     concurrent_unordered_map<std::string, std::string>
+            TransactionCache::read_version_map,
             TransactionCache::read_version_map_data,
             TransactionCache::read_version_map_csn,
             TransactionCache::insert_set;
@@ -37,9 +36,8 @@ namespace Taas{
             TransactionCache::epoch_result_return_queue;
 
 
-    void TransactionCache::CacheInit(const Context &context) {
-        ctx = context;
-        auto max_length = context.taasContext.kCacheMaxLength;
+    void TransactionCache::CacheInit() {
+        auto max_length = TaasContext::kCacheMaxLength;
 
         ///Message handle
         epoch_backup_txn.resize(max_length);
@@ -83,7 +81,7 @@ namespace Taas{
     }
 
     void TransactionCache::EpochCacheClear(uint64_t &epoch) {
-        auto epoch_mod_temp = epoch % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod_temp = epoch % TaasContext::kCacheMaxLength;
 
         ///Message handle
 //        epoch_backup_txn[cache_clear_epoch_num_mod] = std::make_unique<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>();

@@ -17,9 +17,9 @@ namespace workload {
         auto socket = std::make_unique<zmq::socket_t>(context, ZMQ_PUSH);
         socket->set(zmq::sockopt::sndhwm, queue_length);
         socket->set(zmq::sockopt::rcvhwm, queue_length);
-        socket->connect("tcp://" + MultiModelWorkload::ctx.multiModelContext.kTaasIP + ":" + std::to_string(5551));
+        socket->connect("tcp://" + Taas::MultiModelContext::kTaasIP + ":" + std::to_string(5551));
         MultiModelWorkload::isExe[0] = true;
-        printf("Send Server connect ZMQ_PUSH %s", ("tcp://" + MultiModelWorkload::ctx.multiModelContext.kTaasIP + ":" + std::to_string(5551) + "\n").c_str());
+        printf("Send Server connect ZMQ_PUSH %s", ("tcp://" + Taas::MultiModelContext::kTaasIP + ":" + std::to_string(5551) + "\n").c_str());
         printf("线程开始工作 SendServerThread\n");
         while (true) {
             MultiModelWorkload::send_multi_txn_queue->wait_dequeue(params);
@@ -144,23 +144,23 @@ namespace workload {
         printf("====== Taas Multi-Model Client Init Start ======\n");
         Taas::Context ctx;
         MultiModelWorkload param;
-        MultiModelWorkload::StaticInit(ctx);
+        MultiModelWorkload::StaticInit();
         std::vector<std::unique_ptr<std::thread>> threads;
 
         threads.push_back(std::make_unique<std::thread>(ClientListenTaasThreadMain));
         threads.push_back(std::make_unique<std::thread>(DequeueClientListenTaasMessageQueue));
         threads.push_back(std::make_unique<std::thread>(SendTaasClientThreadMain));
 
-        if(ctx.multiModelContext.isUseNebula) Nebula::Init(ctx);
-        if(ctx.multiModelContext.isUseMot) MOT::Init();
+        if(Taas::MultiModelContext::isUseNebula) Nebula::Init();
+        if(Taas::MultiModelContext::isUseMot) MOT::Init();
         printf("====== Taas Multi-Model Client Init OK ======\n");
         printf("====== Taas Multi-Model Client LoadData Start ======\n");
-        if(ctx.multiModelContext.isLoadData) {
+        if(Taas::MultiModelContext::isLoadData) {
             MultiModelWorkload::LoadData();
         }
         printf("====== Taas Multi-Model Client Run Start ======\n");
-        MultiModelWorkload::workCountDown.reset((int)ctx.multiModelContext.kClientNum);
-        for(int i = 0; i < (int)MultiModelWorkload::ctx.multiModelContext.kClientNum; i ++) {
+        MultiModelWorkload::workCountDown.reset((int)Taas::MultiModelContext::kClientNum);
+        for(int i = 0; i < (int)Taas::MultiModelContext::kClientNum; i ++) {
             MultiModelWorkload::thread_pool->push_task(MultiModelWorkload::RunMultiTxn);
         }
         while(!check()) {
@@ -168,7 +168,7 @@ namespace workload {
         }
         uint64_t startTime = Taas::now_to_us();
         uint64_t cnt = 0;
-        while(MultiModelWorkload::subWorksNum.load() < MultiModelWorkload::ctx.multiModelContext.kClientNum) {
+        while(MultiModelWorkload::subWorksNum.load() < Taas::MultiModelContext::kClientNum) {
             if(cnt % 100 == 0) {
                 LOG(INFO) << "Test Exec:" << Taas::now_to_us() - startTime << ", Commit txn number : " << MultiModelWorkload::execTimes.size();
             }
@@ -178,7 +178,7 @@ namespace workload {
         uint64_t consumeTime = Taas::now_to_us() - startTime;
         std::cout<<"Total consume time(ms) : "<<1.0 * (double)consumeTime / 1000.0<<std::endl;
         double avgTime = 1.0 * (double)MultiModelWorkload::execTimes[0];
-        for(int i = 1; i < (int)ctx.multiModelContext.kTxnNum; i++){
+        for(int i = 1; i < (int)Taas::MultiModelContext::kTxnNum; i++){
             avgTime = (avgTime + (double)MultiModelWorkload::execTimes[i]) / 2.0;
         }
         std::cout << "Commit txn number : " << MultiModelWorkload::execTimes.size() <<std::endl;

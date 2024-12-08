@@ -11,7 +11,7 @@
 
 namespace Taas {
 
-//    bool MultiMasterEpochManager::CheckEpochMergeState(const Context& ctx) {
+//    bool MultiMasterEpochManager::CheckEpochMergeState() {
 //        auto res = false;
 //        while (EpochManager::IsShardMergeComplete(merge_epoch.load()) &&
 //               merge_epoch.load() < EpochManager::GetPhysicalEpoch()) {
@@ -19,7 +19,7 @@ namespace Taas {
 //        }
 //        auto i = merge_epoch.load();
 //        while(i < EpochManager::GetPhysicalEpoch() &&
-//              (ctx.taasContext.kTxnNodeNum == 1 ||
+//              (TaasContext::kTxnNodeNum == 1 ||
 //               (EpochMessageReceiveHandler::CheckEpochShardSendComplete(i) &&
 //                       EpochMessageReceiveHandler::CheckEpochShardReceiveComplete(i) &&
 //                       EpochMessageReceiveHandler::CheckEpochBackUpComplete(i))
@@ -49,7 +49,7 @@ namespace Taas {
 //        return false;
 //    }
     static uint64_t last_total_commit_txn_num = 0;
-//    bool MultiMasterEpochManager::CheckEpochCommitState(const Context& ctx) {
+//    bool MultiMasterEpochManager::CheckEpochCommitState() {
 //        if(commit_epoch.load() >= abort_set_epoch.load()) return false;
 //        auto i = commit_epoch.load();
 //        if( i < abort_set_epoch.load() && EpochManager::IsShardMergeComplete(i) &&
@@ -60,7 +60,7 @@ namespace Taas {
 //            auto epoch_commit_success_txn_num =
 //                    ThreadCounters::GetAllThreadLocalCountNum(i, ThreadCounters::epoch_record_committed_txn_num_local_vec);
 //            total_commit_txn_num += epoch_commit_success_txn_num;///success
-//            if(i % ctx.taasContext.print_mode_size == 0) {
+//            if(i % TaasContext::print_mode_size == 0) {
 //                LOG(INFO) << PrintfToString("************ 完成一个Epoch的合并 Epoch: %lu, EpochSuccessCommitTxnNum: %lu, EpochCommitTxnNum: %lu ************\n",
 //                                        i, epoch_commit_success_txn_num, EpochMessageSendHandler::TotalTxnNum.load() - last_total_commit_txn_num);
 //                LOG(INFO) << PrintfToString("Epoch: %lu ClearEpoch: %lu, SuccessTxnNumber %lu, ToTalSuccessLatency %lu, SuccessAvgLatency %lf, TotalCommitTxnNum %lu, TotalCommitlatency %lu, TotalCommitAvglatency %lf ************\n",
@@ -79,21 +79,21 @@ namespace Taas {
 //        return false;
 //    }
 
-    void MultiMasterEpochManager::EpochLogicalTimerManagerThreadMain(const Context& ctx) {
+    void MultiMasterEpochManager::EpochLogicalTimerManagerThreadMain() {
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         uint64_t epoch = 1;
         OUTPUTLOG("===== Logical Start Epoch的合并 ===== ", epoch);
-        util::thread_pool_light workers(ctx.taasContext.kMergeThreadNum);
+        util::thread_pool_light workers(TaasContext::kMergeThreadNum);
         while(!EpochManager::IsInitOK()) usleep(logical_sleep_timme);
-        if(ctx.taasContext.kTxnNodeNum > 1) {
+        if(TaasContext::kTxnNodeNum > 1) {
             while(!EpochManager::IsTimerStop()){
                 auto time1 = now_to_us();
                 while(epoch >= EpochManager::GetPhysicalEpoch()) usleep(logical_sleep_timme);
 //                LOG(INFO) << "**** Start Epoch Merge Epoch : " << epoch << "****\n";
                 while(!EpochMessageReceiveHandler::CheckEpochClientTxnHandleComplete(epoch)) usleep(logical_sleep_timme);
                 while(!Merger::CheckEpochReadValidateComplete(epoch)) usleep(logical_sleep_timme);
-                workers.push_emergency_task([&epoch, &ctx] () {
-                    EpochMessageSendHandler::SendEpochShardEndMessage(ctx.taasContext.txn_node_ip_index, epoch, ctx.taasContext.kTxnNodeNum);
+                workers.push_emergency_task([&epoch] () {
+                    EpochMessageSendHandler::SendEpochShardEndMessage(TaasContext::txn_node_ip_index, epoch, TaasContext::kTxnNodeNum);
                 });
                 while(!EpochMessageReceiveHandler::IsShardSendFinish(epoch)) usleep(logical_sleep_timme);
 
@@ -147,7 +147,7 @@ namespace Taas {
                 auto epoch_commit_success_txn_num = ThreadCounters::GetAllThreadLocalCountNum(epoch,
                                                 ThreadCounters::epoch_record_committed_txn_num_local_vec);
                 total_commit_txn_num += epoch_commit_success_txn_num;///success
-//                if(epoch % ctx.taasContext.print_mode_size == 0)
+//                if(epoch % TaasContext::print_mode_size == 0)
 //                    LOG(INFO) << PrintfToString("************ 完成一个Epoch的合并 Physical Epoch %lu, Logical Epoch: %lu, Local EpochSuccessCommitTxnNum: %lu,TotalSuccessTxnNum: %lu, EpochCommitTxnNum: %lu ",
 //                                                EpochManager::GetPhysicalEpoch(), epoch, epoch_commit_success_txn_num, total_commit_txn_num,
 //                                                EpochMessageSendHandler::TotalTxnNum.load() - last_total_commit_txn_num)
@@ -158,7 +158,7 @@ namespace Taas {
 //                    << "Total Time Cost ****" << time7 - time1
 //                    << "****\n";
 //                    OUTPUTLOG("===== Logical Start Epoch的合并 ===== ", epoch);
-                if(epoch % ctx.taasContext.print_mode_size == 0) {
+                if(epoch % TaasContext::print_mode_size == 0) {
                     LOG(INFO) << PrintfToString(
                             "************ 完成一个Epoch的合并 Physical Epoch %lu, Logical Epoch: %lu, Local EpochSuccessCommitTxnNum: %lu,TotalSuccessTxnNum: %lu, EpochCommitTxnNum: %lu ",
                             EpochManager::GetPhysicalEpoch(), epoch, epoch_commit_success_txn_num, total_commit_txn_num,
@@ -183,7 +183,7 @@ namespace Taas {
                 while(!EpochMessageReceiveHandler::CheckEpochClientTxnHandleComplete(epoch)) usleep(logical_sleep_timme);
                 while(!Merger::CheckEpochReadValidateComplete(epoch)) usleep(logical_sleep_timme);
 //                workers.push_emergency_task([epoch, &ctx] () {
-//                    EpochMessageSendHandler::SendEpochEndMessage(ctx.taasContext.txn_node_ip_index, epoch, ctx.taasContext.kTxnNodeNum);
+//                    EpochMessageSendHandler::SendEpochEndMessage(TaasContext::txn_node_ip_index, epoch, TaasContext::kTxnNodeNum);
 //                });
                 while(!Merger::CheckEpochMergeComplete(epoch)) usleep(logical_sleep_timme);
                 EpochManager::SetEpochMergeComplete(epoch, true);
@@ -202,7 +202,7 @@ namespace Taas {
                 auto epoch_commit_success_txn_num = ThreadCounters::GetAllThreadLocalCountNum(epoch,
                                                            ThreadCounters::epoch_record_committed_txn_num_local_vec);
                 total_commit_txn_num += epoch_commit_success_txn_num;///success
-//                if(epoch % ctx.taasContext.print_mode_size == 0)
+//                if(epoch % TaasContext::print_mode_size == 0)
 //                    LOG(INFO) << PrintfToString("************ 完成一个Epoch的合并 Physical Epoch %lu, Logical Epoch: %lu, Local EpochSuccessCommitTxnNum: %lu,TotalSuccessTxnNum: %lu, EpochCommitTxnNum: %lu ",
 //                                                EpochManager::GetPhysicalEpoch(), epoch, epoch_commit_success_txn_num, total_commit_txn_num,
 //                                            EpochMessageSendHandler::TotalTxnNum.load() - last_total_commit_txn_num)
@@ -212,7 +212,7 @@ namespace Taas {
 //                          << ",Commit time cost : " << time7 - time6
 //                          << "Total Time Cost ****" << time7 - time1
 //                          << "****\n";
-                if(epoch % ctx.taasContext.print_mode_size == 0) {
+                if(epoch % TaasContext::print_mode_size == 0) {
                     LOG(INFO) << PrintfToString(
                             "************ 完成一个Epoch的合并 Physical Epoch %lu, Logical Epoch: %lu, Local EpochSuccessCommitTxnNum: %lu,TotalSuccessTxnNum: %lu, EpochCommitTxnNum: %lu ",
                             EpochManager::GetPhysicalEpoch(), epoch, epoch_commit_success_txn_num, total_commit_txn_num,

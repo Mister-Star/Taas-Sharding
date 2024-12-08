@@ -8,7 +8,7 @@
 #include "message/epoch_message_receive_handler.h"
 
 namespace Taas {
-    void TwoPhaseCommitManager::TwoPhaseCommitManagerThreadMain(const Context& ctx) {
+    void TwoPhaseCommitManager::TwoPhaseCommitManagerThreadMain() {
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         // print some info message
         while(!EpochManager::IsTimerStop()) {

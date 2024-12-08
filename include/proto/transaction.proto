@@ -21,6 +21,8 @@ enum TxnType {
   EpochBackUpEndFlag = 6;
   CommittedTxn = 7;
   EpochCommittedTxnEndFlag = 8;
+  ViewChange = 9;
+  MetaInfo = 10;
 
   AbortSet = 20;
   InsertSet = 21;

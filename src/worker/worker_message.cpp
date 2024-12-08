@@ -9,20 +9,20 @@
 
 namespace Taas {
 
-    void WorkerFroMessageThreadMain(const Context& ctx, uint64_t id) {/// handle client txn
+    void WorkerFroMessageThreadMain(uint64_t id) {/// handle client txn
         std::string name = "TxnMessage-" + std::to_string(id);
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         EpochMessageReceiveHandler receiveHandler;
         class TwoPC twoPC;
         while(init_ok_num.load() < 5) usleep(sleep_time);
-        receiveHandler.Init(id, ctx);
-        Taas::TwoPC::Init(ctx, id);
+        receiveHandler.Init(id);
+        Taas::TwoPC::Init(id);
         init_ok_num.fetch_add(1);
 //        bool sleep_flag;
-//        auto safe_length = ctx.taasContext.kCacheMaxLength / 10;
+//        auto safe_length = TaasContext::kCacheMaxLength / 10;
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         while(!EpochManager::IsTimerStop()){
-            switch(ctx.taasContext.taasMode) {
+            switch(TaasContext::taasMode) {
                 case TaasMode::MultiModel :
                 case TaasMode::MultiMaster :
                 case TaasMode::Shard : {
@@ -52,18 +52,18 @@ namespace Taas {
         }
     }
 
-    void WorkerFroMessageEpochThreadMain(const Context& ctx, uint64_t id) {/// handle message
+    void WorkerFroMessageEpochThreadMain(uint64_t id) {/// handle message
         std::string name = "EpochMessage-" + std::to_string(id);
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         EpochMessageReceiveHandler receiveHandler;
         class TwoPC twoPC;
         while(init_ok_num.load() < 5) usleep(sleep_time);
-        receiveHandler.Init(id, ctx);
-        Taas::TwoPC::Init(ctx, id);
+        receiveHandler.Init(id);
+        Taas::TwoPC::Init(id);
         init_ok_num.fetch_add(1);
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         while(!EpochManager::IsTimerStop()){
-            switch(ctx.taasContext.taasMode) {
+            switch(TaasContext::taasMode) {
                 case TaasMode::MultiModel :
                 case TaasMode::MultiMaster :
                 case TaasMode::Shard : {
@@ -82,58 +82,58 @@ namespace Taas {
         }
     }
 
-    void WorkerForClientListenThreadMain(const Context& ctx) {
+    void WorkerForClientListenThreadMain() {
         std::string name = "EpochClientListen";
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         SetCPU();
-        ListenClientThreadMain(ctx);
+        ListenClientThreadMain();
     }
 
-    void WorkerForClientSendThreadMain(const Context& ctx) {
+    void WorkerForClientSendThreadMain() {
         std::string name = "EpochClientSend";
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         SetCPU();
-        SendClientThreadMain(ctx);
+        SendClientThreadMain();
     }
 
-    void WorkerForServerListenThreadMain(const Context& ctx) {
+    void WorkerForServerListenThreadMain() {
         std::string name = "EpochServerListen";
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         SetCPU();
-        ListenServerThreadMain(ctx);
+        ListenServerThreadMain();
     }
 
-    void WorkerForServerListenThreadMain_Epoch(const Context& ctx) {
+    void WorkerForServerListenThreadMain_Epoch() {
         std::string name = "EpochServerListen";
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         SetCPU();
-        ListenServerThreadMain_Sub(ctx);
+        ListenServerThreadMain_Sub();
     }
 
-    void WorkerForServerSendThreadMain(const Context& ctx) {
+    void WorkerForServerSendThreadMain() {
         std::string name = "EpochServerSend";
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         SetCPU();
-        SendServerThreadMain(ctx);
+        SendServerThreadMain();
     }
 
-    void WorkerForServerSendPUBThreadMain(const Context& ctx) {
+    void WorkerForServerSendPUBThreadMain() {
         std::string name = "EpochClientSend";
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         SetCPU();
-        SendServerPUBThreadMain(ctx);
+        SendServerPUBThreadMain();
     }
 
-    void WorkerForStorageSendMOTThreadMain(const Context& ctx) {
+    void WorkerForStorageSendMOTThreadMain() {
         std::string name = "EpochMOTStorage";
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
-        SendToMOTStorageThreadMain(ctx);
+        SendToMOTStorageThreadMain();
     }
 
-    void WorkerForStorageSendNebulaThreadMain(const Context& ctx) {
+    void WorkerForStorageSendNebulaThreadMain() {
         std::string name = "EpochNebulaStorage";
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
-        SendToNebulaStorageThreadMain(ctx);
+        SendToNebulaStorageThreadMain();
     }
 }
 

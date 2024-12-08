@@ -22,7 +22,7 @@ namespace Taas {
  * @param id 暂时未使用
  * @param ctx 暂时未使用
  */
-    void ListenClientThreadMain(const Context& ctx) {///监听client 写集
+    void ListenClientThreadMain() {///监听client 写集
         // 设置ZeroMQ的相关变量，并监听5555端口，接受client发来的写集
         int queue_length = 1000000000;
         zmq::context_t listen_context(1);
@@ -68,7 +68,7 @@ namespace Taas {
  * @param id
  * @param ctx
  */
-    void SendClientThreadMain(const Context& ctx) {
+    void SendClientThreadMain() {
         // 设置ZeroMQ的相关变量，通过5556端口发送Reply给client
         zmq::context_t context(1);
         zmq::send_flags sendFlags = zmq::send_flags::none;
@@ -79,7 +79,7 @@ namespace Taas {
         printf("线程开始工作 SendClientThread ZMQ_PUSH tcp://ip+:5552 \n");
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         std::unordered_map<std::string, std::unique_ptr<zmq::socket_t>> socket_map;
-        if (ctx.taasContext.kTestClientNum > 0) {
+        if (TaasContext::kTestClientNum > 0) {
             while (!EpochManager::IsTimerStop()) {
                 MessageQueue::send_to_client_queue->wait_dequeue(params);
             }

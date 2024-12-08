@@ -19,7 +19,6 @@ namespace Taas {
     public:
         static tikv_client::TransactionClient* tikv_client_ptr;
 
-        static Context ctx;
         static std::unique_ptr<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>> task_queue, redo_log_queue;
         static std::vector<std::unique_ptr<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>>
                 epoch_redo_log_queue; ///store transactions receive from clients, wait to push down
@@ -42,7 +41,7 @@ namespace Taas {
                 epoch_pushed_down_txn_num_local_vec;
 
         void Init();
-        static void StaticInit(const Context& ctx_);
+        static void StaticInit();
         static void StaticClear(const uint64_t &epoch);
 
         static void ClearAllThreadLocalCountNum(const uint64_t &epoch, const std::vector<std::shared_ptr<AtomicCounters_Cache>> &vec) ;

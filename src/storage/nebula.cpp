@@ -8,7 +8,6 @@
 
 namespace Taas {
 
-    Context Nebula::ctx;
     std::unique_ptr<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>  Nebula::task_queue, Nebula::redo_log_queue;
     std::vector<std::unique_ptr<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>> Nebula::epoch_redo_log_queue;
     std::atomic<uint64_t> Nebula::pushed_down_epoch(1);
@@ -24,33 +23,31 @@ namespace Taas {
 
     void Nebula::Init() {
         thread_id = inc_id.fetch_add(1);
-        shard_num = ctx.taasContext.kTxnNodeNum;
-        max_length = ctx.taasContext.kCacheMaxLength;
-        local_server_id = ctx.taasContext.txn_node_ip_index;
+        shard_num = TaasContext::kTxnNodeNum;
+        max_length = TaasContext::kCacheMaxLength;
+        local_server_id = TaasContext::txn_node_ip_index;
         epoch_should_push_down_txn_num_local= std::make_shared<AtomicCounters_Cache>(max_length, shard_num);
         epoch_pushed_down_txn_num_local= std::make_shared<AtomicCounters_Cache>(max_length, shard_num);
         epoch_should_push_down_txn_num_local_vec[thread_id] = epoch_should_push_down_txn_num_local;
         epoch_pushed_down_txn_num_local_vec[thread_id] = epoch_pushed_down_txn_num_local;
     }
 
-    void Nebula::StaticInit(const Context &ctx_) {
-        ctx = ctx_;
-
+    void Nebula::StaticInit() {
         task_queue = std::make_unique<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>();
         redo_log_queue = std::make_unique<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>();
-        epoch_redo_log_complete.resize(ctx.taasContext.kCacheMaxLength);
-        epoch_redo_log_queue.resize(ctx.taasContext.kCacheMaxLength);
-        for(int i = 0; i < static_cast<int>(ctx.taasContext.kCacheMaxLength); i ++) {
+        epoch_redo_log_complete.resize(TaasContext::kCacheMaxLength);
+        epoch_redo_log_queue.resize(TaasContext::kCacheMaxLength);
+        for(int i = 0; i < static_cast<int>(TaasContext::kCacheMaxLength); i ++) {
             epoch_redo_log_complete[i] = std::make_unique<std::atomic<bool>>(false);
             epoch_redo_log_queue[i] = std::make_unique<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>();
         }
-        epoch_should_push_down_txn_num_local_vec.resize(ctx.storageContext.kMOTThreadNum);
-        epoch_pushed_down_txn_num_local_vec.resize(ctx.storageContext.kMOTThreadNum);
+        epoch_should_push_down_txn_num_local_vec.resize(StorageContext::kMOTThreadNum);
+        epoch_pushed_down_txn_num_local_vec.resize(StorageContext::kMOTThreadNum);
     }
 
     void Nebula::StaticClear(const uint64_t &epoch) {
-        epoch_redo_log_complete[epoch % ctx.taasContext.kCacheMaxLength]->store(false);
-//        epoch_redo_log_queue[epoch % ctx.taasContext.kCacheMaxLength] = std::make_unique<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>();
+        epoch_redo_log_complete[epoch % TaasContext::kCacheMaxLength]->store(false);
+//        epoch_redo_log_queue[epoch % TaasContext::kCacheMaxLength] = std::make_unique<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>();
         ClearAllThreadLocalCountNum(epoch, epoch_should_push_down_txn_num_local_vec);
         ClearAllThreadLocalCountNum(epoch, epoch_pushed_down_txn_num_local_vec);
     }
@@ -79,24 +76,24 @@ namespace Taas {
     }
 
     bool Nebula::CheckEpochPushDownComplete(const uint64_t &epoch) {
-        if(epoch_redo_log_complete[epoch % ctx.taasContext.kCacheMaxLength]->load()) return true;
+        if(epoch_redo_log_complete[epoch % TaasContext::kCacheMaxLength]->load()) return true;
 //        if(epoch < EpochManager::GetLogicalEpoch() &&
 //           epoch_pushed_down_txn_num_local->GetCount(epoch) >= epoch_should_push_down_txn_num.GetCount(epoch)) {
-//            epoch_redo_log_complete[epoch % ctx.taasContext.kCacheMaxLength]->store(true);
+//            epoch_redo_log_complete[epoch % TaasContext::kCacheMaxLength]->store(true);
 //            return true;
 //        }
         if(epoch < EpochManager::GetLogicalEpoch() &&
             GetAllThreadLocalCountNum(epoch, epoch_pushed_down_txn_num_local_vec) >=
             GetAllThreadLocalCountNum(epoch, epoch_should_push_down_txn_num_local_vec)
                 ) {
-            epoch_redo_log_complete[epoch % ctx.taasContext.kCacheMaxLength]->store(true);
+            epoch_redo_log_complete[epoch % TaasContext::kCacheMaxLength]->store(true);
             return true;
         }
         return false;
     }
     void Nebula::DBRedoLogQueueEnqueue(const uint64_t& thread_id, const uint64_t &epoch, std::shared_ptr<proto::Transaction> txn_ptr) {
 //        epoch_should_push_down_txn_num_local->IncCount(epoch, txn_ptr->txn_server_id(), 1);
-        auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod = epoch % TaasContext::kCacheMaxLength;
         epoch_should_push_down_txn_num_local_vec[thread_id % inc_id.load() ]->IncCount(epoch, txn_ptr->txn_server_id(), 1);
         epoch_redo_log_queue[epoch_mod]->enqueue(txn_ptr);
         epoch_redo_log_queue[epoch_mod]->enqueue(nullptr);
@@ -104,7 +101,7 @@ namespace Taas {
     }
 
     bool Nebula::DBRedoLogQueueTryDequeue(const uint64_t &epoch, std::shared_ptr<proto::Transaction> txn_ptr) {
-        auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod = epoch % TaasContext::kCacheMaxLength;
         return epoch_redo_log_queue[epoch_mod]->try_dequeue(txn_ptr);
     }
 
@@ -129,7 +126,7 @@ namespace Taas {
                 usleep(storage_sleep_time);
                 epoch = EpochManager::GetPushDownEpoch();
             }
-            epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
+            epoch_mod = epoch % TaasContext::kCacheMaxLength;
             while(epoch_redo_log_queue[epoch_mod]->try_dequeue(txn_ptr)) {
                 if(txn_ptr == nullptr || txn_ptr->txn_type() == proto::TxnType::NullMark) {
                     continue;
@@ -170,7 +167,7 @@ namespace Taas {
                 commit_cv.wait(lck);
                 epoch = EpochManager::GetPushDownEpoch();
             }
-            epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
+            epoch_mod = epoch % TaasContext::kCacheMaxLength;
             sleep_flag = true;
             while(epoch_redo_log_queue[epoch_mod]->try_dequeue(txn_ptr)) {
                 if(txn_ptr == nullptr || txn_ptr->txn_type() == proto::TxnType::NullMark) {

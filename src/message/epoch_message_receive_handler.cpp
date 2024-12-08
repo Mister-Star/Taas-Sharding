@@ -13,23 +13,22 @@
 
 namespace Taas {
 
-    bool EpochMessageReceiveHandler::Init(const uint64_t &id, const Context& context) {
-        ctx = context;
+    bool EpochMessageReceiveHandler::Init(const uint64_t &id) {
         message_ptr = nullptr;
         txn_ptr.reset();
         thread_id = id;
-        server_num = ctx.taasContext.kTxnNodeNum;
-        shard_num = ctx.taasContext.kShardNum;
-        replica_num = ctx.taasContext.kReplicaNum;
-        local_server_id = ctx.taasContext.txn_node_ip_index;
-        max_length = ctx.taasContext.kCacheMaxLength;
+        server_num = TaasContext::kTxnNodeNum;
+        shard_num = TaasContext::kShardNum;
+        replica_num = TaasContext::kReplicaNum;
+        local_server_id = TaasContext::txn_node_ip_index;
+        max_length = TaasContext::kCacheMaxLength;
         ThreadCountersInit(ctx);
 
-        server_num = ctx.taasContext.kTxnNodeNum,
-        shard_num = ctx.taasContext.kShardNum,
-        replica_num = ctx.taasContext.kReplicaNum,
-        local_server_id = ctx.taasContext.txn_node_ip_index,
-        max_length = ctx.taasContext.kCacheMaxLength;
+        server_num = TaasContext::kTxnNodeNum,
+        shard_num = TaasContext::kShardNum,
+        replica_num = TaasContext::kReplicaNum,
+        local_server_id = TaasContext::txn_node_ip_index,
+        max_length = TaasContext::kCacheMaxLength;
 
         is_local_shard.resize(server_num);
         for(auto &i : is_local_shard) {
@@ -48,7 +47,7 @@ namespace Taas {
         return true;
     }
 
-    bool EpochMessageReceiveHandler::StaticInit([[maybe_unused]] const Context& context) {
+    bool EpochMessageReceiveHandler::StaticInit() {
         return true;
     }
 
@@ -57,41 +56,41 @@ namespace Taas {
     }
 
     void EpochMessageReceiveHandler::ReadValidateQueueEnqueue(uint64_t &epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_) {
-        auto epoch_mod_temp = epoch_ % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod_temp = epoch_ % TaasContext::kCacheMaxLength;
         epoch_should_read_validate_txn_num_local->IncCount(epoch_mod_temp, txn_ptr_->txn_server_id(), 1);
         TransactionCache::epoch_read_validate_queue[epoch_mod_temp]->enqueue(txn_ptr_);
         TransactionCache::epoch_read_validate_queue[epoch_mod_temp]->enqueue(nullptr);
     }
     void EpochMessageReceiveHandler::MergeQueueEnqueue(uint64_t &epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_) {
-        auto epoch_mod_temp = epoch_ % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod_temp = epoch_ % TaasContext::kCacheMaxLength;
         epoch_should_merge_txn_num_local->IncCount(epoch_mod_temp, txn_ptr->txn_server_id(), 1);
         TransactionCache::epoch_merge_queue[epoch_mod_temp]->enqueue(txn_ptr_);
         TransactionCache::epoch_merge_queue[epoch_mod_temp]->enqueue(nullptr);
     }
     void EpochMessageReceiveHandler::CommitQueueEnqueue(uint64_t& epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_) {
-        auto epoch_mod_temp = epoch_ % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod_temp = epoch_ % TaasContext::kCacheMaxLength;
         epoch_should_commit_txn_num_local->IncCount(epoch_mod_temp, txn_ptr_->txn_server_id(), 1);
         TransactionCache::epoch_commit_queue[epoch_mod_temp]->enqueue(txn_ptr_);
         TransactionCache::epoch_commit_queue[epoch_mod_temp]->enqueue(nullptr);
     }
     void EpochMessageReceiveHandler::RedoLogQueueEnqueue(uint64_t& epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_) {
-        auto epoch_mod_temp = epoch_ % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod_temp = epoch_ % TaasContext::kCacheMaxLength;
         epoch_record_commit_txn_num_local->IncCount(epoch_mod_temp, txn_ptr_->txn_server_id(), 1);
         TransactionCache::epoch_redo_log_queue[epoch_mod_temp]->enqueue(txn_ptr_);
         TransactionCache::epoch_redo_log_queue[epoch_mod_temp]->enqueue(nullptr);
     }
     void EpochMessageReceiveHandler::ResultReturnQueueEnqueue(uint64_t& epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_) {
-        auto epoch_mod_temp = epoch_ % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod_temp = epoch_ % TaasContext::kCacheMaxLength;
         epoch_result_return_txn_num_local->IncCount(epoch_mod_temp, txn_ptr_->txn_server_id(), 1);
         TransactionCache::epoch_result_return_queue[epoch_mod_temp]->enqueue(txn_ptr_);
         TransactionCache::epoch_result_return_queue[epoch_mod_temp]->enqueue(nullptr);
     }
 
     void EpochMessageReceiveHandler::HandleReceivedMessage() {
-        auto safe_length = ctx.taasContext.kSafeEpochDistance;
+        auto safe_length = TaasContext::kSafeEpochDistance;
         while(!EpochManager::IsTimerStop()) {
 //            while( EpochManager::GetLogicalEpoch() + safe_length > EpochManager::GetPhysicalEpoch() ) {
-//                usleep(ctx.taasContext.kEpochSize_us);
+//                usleep(TaasContext::kEpochSize_us);
 //            }
             MessageQueue::listen_message_txn_queue->wait_dequeue(message_ptr);
             if (message_ptr == nullptr || message_ptr->empty()) continue;
@@ -118,7 +117,7 @@ namespace Taas {
 //            HandleReceivedTxn();
 //            txn_ptr.reset();
 //        }
-        for(int i = 0; i < (int)ctx.taasContext.kHandleTxnMessageNumOfEachTraversal; i ++) {
+        for(int i = 0; i < (int)TaasContext::kHandleTxnMessageNumOfEachTraversal; i ++) {
             if(MessageQueue::listen_message_txn_queue->try_dequeue(message_ptr)) {
                 sleep_flag = false;
                 if (message_ptr == nullptr) return;
@@ -149,7 +148,7 @@ namespace Taas {
             txn_ptr = std::make_shared<proto::Transaction>(msg_ptr->txn());
             HandleReceivedTxn();
             txn_ptr.reset();
-            if(total_single_shard_num > 0 && total_single_shard_num % ctx.taasContext.print_mode_size == 0) {
+            if(total_single_shard_num > 0 && total_single_shard_num % TaasContext::print_mode_size == 0) {
                 LOG(INFO) << "ClientTxnHandle Time Cost : " << total_single_shard_time  << " ClientTxnHandle Time count : " << total_single_shard_num << " ClientTxnHandle avg: " << total_single_shard_time/total_single_shard_num
                           << "ShardedClientTxn Time Cost : " << total_single_remote_handle_time << " ShardedClientTxn Time count : " << total_single_remote_handle_num << " ShardedClientTxn Tavg: " << total_single_remote_handle_time/total_single_remote_handle_num
                         << " end";
@@ -171,7 +170,7 @@ namespace Taas {
 ////            if(txn_ptr->commit_epoch() > EpochManager::GetLogicalEpoch()) return ;
 //            txn_ptr.reset();
 //        }
-        for(int i = 0; i < (int)ctx.taasContext.kHandleEpochMessageNumOfEachTraversal; i ++) {
+        for(int i = 0; i < (int)TaasContext::kHandleEpochMessageNumOfEachTraversal; i ++) {
             if(MessageQueue::listen_message_epoch_queue->try_dequeue(message_ptr)) {
                 sleep_flag = false;
                 if (message_ptr == nullptr) return;
@@ -226,15 +225,15 @@ namespace Taas {
                 CommitQueueEnqueue(message_epoch, (*shard_row_vector)[i]);
 
                 shard_id = i;
-                for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) { /// use the network for reducing the merge time
-                  auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum + j) % ctx.taasContext.kTxnNodeNum;
-                  if (to_id == ctx.taasContext.txn_node_ip_index) continue;
+                for(uint64_t j = 0; j < TaasContext::kReplicaNum; j ++ ) { /// use the network for reducing the merge time
+                  auto to_id = (shard_id + TaasContext::kTxnNodeNum + j) % TaasContext::kTxnNodeNum;
+                  if (to_id == TaasContext::txn_node_ip_index) continue;
                   remote_server_should_send_txn_num_local->IncCount(message_epoch, to_id, 1);
                 }
                 EpochMessageSendHandler::SendTxnToServer(message_epoch, shard_id, txn_ptr, proto::TxnType::RemoteServerTxn);
-                for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) {
-                  auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum + j) % ctx.taasContext.kTxnNodeNum;
-                  if (to_id == ctx.taasContext.txn_node_ip_index) continue;
+                for(uint64_t j = 0; j < TaasContext::kReplicaNum; j ++ ) {
+                  auto to_id = (shard_id + TaasContext::kTxnNodeNum + j) % TaasContext::kTxnNodeNum;
+                  if (to_id == TaasContext::txn_node_ip_index) continue;
                   remote_server_send_txn_num_local->IncCount(message_epoch, to_id, 1);
                 }
             } else {
@@ -257,7 +256,7 @@ namespace Taas {
 
     bool EpochMessageReceiveHandler::SetMessageRelatedCountersInfo() {
         message_epoch = txn_ptr->commit_epoch();
-        message_epoch_mod = message_epoch % ctx.taasContext.kCacheMaxLength;
+        message_epoch_mod = message_epoch % TaasContext::kCacheMaxLength;
         txn_server_id = txn_ptr->txn_server_id();
         shard_id = txn_ptr->shard_id();
         shard_server_id = txn_ptr->shard_server_id();
@@ -271,7 +270,7 @@ namespace Taas {
         switch (txn_ptr->txn_type()) {
             ///这里需要注意 这几个计数器是以server_id为粒度增加的，不是线程id ！！！
             case proto::TxnType::ClientTxn : {/// sql node --> txn node
-                if(ctx.taasContext.taasMode == TaasMode::MultiModel) {
+                if(TaasContext::taasMode == TaasMode::MultiModel) {
                     HandleMultiModelClientTxn();
                 }
                 else {
@@ -302,15 +301,15 @@ namespace Taas {
 
                 shard_id = txn_ptr->shard_id();
                 assert(is_local_shard[local_server_id][shard_id]);
-                for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) { /// use the network for reducing the merge time
-                      auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum + j) % ctx.taasContext.kTxnNodeNum;
-                      if (to_id == ctx.taasContext.txn_node_ip_index) continue;
+                for(uint64_t j = 0; j < TaasContext::kReplicaNum; j ++ ) { /// use the network for reducing the merge time
+                      auto to_id = (shard_id + TaasContext::kTxnNodeNum + j) % TaasContext::kTxnNodeNum;
+                      if (to_id == TaasContext::txn_node_ip_index) continue;
                       remote_server_should_send_txn_num_local->IncCount(message_epoch, to_id, 1);
                   }
                   EpochMessageSendHandler::SendTxnToServer(message_epoch, shard_id, txn_ptr, proto::TxnType::RemoteServerTxn);
-                  for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) {
-                      auto to_id = (shard_id + ctx.taasContext.kTxnNodeNum + j) % ctx.taasContext.kTxnNodeNum;
-                      if (to_id == ctx.taasContext.txn_node_ip_index) continue;
+                  for(uint64_t j = 0; j < TaasContext::kReplicaNum; j ++ ) {
+                      auto to_id = (shard_id + TaasContext::kTxnNodeNum + j) % TaasContext::kTxnNodeNum;
+                      if (to_id == TaasContext::txn_node_ip_index) continue;
                       remote_server_send_txn_num_local->IncCount(message_epoch, to_id, 1);
                   }
 
@@ -395,6 +394,21 @@ namespace Taas {
                 redo_log_push_down_ack_num.IncCount(message_epoch, message_server_id, 1);
             break;
         }
+        case proto::TxnType::ViewChange : {
+          message_epoch = txn_ptr->commit_epoch();
+          message_epoch_mod = txn_ptr->commit_epoch() % TaasContext::kCacheMaxLength;
+          for(int i = 0; i < txn_ptr->row_size(); i ++) {
+            TransactionCache::read_version_map.insert(txn_ptr->row(i).key(), txn_ptr->row(i).data());
+          }
+          break;
+        }
+        case proto::TxnType::MetaInfo : {
+          UpdateMetaInfo();
+          meta_info_received_num.IncCount(message_epoch,message_server_id, 1);
+//          EpochMessageSendHandler::SendTxnToServer(message_epoch, message_server_id, empty_txn_ptr, proto::TxnType::AbortSetACK);
+          break;
+        }
+
         case proto::NullMark:
             case proto::TxnType_INT_MIN_SENTINEL_DO_NOT_USE_:
             case proto::TxnType_INT_MAX_SENTINEL_DO_NOT_USE_:
@@ -415,11 +429,20 @@ namespace Taas {
 
     bool EpochMessageReceiveHandler::UpdateEpochAbortSet() {
         message_epoch = txn_ptr->commit_epoch();
-        message_epoch_mod = txn_ptr->commit_epoch() % ctx.taasContext.kCacheMaxLength;
+        message_epoch_mod = txn_ptr->commit_epoch() % TaasContext::kCacheMaxLength;
         for(int i = 0; i < txn_ptr->row_size(); i ++) {
             TransactionCache::epoch_abort_txn_set[message_epoch_mod]->insert(txn_ptr->row(i).key(), txn_ptr->row(i).data());
         }
         return true;
+    }
+
+    bool EpochMessageReceiveHandler::UpdateMetaInfo() {
+      message_epoch = txn_ptr->commit_epoch();
+      message_epoch_mod = txn_ptr->commit_epoch() % TaasContext::kCacheMaxLength;
+      for(int i = 0; i < txn_ptr->row_size(); i ++) {
+        TransactionCache::read_version_map.insert(txn_ptr->row(i).key(), txn_ptr->row(i).data());
+      }
+      return true;
     }
 
 

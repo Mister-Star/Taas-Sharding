@@ -51,7 +51,7 @@ namespace Taas {
     };
 
     void SetTxnState(proto::Transaction& txn){
-        if (txn.shard_id() == ctx.taasContext.txn_node_ip_index) {
+        if (txn.shard_id() == TaasContext::txn_node_ip_index) {
             tid = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
             std::shared_ptr<TwoPCTxnStateStruct> txn_state_struct;
             txn_state_map.getValue(tid, txn_state_struct);
@@ -132,11 +132,11 @@ namespace Taas {
     bool Check_2PL_complete(proto::Transaction& txn, std::shared_ptr<TwoPCTxnStateStruct>);
     bool Check_2PC_Prepare_complete(proto::Transaction& txn, std::shared_ptr<TwoPCTxnStateStruct>);
     bool Check_2PC_Commit_complete(proto::Transaction& txn, std::shared_ptr<TwoPCTxnStateStruct>);
-    bool Send(const Context& ctx, uint64_t& epoch, uint64_t& to_whom, proto::Transaction& txn,
+    bool Send(uint64_t& epoch, uint64_t& to_whom, proto::Transaction& txn,
               proto::TxnType txn_type);
-    bool SendToClient(const Context& ctx, proto::Transaction& txn, proto::TxnType txn_type,
+    bool SendToClient(proto::Transaction& txn, proto::TxnType txn_type,
                    proto::TxnState txn_state);
-    static bool Init(const Taas::Context& ctx_, uint64_t id);
+    static bool Init(uint64_t id);
       bool HandleClientMessage();// 处理接收到的消息 from client
       bool HandleReceivedMessage();  // from coordinator
 
@@ -178,7 +178,6 @@ namespace Taas {
                                                          /// cache check
         message_epoch, message_shard_id, message_server_id;  /// message epoch info
     static uint64_t  shard_num;
-    static Context ctx;
     std::string tid;  // 记录当前tid
     std::map<std::string, uint64_t> key_sorted; // first is the key/row
 

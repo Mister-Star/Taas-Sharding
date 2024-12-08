@@ -19,7 +19,6 @@
 namespace Taas{
     class TransactionCache {
     public:
-        static Context ctx;
         ///message handler
         static std::vector<std::unique_ptr<BlockingConcurrentQueue<std::shared_ptr<proto::Transaction>>>>
         epoch_backup_txn,
@@ -38,6 +37,7 @@ namespace Taas{
         epoch_txn_map, epoch_write_set_map, epoch_back_txn_map;
 
         static concurrent_unordered_map<std::string, std::string>
+            read_version_map,
                 read_version_map_data, ///read validate for higher isolation
         read_version_map_csn, ///read validate for higher isolation
         insert_set;   ///插入集合，用于判断插入是否可以执行成功 check key exits?
@@ -49,7 +49,7 @@ namespace Taas{
                 epoch_redo_log_queue,
                 epoch_result_return_queue;///存放每个epoch要进行写日志的事务，分片写日志
 
-        static void CacheInit(const Context& context);
+        static void CacheInit();
         static void EpochCacheClear(uint64_t& epoch);
     };
 }

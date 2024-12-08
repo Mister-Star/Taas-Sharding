@@ -10,30 +10,30 @@
 
 namespace Taas {
 
-    void WorkerForPhysicalThreadMain(const Context &ctx) {
+    void WorkerForPhysicalThreadMain() {
         std::string name = "EpochPhysical";
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         SetCPU();
-        EpochPhysicalTimerManagerThreadMain(ctx);
+        EpochPhysicalTimerManagerThreadMain();
    }
 
-    void WorkerForLogicalThreadMain(const Context& ctx) {
+    void WorkerForLogicalThreadMain() {
         std::string name = "EpochLogical";
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         SetCPU();
-        ShardEpochManager::EpochLogicalTimerManagerThreadMain(ctx);
+        ShardEpochManager::EpochLogicalTimerManagerThreadMain();
     }
 
-    void WorkerForEpochControlMessageThreadMain(const Context& ctx) {
+    void WorkerForEpochControlMessageThreadMain() {
         SetCPU();
         while(!EpochManager::IsInitOK() || EpochManager::GetPhysicalEpoch() < 10) usleep(sleep_time);
         while(!EpochManager::IsTimerStop()){
-            switch(ctx.taasContext.taasMode) {
+            switch(TaasContext::taasMode) {
                 case TaasMode::MultiModel :
                 case TaasMode::MultiMaster :
                 case TaasMode::Shard : {
-                    uint64_t local_server_id = ctx.taasContext.txn_node_ip_index;
-                    uint64_t shard_epoch = 1, remote_server_epoch = 1, abort_send_epoch = 1, server_num = ctx.taasContext.kTxnNodeNum;
+                    uint64_t local_server_id = TaasContext::txn_node_ip_index;
+                    uint64_t shard_epoch = 1, remote_server_epoch = 1, abort_send_epoch = 1, server_num = TaasContext::kTxnNodeNum;
                     bool sleep_flag;
                     while(!EpochManager::IsInitOK()) usleep(sleep_time);
                     while(!EpochManager::IsTimerStop()) {
@@ -66,7 +66,7 @@ namespace Taas {
 
 //
 //                        if(EpochManager::IsEpochMergeComplete(abort_send_epoch)) {
-//                            EpochMessageSendHandler::SendAbortSet(local_server_id, abort_send_epoch, ctx.taasContext.kCacheMaxLength);
+//                            EpochMessageSendHandler::SendAbortSet(local_server_id, abort_send_epoch, TaasContext::kCacheMaxLength);
 //                            abort_send_epoch ++;
 //                            sleep_flag = false;
 //                        }
@@ -83,15 +83,15 @@ namespace Taas {
         }
     }
 
-    void WorkerForLogicalRedoLogPushDownCheckThreadMain(const Context& ctx) {
+    void WorkerForLogicalRedoLogPushDownCheckThreadMain() {
         SetCPU();
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         while(!EpochManager::IsTimerStop()){
-            switch(ctx.taasContext.taasMode) {
+            switch(TaasContext::taasMode) {
                 case TaasMode::MultiModel :
                 case TaasMode::MultiMaster :
                 case TaasMode::Shard : {
-                    CheckRedoLogPushDownState(ctx);
+                    CheckRedoLogPushDownState();
                     break;
                 }
                 case TaasMode::TwoPC : {

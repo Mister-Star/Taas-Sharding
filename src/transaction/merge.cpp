@@ -12,36 +12,36 @@
 namespace Taas {
 
 
-    void Merger::MergeInit(const uint64_t &id, const Context &ctx_) {
-        ctx = ctx_;
+    void Merger::MergeInit(const uint64_t &id) {
+
         txn_ptr.reset();
         message_ptr = nullptr;
-        shard_num = ctx.taasContext.kTxnNodeNum;
-        local_server_id = ctx.taasContext.txn_node_ip_index;
+        shard_num = TaasContext::kTxnNodeNum;
+        local_server_id = TaasContext::txn_node_ip_index;
         ThreadCountersInit(ctx);
     }
 
 
     void Merger::ReadValidateQueueEnqueue(uint64_t &epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_) {
-        auto epoch_mod_temp = epoch_ % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod_temp = epoch_ % TaasContext::kCacheMaxLength;
         epoch_should_read_validate_txn_num_local->IncCount(epoch_mod_temp, txn_ptr_->txn_server_id(), 1);
         TransactionCache::epoch_read_validate_queue[epoch_mod_temp]->enqueue(txn_ptr_);
         TransactionCache::epoch_read_validate_queue[epoch_mod_temp]->enqueue(nullptr);
     }
     void Merger::MergeQueueEnqueue(uint64_t &epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_) {
-        auto epoch_mod_temp = epoch_ % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod_temp = epoch_ % TaasContext::kCacheMaxLength;
         epoch_should_merge_txn_num_local->IncCount(epoch_mod_temp, txn_ptr->txn_server_id(), 1);
         TransactionCache::epoch_merge_queue[epoch_mod_temp]->enqueue(txn_ptr_);
         TransactionCache::epoch_merge_queue[epoch_mod_temp]->enqueue(nullptr);
     }
     void Merger::CommitQueueEnqueue(uint64_t& epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_) {
-        auto epoch_mod_temp = epoch_ % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod_temp = epoch_ % TaasContext::kCacheMaxLength;
         epoch_should_commit_txn_num_local->IncCount(epoch_mod_temp, txn_ptr_->txn_server_id(), 1);
         TransactionCache::epoch_commit_queue[epoch_mod_temp]->enqueue(txn_ptr_);
         TransactionCache::epoch_commit_queue[epoch_mod_temp]->enqueue(nullptr);
     }
     void Merger::ResultReturnQueueEnqueue(uint64_t& epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_) {
-        auto epoch_mod_temp = epoch_ % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod_temp = epoch_ % TaasContext::kCacheMaxLength;
         epoch_result_return_txn_num_local->IncCount(epoch_mod_temp, txn_ptr_->txn_server_id(), 1);
         TransactionCache::epoch_result_return_queue[epoch_mod_temp]->enqueue(txn_ptr_);
         TransactionCache::epoch_result_return_queue[epoch_mod_temp]->enqueue(nullptr);
@@ -52,7 +52,7 @@ namespace Taas {
         return false;
     }
     bool Merger::CommitQueueTryDequeue(uint64_t& epoch_, std::shared_ptr<proto::Transaction> txn_ptr_) {
-        auto epoch_mod_temp = epoch_ % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod_temp = epoch_ % TaasContext::kCacheMaxLength;
         return TransactionCache::epoch_commit_queue[epoch_mod_temp]->try_dequeue(txn_ptr_);
     }
 
@@ -64,7 +64,7 @@ namespace Taas {
 
     void Merger::ReadValidate() {
         message_epoch = txn_ptr->commit_epoch();
-        message_epoch_mod = message_epoch % ctx.taasContext.kCacheMaxLength;
+        message_epoch_mod = message_epoch % TaasContext::kCacheMaxLength;
         message_server_id = txn_ptr->txn_server_id();
         shard_id = txn_ptr->shard_id();
         shard_server_id = txn_ptr->shard_server_id();
@@ -138,7 +138,7 @@ namespace Taas {
         total_single_result_num ++;
         total_single_time += now_to_us() - txn_ptr->csn();
         total_single_num ++;
-        if(total_single_num > 0 &&  total_single_num % ctx.taasContext.print_mode_size == 0) {
+        if(total_single_num > 0 &&  total_single_num % TaasContext::print_mode_size == 0) {
             LOG(INFO) << " Validate Time Cost : " << total_single_validate_time  << " Validate Time count : " << total_single_validate_num << " Validate avg : " << total_single_validate_time/total_single_validate_num
                       << " Merge Time Cost : " << total_single_merge_time << " Merge Time count : " << total_single_merge_num << " Validate avg : " << total_single_merge_time/total_single_merge_num
                       << " Commit Time Cost : " << total_single_commit_time << " Commit Time count : " << total_single_commit_num << " Validate avg : " << total_single_commit_time/total_single_commit_num
@@ -156,7 +156,7 @@ namespace Taas {
         while (!EpochManager::IsTimerStop()) {
             sleep_flag = true;
             epoch = EpochManager::GetLogicalEpoch();
-            epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
+            epoch_mod = epoch % TaasContext::kCacheMaxLength;
 
             while(TransactionCache::epoch_read_validate_queue[epoch_mod]->try_dequeue(txn_ptr)) { /// only local txn do this procedure
                 if (txn_ptr != nullptr && txn_ptr->txn_type() != proto::TxnType::NullMark) {

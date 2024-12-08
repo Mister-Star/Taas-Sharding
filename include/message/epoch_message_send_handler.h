@@ -28,9 +28,8 @@ namespace Taas {
         static bool SendMessageToAll(uint64_t& epoch, proto::TxnType txn_type);
 
         ///一下函数都由single one线程执行
-        static void StaticInit(const Context& _ctx);
+        static void StaticInit();
         static void StaticClear();
-        static Context ctx;
         static std::vector<std::unique_ptr<std::atomic<uint64_t>>> shard_send_epoch, backup_send_epoch, abort_set_send_epoch, insert_set_send_epoch;
 //        static uint64_t shard_sent_epoch, backup_sent_epoch, abort_sent_epoch, insert_set_sent_epoch, abort_set_sent_epoch;
 
@@ -45,6 +44,7 @@ namespace Taas {
     private:
         bool sleep_flag = false;
         std::unique_ptr<pack_params> pack_param;
+        bool SendMetaInfo(const uint64_t& txn_node_ip_index, const uint64_t& epoch);
     };
 }
 #endif //TAAS_EPOCH_MESSAGE_SEND_HANDLER_H

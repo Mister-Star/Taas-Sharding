@@ -22,7 +22,6 @@ namespace Taas {
     class Merger : public ThreadCounters {
 
     public:
-        Context ctx;
         std::unique_ptr<zmq::message_t> message_ptr;
         std::unique_ptr<std::string> message_string_ptr;
         std::unique_ptr<proto::Message> msg_ptr;
@@ -67,7 +66,7 @@ namespace Taas {
         bool MergeQueueTryDequeue(uint64_t &epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_);
         bool CommitQueueTryDequeue(uint64_t &epoch_, std::shared_ptr<proto::Transaction> txn_ptr_);
 
-        void MergeInit(const uint64_t &id, const Context &ctx_);
+        void MergeInit(const uint64_t &id);
         void ReadValidate();
         void Send();
         void Merge();

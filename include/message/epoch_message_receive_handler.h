@@ -20,7 +20,7 @@ namespace Taas {
 
 class EpochMessageReceiveHandler : public ThreadCounters {
     public:
-        bool Init(const uint64_t &id, const Context& context);
+        bool Init(const uint64_t &id);
 
         void HandleReceivedMessage();
         void TryHandleReceivedMessage();
@@ -44,11 +44,10 @@ class EpochMessageReceiveHandler : public ThreadCounters {
         void RedoLogQueueEnqueue(uint64_t &epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_);
         void ResultReturnQueueEnqueue(uint64_t &epoch_, const std::shared_ptr<proto::Transaction>& txn_ptr_);
 
-        static bool StaticInit(const Context& context);
+        static bool StaticInit();
         static bool StaticClear([[maybe_unused]] uint64_t& epoch);
 
     private:
-        Context ctx;
         std::unique_ptr<zmq::message_t> message_ptr;
         std::unique_ptr<std::string> message_string_ptr;
         std::unique_ptr<proto::Message> msg_ptr;
@@ -72,7 +71,8 @@ class EpochMessageReceiveHandler : public ThreadCounters {
     public:
         void Shard();
 
-    };
+      bool UpdateMetaInfo();
+};
 
 }
 

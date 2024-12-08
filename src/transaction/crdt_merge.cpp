@@ -8,11 +8,11 @@
 #include "transaction/transaction_cache.h"
 
 namespace Taas {
-    Context CRDTMerge::ctx;
+
     bool CRDTMerge::ValidateReadSet(std::shared_ptr<proto::Transaction> txn_ptr) {
         ///RC & RR & SI
         //RC do not check read data
-        auto epoch_mod = txn_ptr->commit_epoch() % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod = txn_ptr->commit_epoch() % TaasContext::kCacheMaxLength;
         std::string version;
         uint64_t csn = 0;
         for(auto i = 0; i < txn_ptr->row_size(); i ++) {
@@ -23,12 +23,12 @@ namespace Taas {
             }
             /// indeed, we should use the csn to check the read version,
             /// but there are some bugs in updating the csn to the storage(tikv).
-            if (!TransactionCache::read_version_map_data.getValue(key, version)) {
+            if (!TransactionCache::read_version_map.getValue(key, version)) {
                 /// should be abort, but Taas do not connect load data,
                 /// so read the init snap will get empty in read_version_map
                 continue;
             }
-            if (version != row.data()) {
+            if (version != row.data()) { /// row.data == data item.version_csn
 //                continue; ///only for debug
                 auto csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
                 TransactionCache::epoch_abort_txn_set[epoch_mod]->insert(csn_temp, csn_temp);
@@ -43,7 +43,7 @@ namespace Taas {
     }
 
     bool CRDTMerge::ValidateWriteSet(std::shared_ptr<proto::Transaction> txn_ptr) {
-        auto epoch_mod = txn_ptr->commit_epoch() % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod = txn_ptr->commit_epoch() % TaasContext::kCacheMaxLength;
         auto csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
         if(TransactionCache::epoch_abort_txn_set[epoch_mod]->contain(csn_temp, csn_temp)) {
             txn_ptr.reset();
@@ -54,7 +54,7 @@ namespace Taas {
     }
 
     bool CRDTMerge::MultiMasterCRDTMerge(std::shared_ptr<proto::Transaction> txn_ptr) {
-        auto epoch_mod = txn_ptr->commit_epoch() % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod = txn_ptr->commit_epoch() % TaasContext::kCacheMaxLength;
         auto csn_temp = std::to_string(txn_ptr->csn()) + ":" + std::to_string(txn_ptr->txn_server_id());
         std::string csn_result;
         bool result = true;
@@ -90,8 +90,7 @@ namespace Taas {
             else {
                 //nothing to do
             }
-            TransactionCache::read_version_map_data.insert(key, row.data());
-            TransactionCache::read_version_map_csn.insert(key, csn_temp);
+            TransactionCache::read_version_map.insert(key, csn_temp);
         }
         txn_ptr.reset();
         return true;

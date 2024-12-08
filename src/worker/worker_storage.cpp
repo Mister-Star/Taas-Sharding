@@ -11,7 +11,7 @@
 
 namespace Taas {
 
-    void WorkerFroMOTStorageThreadMain(const Context& ctx, uint64_t id) {
+    void WorkerFroMOTStorageThreadMain(uint64_t id) {
         std::string name = "EpochMOT";
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
@@ -22,7 +22,7 @@ namespace Taas {
         }
     }
 
-    void WorkerFroNebulaStorageThreadMain(const Context& ctx, uint64_t id) {
+    void WorkerFroNebulaStorageThreadMain(uint64_t id) {
         std::string name = "EpochNebula";
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
@@ -33,7 +33,7 @@ namespace Taas {
         }
     }
 
-    void WorkerFroTiKVStorageThreadMain(const Context& ctx, uint64_t id) {
+    void WorkerFroTiKVStorageThreadMain(uint64_t id) {
         std::string name = "EpochTikv-" + std::to_string(id);
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
@@ -47,7 +47,7 @@ namespace Taas {
         }
     }
 
-    void WorkerFroLevelDBStorageThreadMain(const Context& ctx, uint64_t id) {
+    void WorkerFroLevelDBStorageThreadMain(uint64_t id) {
         std::string name = "EpochLevelDB-" + std::to_string(id);
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
@@ -62,7 +62,7 @@ namespace Taas {
         }
     }
 
-    void WorkerFroHBaseStorageThreadMain(const Context& ctx, uint64_t id) {
+    void WorkerFroHBaseStorageThreadMain(uint64_t id) {
         std::string name = "EpochHBase-" + std::to_string(id);
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         while(!EpochManager::IsInitOK()) usleep(sleep_time);

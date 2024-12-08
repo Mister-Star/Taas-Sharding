@@ -14,7 +14,6 @@
 namespace Taas {
     class storage_thread_counts {
     public:
-        Context ctx;
         uint64_t thread_id = 0, max_length = 0, sharding_num = 0, local_server_id;
         std::atomic<uint64_t> inc_id;
 

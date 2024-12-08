@@ -64,7 +64,7 @@ namespace Taas {
 
     uint64_t GetHashValue(const std::string& key) const { return _hash(key) % shard_num; }
 
-    static bool StaticInit(const Context& context);
+    static bool StaticInit();
     static bool StaticClear(const Context& context, uint64_t& epoch);
 
   private:
@@ -82,7 +82,6 @@ namespace Taas {
 
     bool res, sleep_flag;
 
-    Context ctx;
     proto::Transaction empty_txn;
     std::hash<std::string> _hash;
 

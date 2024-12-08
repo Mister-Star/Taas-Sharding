@@ -57,20 +57,20 @@ namespace Taas {
         static std::unique_ptr<MessageBlockingConcurrentQueue<std::unique_ptr<send_params>>> send_to_server_queue, send_to_client_queue,
                 send_to_storage_queue, send_to_mot_storage_queue, send_to_nebula_storage_queue, send_to_server_pub_queue;
         static std::unique_ptr<MessageBlockingConcurrentQueue<std::unique_ptr<proto::Message>>> request_queue, raft_message_queue;
-        static void StaticInitMessageQueue(const Context& ctx);
+        static void StaticInitMessageQueue();
         static std::atomic<uint64_t> client_receive_message_num, client_send_message_num;
     };
 
     //message transport threads
-    extern void SendServerThreadMain(const Context& ctx);
-    extern void SendServerPUBThreadMain(const Context& ctx);
-    extern void ListenServerThreadMain(const Context& ctx);
-    extern void ListenServerThreadMain_Sub(const Context& ctx);
-    extern void SendClientThreadMain(const Context& ctx);
-    extern void ListenClientThreadMain(const Context& ctx);
-    extern void ListenStorageThreadMain(const Context& ctx);
-    extern void SendToMOTStorageThreadMain(const Context& ctx);
-    extern void SendToNebulaStorageThreadMain(const Context& ctx);
+    extern void SendServerThreadMain();
+    extern void SendServerPUBThreadMain();
+    extern void ListenServerThreadMain();
+    extern void ListenServerThreadMain_Sub();
+    extern void SendClientThreadMain();
+    extern void ListenClientThreadMain();
+    extern void ListenStorageThreadMain();
+    extern void SendToMOTStorageThreadMain();
+    extern void SendToNebulaStorageThreadMain();
 
 }
 

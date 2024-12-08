@@ -72,6 +72,8 @@ namespace Taas{
             ThreadCounters::abort_set_received_num(10, 1),
             ThreadCounters::abort_set_received_ack_num(10, 1),
 
+            ThreadCounters::meta_info_received_num(10, 1),
+
             ThreadCounters::redo_log_push_down_ack_num(10, 1),
             ThreadCounters::redo_log_push_down_local_epoch(10, 1);
 
@@ -117,11 +119,11 @@ namespace Taas{
 
     void ThreadCounters::ThreadCountersInit(const Context& context) {
         thread_id = inc_id.fetch_add(1);
-        shard_num = context.taasContext.kShardNum;
-        replica_num = context.taasContext.kReplicaNum;
-        server_num = context.taasContext.kTxnNodeNum;
-        max_length = context.taasContext.kCacheMaxLength;
-        local_server_id = context.taasContext.txn_node_ip_index;
+        shard_num = TaasContext::kShardNum;
+        replica_num = TaasContext::kReplicaNum;
+        server_num = TaasContext::kTxnNodeNum;
+        max_length = TaasContext::kCacheMaxLength;
+        local_server_id = TaasContext::txn_node_ip_index;
 
         shard_should_send_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num),
         shard_send_txn_num_local = std::make_shared<AtomicCounters_Cache>(max_length, server_num);
@@ -190,23 +192,22 @@ namespace Taas{
 
     }
 
-    bool ThreadCounters::StaticInit(const Context& context) {
-        ctx = context;
-        auto thread_total_num = ctx.taasContext.kMergeThreadNum * 2
-                + ctx.taasContext.kEpochMessageThreadNum + ctx.taasContext.kEpochTxnThreadNum;
-        auto max_length = context.taasContext.kCacheMaxLength;
-        auto shard_num = context.taasContext.kShardNum;
-        auto replica_num = context.taasContext.kReplicaNum;
-        auto server_num = context.taasContext.kTxnNodeNum;
+    bool ThreadCounters::StaticInit() {
+        auto thread_total_num = TaasContext::kMergeThreadNum * 2
+                + TaasContext::kEpochMessageThreadNum + TaasContext::kEpochTxnThreadNum;
+        auto max_length = TaasContext::kCacheMaxLength;
+        auto shard_num = TaasContext::kShardNum;
+        auto replica_num = TaasContext::kReplicaNum;
+        auto server_num = TaasContext::kTxnNodeNum;
 
-        is_local_shard.resize(ctx.taasContext.kTxnNodeNum);
+        is_local_shard.resize(TaasContext::kTxnNodeNum);
         for(auto &i : is_local_shard) {
-            i.resize(ctx.taasContext.kShardNum);
+            i.resize(TaasContext::kShardNum);
         }
-        for(uint64_t server_id = 0; server_id < ctx.taasContext.kTxnNodeNum; server_id ++) {
-            for(uint64_t i = 0; i < ctx.taasContext.kShardNum; i ++) {
-                for(uint64_t j = 0; j < ctx.taasContext.kReplicaNum; j ++ ) {
-                    if((i + ctx.taasContext.kTxnNodeNum - j) % ctx.taasContext.kTxnNodeNum == server_id) {
+        for(uint64_t server_id = 0; server_id < TaasContext::kTxnNodeNum; server_id ++) {
+            for(uint64_t i = 0; i < TaasContext::kShardNum; i ++) {
+                for(uint64_t j = 0; j < TaasContext::kReplicaNum; j ++ ) {
+                    if((i + TaasContext::kTxnNodeNum - j) % TaasContext::kTxnNodeNum == server_id) {
                         is_local_shard[server_id][i] = true;
                     }
                 }
@@ -309,12 +310,12 @@ namespace Taas{
         epoch_result_returned_txn_num_local_vec.resize(thread_total_num);
 
         ///epoch merge state
-        epoch_read_validate_complete.resize(ctx.taasContext.kCacheMaxLength);
-        epoch_merge_complete.resize(ctx.taasContext.kCacheMaxLength);
-        epoch_commit_complete.resize(ctx.taasContext.kCacheMaxLength);
-        epoch_record_committed.resize(ctx.taasContext.kCacheMaxLength);
-        epoch_result_returned.resize(ctx.taasContext.kCacheMaxLength);
-        for(int i = 0; i < static_cast<int>(ctx.taasContext.kCacheMaxLength); i ++) {
+        epoch_read_validate_complete.resize(TaasContext::kCacheMaxLength);
+        epoch_merge_complete.resize(TaasContext::kCacheMaxLength);
+        epoch_commit_complete.resize(TaasContext::kCacheMaxLength);
+        epoch_record_committed.resize(TaasContext::kCacheMaxLength);
+        epoch_result_returned.resize(TaasContext::kCacheMaxLength);
+        for(int i = 0; i < static_cast<int>(TaasContext::kCacheMaxLength); i ++) {
             epoch_read_validate_complete[i] = std::make_unique<std::atomic<bool>>(false);
             epoch_merge_complete[i] = std::make_unique<std::atomic<bool>>(false);
             epoch_commit_complete[i] = std::make_unique<std::atomic<bool>>(false);
@@ -325,8 +326,8 @@ namespace Taas{
     }
 
     bool ThreadCounters::StaticClear(uint64_t& epoch) {
-        auto epoch_mod_temp = epoch % ctx.taasContext.kCacheMaxLength;
-        auto cache_clear_epoch_num_mod = epoch % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod_temp = epoch % TaasContext::kCacheMaxLength;
+        auto cache_clear_epoch_num_mod = epoch % TaasContext::kCacheMaxLength;
 
         ///Message handle
         shard_should_receive_pack_num.Clear(cache_clear_epoch_num_mod, 1),///relate to server state
@@ -411,7 +412,7 @@ namespace Taas{
 
 
     bool ThreadCounters::CheckEpochShardSendComplete(const uint64_t& epoch) {
-        auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod = epoch % TaasContext::kCacheMaxLength;
         if(epoch_shard_send_complete[epoch_mod]->load()) {
             return true;
         }
@@ -425,7 +426,7 @@ namespace Taas{
         return false;
     }
     bool ThreadCounters::CheckEpochShardReceiveComplete(const uint64_t& epoch) {
-        auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod = epoch % TaasContext::kCacheMaxLength;
         if (epoch_shard_receive_complete[epoch_mod]->load()) return true;
         if (epoch < EpochManager::GetPhysicalEpoch() &&
             IsShardPackReceiveComplete(epoch) &&
@@ -464,8 +465,8 @@ namespace Taas{
         return GetAllThreadLocalCountNum(epoch, shard_received_txn_num_local_vec) >= shard_should_receive_txn_num.GetCount(epoch, id);
     }
     bool ThreadCounters::IsShardPackReceiveComplete(const uint64_t &epoch) {
-        for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i ++) {
-            if(i == ctx.taasContext.txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
+        for(uint64_t i = 0; i < TaasContext::kTxnNodeNum; i ++) {
+            if(i == TaasContext::txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
             if(shard_received_pack_num.GetCount(epoch, i) < shard_should_receive_pack_num.GetCount(epoch, i)) return false;
         }
         return true;
@@ -482,7 +483,7 @@ namespace Taas{
 
 
     bool ThreadCounters::CheckEpochRemoteServerSendComplete(const uint64_t& epoch) {
-        auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod = epoch % TaasContext::kCacheMaxLength;
         if(epoch_remote_server_send_complete[epoch_mod]->load()) {
             return true;
         }
@@ -496,7 +497,7 @@ namespace Taas{
         return false;
     }
     bool ThreadCounters::CheckEpochRemoteServerReceiveComplete(const uint64_t& epoch) {
-        auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod = epoch % TaasContext::kCacheMaxLength;
         if (epoch_remote_server_receive_complete[epoch_mod]->load()) return true;
         if (epoch < EpochManager::GetPhysicalEpoch() &&
             IsRemoteServerPackReceiveComplete(epoch) &&
@@ -535,8 +536,8 @@ namespace Taas{
         return GetAllThreadLocalCountNum(epoch, remote_server_received_txn_num_local_vec) >= remote_server_should_receive_txn_num.GetCount(epoch, id);
     }
     bool ThreadCounters::IsRemoteServerPackReceiveComplete(const uint64_t &epoch) {
-        for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i ++) {
-            if(i == ctx.taasContext.txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
+        for(uint64_t i = 0; i < TaasContext::kTxnNodeNum; i ++) {
+            if(i == TaasContext::txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
             if(remote_server_received_pack_num.GetCount(epoch, i) < remote_server_should_receive_pack_num.GetCount(epoch, i)) return false;
         }
         return true;
@@ -553,7 +554,7 @@ namespace Taas{
 
 
     bool ThreadCounters::CheckEpochBackUpComplete(const uint64_t& epoch) {
-        auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod = epoch % TaasContext::kCacheMaxLength;
         if (epoch_back_up_complete[epoch_mod]->load()) return true;
         if(epoch < EpochManager::GetPhysicalEpoch() && IsBackUpACKReceiveComplete(epoch)
            &&IsBackUpSendFinish(epoch)) {
@@ -573,8 +574,8 @@ namespace Taas{
                 ;
     }
     bool ThreadCounters::IsBackUpTxnReceiveComplete(const uint64_t &epoch) {
-        for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i ++) {
-            if(i == ctx.taasContext.txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
+        for(uint64_t i = 0; i < TaasContext::kTxnNodeNum; i ++) {
+            if(i == TaasContext::txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
             if(GetAllThreadLocalCountNum(epoch, i, backup_received_txn_num_local_vec) < backup_should_receive_txn_num.GetCount(epoch, i)) return false;
         }
         return true;
@@ -583,8 +584,8 @@ namespace Taas{
         return GetAllThreadLocalCountNum(epoch, id, backup_received_txn_num_local_vec) >= backup_should_receive_txn_num.GetCount(epoch, id);
     }
     bool ThreadCounters::IsBackUpPackReceiveComplete(const uint64_t &epoch) {
-        for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i ++) {
-            if(i == ctx.taasContext.txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
+        for(uint64_t i = 0; i < TaasContext::kTxnNodeNum; i ++) {
+            if(i == TaasContext::txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
             if(backup_received_pack_num.GetCount(epoch, i) < backup_should_receive_pack_num.GetCount(epoch, i)) return false;
         }
         return true;
@@ -596,7 +597,7 @@ namespace Taas{
 
 
     bool ThreadCounters::CheckEpochAbortSetMergeComplete(const uint64_t& epoch) {
-        auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod = epoch % TaasContext::kCacheMaxLength;
         if(epoch_abort_set_merge_complete[epoch_mod]->load()) return true;
         if(epoch < EpochManager::GetPhysicalEpoch() &&
            IsAbortSetACKReceiveComplete(epoch) &&
@@ -608,7 +609,7 @@ namespace Taas{
         return false;
     }
     bool ThreadCounters::CheckEpochInsertSetMergeComplete(const uint64_t& epoch) {
-        auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod = epoch % TaasContext::kCacheMaxLength;
         if(epoch_insert_set_complete[epoch_mod]->load()) return true;
         if(epoch < EpochManager::GetPhysicalEpoch() &&
            IsInsertSetACKReceiveComplete(epoch) &&
@@ -624,8 +625,8 @@ namespace Taas{
         return abort_set_received_num.GetCount(epoch, id) >= abort_set_should_receive_num.GetCount(epoch, id);
     }
     bool ThreadCounters::IsAbortSetReceiveComplete(const uint64_t &epoch) {
-        for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i ++) {
-            if(i == ctx.taasContext.txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
+        for(uint64_t i = 0; i < TaasContext::kTxnNodeNum; i ++) {
+            if(i == TaasContext::txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
             if(abort_set_received_num.GetCount(epoch, i) < abort_set_should_receive_num.GetCount(epoch, i)) return false;
         }
         return true;
@@ -634,8 +635,8 @@ namespace Taas{
         return insert_set_received_num.GetCount(epoch, id) >= insert_set_should_receive_num.GetCount(epoch, id);
     }
     bool ThreadCounters::IsInsertSetReceiveComplete(const uint64_t &epoch) {
-        for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i ++) {
-            if(i == ctx.taasContext.txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
+        for(uint64_t i = 0; i < TaasContext::kTxnNodeNum; i ++) {
+            if(i == TaasContext::txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
             if(insert_set_received_num.GetCount(epoch, i) < insert_set_should_receive_num.GetCount(epoch, i)) return false;
         }
         return true;
@@ -646,45 +647,45 @@ namespace Taas{
 
 
     bool ThreadCounters::IsShardACKReceiveComplete(const uint64_t &epoch) {
-        for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i ++) {
-            if(i == ctx.taasContext.txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
+        for(uint64_t i = 0; i < TaasContext::kTxnNodeNum; i ++) {
+            if(i == TaasContext::txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
             if(shard_received_ack_num.GetCount(epoch, i) < shard_should_receive_pack_num.GetCount(epoch, i)) return false;
         }
         return true;
     }
     bool ThreadCounters::IsRemoteServerACKReceiveComplete(const uint64_t &epoch) {
-        for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i ++) {
-            if(i == ctx.taasContext.txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
+        for(uint64_t i = 0; i < TaasContext::kTxnNodeNum; i ++) {
+            if(i == TaasContext::txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
             if(remote_server_received_ack_num.GetCount(epoch, i) < remote_server_should_receive_pack_num.GetCount(epoch, i)) return false;
         }
         return true;
     }
     bool ThreadCounters::IsBackUpACKReceiveComplete(const uint64_t &epoch) {
         uint64_t to_id ;
-        for(uint64_t i = 0; i < ctx.taasContext.kBackUpNum; i ++) { /// send to i+1, i+2...i+kBackNum-1
-            to_id = (ctx.taasContext.txn_node_ip_index + i + 1) % ctx.taasContext.kTxnNodeNum;
-            if(to_id == (uint64_t)ctx.taasContext.txn_node_ip_index || EpochManager::server_state.GetCount(epoch, to_id) == 0) continue;
+        for(uint64_t i = 0; i < TaasContext::kBackUpNum; i ++) { /// send to i+1, i+2...i+kBackNum-1
+            to_id = (TaasContext::txn_node_ip_index + i + 1) % TaasContext::kTxnNodeNum;
+            if(to_id == (uint64_t)TaasContext::txn_node_ip_index || EpochManager::server_state.GetCount(epoch, to_id) == 0) continue;
             if(backup_received_ack_num.GetCount(epoch, to_id) < backup_should_receive_pack_num.GetCount(epoch, to_id)) return false;
         }
         return true;
     }
     bool ThreadCounters::IsAbortSetACKReceiveComplete(const uint64_t &epoch) {
-        for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i ++) {
-            if(i == ctx.taasContext.txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
+        for(uint64_t i = 0; i < TaasContext::kTxnNodeNum; i ++) {
+            if(i == TaasContext::txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
             if(abort_set_received_ack_num.GetCount(epoch, i) < abort_set_should_receive_num.GetCount(epoch, i)) return false;
         }
         return true;
     }
     bool ThreadCounters::IsInsertSetACKReceiveComplete(const uint64_t &epoch) {
-        for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i ++) {
-            if(i == ctx.taasContext.txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
+        for(uint64_t i = 0; i < TaasContext::kTxnNodeNum; i ++) {
+            if(i == TaasContext::txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
             if(insert_set_received_ack_num.GetCount(epoch, i) < insert_set_should_receive_num.GetCount(epoch, i)) return false;
         }
         return true;
     }
     bool ThreadCounters::IsRedoLogPushDownACKReceiveComplete(const uint64_t &epoch) {
-        for(uint64_t i = 0; i < ctx.taasContext.kTxnNodeNum; i ++) {
-            if(i == ctx.taasContext.txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
+        for(uint64_t i = 0; i < TaasContext::kTxnNodeNum; i ++) {
+            if(i == TaasContext::txn_node_ip_index || EpochManager::server_state.GetCount(epoch, i) == 0) continue;
             if(redo_log_push_down_ack_num.GetCount(epoch, i) < EpochManager::server_state.GetCount(epoch, i)) return false;
         }
         return true;
@@ -693,7 +694,7 @@ namespace Taas{
 
 
     bool ThreadCounters::CheckEpochClientTxnHandleComplete(const uint64_t &epoch) {
-        auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod = epoch % TaasContext::kCacheMaxLength;
         if(epoch_shard_handle_complete[epoch_mod]->load()) {
             return true;
         }
@@ -709,7 +710,7 @@ namespace Taas{
     }
 
     bool ThreadCounters::CheckEpochShardTxnHandleComplete(const uint64_t &epoch) {
-        auto epoch_mod = epoch % ctx.taasContext.kCacheMaxLength;
+        auto epoch_mod = epoch % TaasContext::kCacheMaxLength;
         if(epoch_remote_server_handle_complete[epoch_mod]->load()) {
             return true;
         }
@@ -746,46 +747,46 @@ namespace Taas{
 
 
     bool ThreadCounters::CheckEpochReadValidateComplete(const uint64_t& epoch) {
-        if(epoch_read_validate_complete[epoch % ctx.taasContext.kCacheMaxLength]->load()) {
+        if(epoch_read_validate_complete[epoch % TaasContext::kCacheMaxLength]->load()) {
             return true;
         }
         if (epoch < EpochManager::GetPhysicalEpoch() && IsReadValidateComplete(epoch)) {
-            epoch_read_validate_complete[epoch % ctx.taasContext.kCacheMaxLength]->store(true);
+            epoch_read_validate_complete[epoch % TaasContext::kCacheMaxLength]->store(true);
             return true;
         }
         return false;
     }
     bool ThreadCounters::CheckEpochMergeComplete(const uint64_t& epoch) {
-        if(epoch_merge_complete[epoch % ctx.taasContext.kCacheMaxLength]->load()) {
+        if(epoch_merge_complete[epoch % TaasContext::kCacheMaxLength]->load()) {
             return true;
         }
         if (epoch < EpochManager::GetPhysicalEpoch() && IsMergeComplete(epoch)) {
-            epoch_merge_complete[epoch % ctx.taasContext.kCacheMaxLength]->store(true);
+            epoch_merge_complete[epoch % TaasContext::kCacheMaxLength]->store(true);
             return true;
         }
         return false;
     }
     bool ThreadCounters::CheckEpochCommitComplete(const uint64_t& epoch) {
-        if (epoch_commit_complete[epoch % ctx.taasContext.kCacheMaxLength]->load()) return true;
+        if (epoch_commit_complete[epoch % TaasContext::kCacheMaxLength]->load()) return true;
         if (epoch < EpochManager::GetPhysicalEpoch() && IsCommitComplete(epoch)) {
-            epoch_commit_complete[epoch % ctx.taasContext.kCacheMaxLength]->store(true);
+            epoch_commit_complete[epoch % TaasContext::kCacheMaxLength]->store(true);
             return true;
         }
         return false;
     }
     bool ThreadCounters::CheckEpochRecordCommitted(const uint64_t& epoch) {
-        if (epoch_record_committed[epoch % ctx.taasContext.kCacheMaxLength]->load()) return true;
+        if (epoch_record_committed[epoch % TaasContext::kCacheMaxLength]->load()) return true;
         if (epoch < EpochManager::GetPhysicalEpoch() && IsCommitComplete(epoch) && IsRecordCommitted(epoch)) {
-            epoch_record_committed[epoch % ctx.taasContext.kCacheMaxLength]->store(true);
+            epoch_record_committed[epoch % TaasContext::kCacheMaxLength]->store(true);
             return true;
         }
         return false;
     }
 
     bool ThreadCounters::CheckEpochResultReturned(const uint64_t& epoch) {
-        if (epoch_result_returned[epoch % ctx.taasContext.kCacheMaxLength]->load()) return true;
+        if (epoch_result_returned[epoch % TaasContext::kCacheMaxLength]->load()) return true;
         if (epoch < EpochManager::GetPhysicalEpoch() && IsRecordCommitted(epoch) && IsResultReturned(epoch)) {
-            epoch_result_returned[epoch % ctx.taasContext.kCacheMaxLength]->store(true);
+            epoch_result_returned[epoch % TaasContext::kCacheMaxLength]->store(true);
             return true;
         }
         return false;

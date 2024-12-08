@@ -30,16 +30,16 @@ namespace Taas {
         message_ptr = nullptr;
         txn_ptr.reset();
         thread_id = id;
-        ctx = ctx_;
+
 //        max_length = ctx_.kCacheMaxLength;
         shard_num = ctx_.taasContext.kTxnNodeNum;
 
         return true;
     }
 
-    bool TwoPCMessageReceiveHandler::StaticInit(const Context& context) {
-        auto max_length = context.taasContext.kCacheMaxLength;
-        auto shard_num = context.taasContext.kTxnNodeNum;
+    bool TwoPCMessageReceiveHandler::StaticInit() {
+        auto max_length = TaasContext::kCacheMaxLength;
+        auto shard_num = TaasContext::kTxnNodeNum;
 
         shard_send_ack_epoch_num.resize(shard_num + 1);
         backup_send_ack_epoch_num.resize(shard_num + 1);
@@ -92,7 +92,7 @@ namespace Taas {
         if(txn_ptr->txn_type() == proto::TxnType::ClientTxn) {
             txn_ptr->set_commit_epoch(EpochManager::GetPhysicalEpoch());
             txn_ptr->set_csn(now_to_us());
-            txn_ptr->set_txn_server_id(ctx.taasContext.txn_node_ip_index);
+            txn_ptr->set_txn_server_id(TaasContext::txn_node_ip_index);
         }
         SetMessageRelatedCountersInfo();
         switch (txn_ptr->txn_type()) {
@@ -158,16 +158,16 @@ namespace Taas {
             if(shard_row_vector[i]->row_size() > 0) {
                 txn_shard_num |= 1<<i;
                 ///shard sending
-                if(i == ctx.taasContext.txn_node_ip_index) {
+                if(i == TaasContext::txn_node_ip_index) {
                     continue;
                 }
                 else {
-//                    TwoPCMessageSendHandler::SendTxnToServer(ctx, i, shard_row_vector[i], proto::TxnType::);
+//                    TwoPCMessageSendHandler::SendTxnToServer(i, shard_row_vector[i], proto::TxnType::);
                 }
             }
         }
         auto txn_state = std::make_unique<TwoPCTxnStateStruct>();
-        if(shard_row_vector[ctx.taasContext.txn_node_ip_index]->row_size() > 0) {
+        if(shard_row_vector[TaasContext::txn_node_ip_index]->row_size() > 0) {
             ///read version check need to wait until last epoch has committed.
 
         }

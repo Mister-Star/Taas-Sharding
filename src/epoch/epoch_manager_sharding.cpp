@@ -14,7 +14,7 @@ namespace Taas {
 
     static uint64_t last_total_commit_txn_num = 0;
 
-    void ShardEpochManager::EpochLogicalTimerManagerThreadMain(const Context& ctx) {
+    void ShardEpochManager::EpochLogicalTimerManagerThreadMain() {
 
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         uint64_t epoch = 1;
@@ -65,7 +65,7 @@ namespace Taas {
             auto epoch_commit_success_txn_num = ThreadCounters::GetAllThreadLocalCountNum(epoch,
                                                ThreadCounters::epoch_record_committed_txn_num_local_vec);
             total_commit_txn_num += epoch_commit_success_txn_num;///success
-            if(epoch % ctx.taasContext.print_mode_size == 0) {
+            if(epoch % TaasContext::print_mode_size == 0) {
                 LOG(INFO) << PrintfToString(
                         "************ 完成一个Epoch的合并 Physical Epoch %lu, Logical Epoch: %lu, Local EpochSuccessCommitTxnNum: %lu,TotalSuccessTxnNum: %lu, EpochCommitTxnNum: %lu ",
                         EpochManager::GetPhysicalEpoch(), epoch, epoch_commit_success_txn_num, total_commit_txn_num,

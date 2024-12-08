@@ -9,10 +9,10 @@
 
 namespace Taas {
 
-    void WorkerFroMergeThreadMain(const Context& ctx, uint64_t id) {
+    void WorkerFroMergeThreadMain(uint64_t id) {
     }
 
-    void EpochWorkerThreadMain(const Context& ctx, uint64_t id) {
+    void EpochWorkerThreadMain(uint64_t id) {
         std::string name = "TaaSMerger-" + std::to_string(id);
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
         Merger merger;
@@ -20,15 +20,15 @@ namespace Taas {
         class TwoPC two_pc;
         while(init_ok_num.load() < 5) usleep(sleep_time);
 //        LOG(INFO) << "start worker init" << id;
-        merger.MergeInit(id, ctx);
-        receiveHandler.Init(id, ctx);
-        Taas::TwoPC::Init(ctx, id);
+        merger.MergeInit(id);
+        receiveHandler.Init(id);
+        Taas::TwoPC::Init(id);
         bool sleep_flag;
         init_ok_num.fetch_add(1);
 //        LOG(INFO) << "finish worker init" << id;
         while(!EpochManager::IsInitOK()) usleep(sleep_time);
         SetCPU();
-        switch(ctx.taasContext.taasMode) {
+        switch(TaasContext::taasMode) {
             case TaasMode::MultiModel :
             case TaasMode::MultiMaster :
             case TaasMode::Shard : {
@@ -36,7 +36,7 @@ namespace Taas {
                     sleep_flag = true;
 
                     merger.epoch = EpochManager::GetLogicalEpoch();
-                    merger.epoch_mod = merger.epoch % ctx.taasContext.kCacheMaxLength;
+                    merger.epoch_mod = merger.epoch % TaasContext::kCacheMaxLength;
                     while (TransactionCache::epoch_read_validate_queue[merger.epoch_mod]->try_dequeue(
                             merger.txn_ptr)) {
                         if (merger.txn_ptr != nullptr && merger.txn_ptr->txn_type() != proto::TxnType::NullMark) {

@@ -7,6 +7,39 @@
 
 namespace Taas {
 
+   ServerMode TaasContext::server_type = ServerMode::Taas;
+   TaasMode TaasContext::taasMode = TaasMode::MultiMaster;
+   std::vector<std::string> TaasContext::kServerIp;
+   uint64_t TaasContext::kTxnNodeNum = 1, TaasContext::kBackUpNum = 1;
+   uint64_t TaasContext::kIndexNum = 1, TaasContext::kEpochSize_us = 10000/** us */, TaasContext::txn_node_ip_index = 0,
+            TaasContext::kShardNum = 1, TaasContext::kReplicaNum = 1,
+            TaasContext::kDurationTime_us = 0,
+            TaasContext::kCacheMaxLength = 200000, TaasContext::kDelayEpochNum = 0, TaasContext::print_mode_size = 1000;
+   uint64_t TaasContext::kMergeThreadNum = 0, TaasContext::kEpochTxnThreadNum = 0, TaasContext::kEpochMessageThreadNum = 0;
+   uint64_t TaasContext::kTestClientNum = 0, TaasContext::kTestKeyRange = 1000000, TaasContext::kTestTxnOpNum = 10;
+   uint64_t TaasContext::kHandleEpochMessageNumOfEachTraversal = 1, TaasContext::kHandleTxnMessageNumOfEachTraversal = 1, TaasContext::kSafeEpochDistance = 10;
+
+   bool TaasContext::is_read_repeatable = false, TaasContext::is_snap_isolation = false,
+        TaasContext::is_breakdown = false, TaasContext::is_sync_start = false,
+        TaasContext::is_cache_server_available = false;
+   std::string TaasContext::glog_path = "/tmp";
+
+   bool StorageContext::is_tikv_enable = false, StorageContext::is_leveldb_enable = false, StorageContext::is_hbase_enable = false,
+        StorageContext::is_mot_enable = true, StorageContext::is_nebula_enable = false;
+   std::string StorageContext::kMasterIp, StorageContext::kPrivateIp, StorageContext::kTiKVIP, StorageContext::kLevelDBIP, StorageContext::kHbaseIP;
+   uint64_t StorageContext::kTikvThreadNum = 10, StorageContext::kLeveldbThreadNum = 10, StorageContext::kHbaseThreadNum = 10, StorageContext::kMOTThreadNum = 10;
+
+
+    std::string  MultiModelContext::kMultiModelClientIP, MultiModelContext::kTaasIP,
+       MultiModelContext::kNebulaIP, MultiModelContext::kNebulaSpace, MultiModelContext::kNebulaUser, MultiModelContext::kNebulaPwd,
+       MultiModelContext::kMOTIP, MultiModelContext::kMOTDsnName, MultiModelContext::kMOTDsnUid, MultiModelContext::kMOTDsnPwd;
+    TestMode MultiModelContext::kTestMode = MultiModelTest;
+    bool MultiModelContext::isLoadData = true , MultiModelContext::isUseMot = true, MultiModelContext::isUseNebula = true;
+
+    uint64_t MultiModelContext::kRecordCount = 1000000, MultiModelContext::kTxnNum = 10000, MultiModelContext::kWriteNum = 100,
+                   MultiModelContext::kReadNum = 0, MultiModelContext::kOpNum = 10, MultiModelContext::kClientNum = 10;
+    std::string MultiModelContext::kDistribution = "zipfian";
+
     void TaasContext::GetTaaSServerInfo(const std::string& config_file_path){
         tinyxml2::XMLDocument doc;
         doc.LoadFile(config_file_path.c_str());
@@ -77,10 +110,10 @@ namespace Taas {
 
 
         /** Get glog path */
-        tinyxml2::XMLElement *glog_path = root->FirstChildElement("glog_path");
-        glog_path_ = std::string(glog_path->GetText());
+//        tinyxml2::XMLElement* glog_path_ = root->FirstChildElement("glog_path");
+//        glog_path = std::string(glog_path_->GetText());
 
-        auto* mode_size_t = root->FirstChildElement("print_mode_size");
+        tinyxml2::XMLElement* mode_size_t = root->FirstChildElement("print_mode_size");
         print_mode_size = std::stoull(mode_size_t->GetText());
 
 //        kBackUpNum = kTxnNodeNum - 1;

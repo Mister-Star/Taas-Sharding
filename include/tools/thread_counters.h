@@ -105,6 +105,8 @@ namespace Taas {
             abort_set_received_num,
             abort_set_received_ack_num,
 
+            meta_info_received_num,
+
             redo_log_push_down_ack_num,
             redo_log_push_down_local_epoch;
 
@@ -240,7 +242,7 @@ namespace Taas {
     public:
 
         void ThreadCountersInit(const Context& context);
-        static bool StaticInit(const Context& context);
+        static bool StaticInit();
         static bool StaticClear(uint64_t& epoch);
 
         static void ClearAllThreadLocalCountNum(const uint64_t &epoch, const std::vector<std::shared_ptr<AtomicCounters_Cache>> &vec) ;
