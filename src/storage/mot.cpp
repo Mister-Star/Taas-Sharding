@@ -126,11 +126,16 @@ namespace Taas {
                 epoch = EpochManager::GetPushDownEpoch();
             }
             epoch_mod = epoch % TaasContext::kCacheMaxLength;
+            sleep_flag = true;
+//            uint64_t cnt = 0;
             while(epoch_redo_log_queue[epoch_mod]->try_dequeue(txn_ptr)) {
+//                cnt ++;
+//                LOG(INFO) << "Try Dequeue MOT, epoch : " <<  epoch_mod << " cnt: " << cnt;
                 if(txn_ptr == nullptr || txn_ptr->txn_type() == proto::TxnType::NullMark) {
                     continue;
                 }
 //                commit_cv.notify_all();
+//                LOG(INFO) << "Send a txn to MOT, epoch : " <<  txn_ptr->commit_epoch();
                 epoch = txn_ptr->commit_epoch();
                 auto push_msg = std::make_unique<proto::Message>();
                 auto push_response = push_msg->mutable_storage_push_response();
@@ -148,11 +153,11 @@ namespace Taas {
                 txn_ptr.reset();
                 sleep_flag = false;
             }
+            if(sleep_flag)
+                usleep(sleep_time);
         }
 //        if(sleep_flag)
 //            usleep(storage_sleep_time);
-        if(sleep_flag)
-            usleep(sleep_time);
     }
 
     void MOT::SendTransactionToDB_Block() {
